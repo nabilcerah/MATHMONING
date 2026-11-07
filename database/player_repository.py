@@ -95,6 +95,25 @@ class PlayerRepository:
             db.execute("UPDATE inventory SET quantity=quantity-1 WHERE player_id=? AND item=?", (player_id, item))
             return True
 
+    def add_item(self, player_id, item, count=1):
+        with self.database.connect() as db:
+            db.execute("""INSERT INTO inventory(player_id, item, quantity) VALUES (?, ?, ?)
+                         ON CONFLICT(player_id, item) DO UPDATE SET quantity=quantity+excluded.quantity""",
+                       (player_id, item, max(0, int(count))))
+
+    def world_flags(self, player_id):
+        with self.database.connect() as db:
+            return {row["flag"] for row in db.execute("SELECT flag FROM world_flags WHERE player_id=?", (player_id,))}
+
+    def set_world_flag(self, player_id, flag):
+        with self.database.connect() as db:
+            db.execute("INSERT OR IGNORE INTO world_flags(player_id, flag) VALUES (?, ?)", (player_id, str(flag)[:80]))
+
+    def clear_world_flags(self, player_id, prefix):
+        with self.database.connect() as db:
+            db.execute("DELETE FROM world_flags WHERE player_id=? AND substr(flag, 1, ?)=?",
+                       (player_id, len(prefix), prefix))
+
     def add_recommendation(self, player_id, message):
         with self.database.connect() as db:
             db.execute("INSERT INTO recommendations(player_id, message) VALUES (?, ?)", (player_id, message[:220]))

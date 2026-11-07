@@ -1,0 +1,62 @@
+{
+  "name": "AQUABIT",
+  "source": "Aquabit.jpg",
+  "poses": [
+    {
+      "pose": "idle",
+      "file": "0.png",
+      "dx": -42,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -38,
+      "dy": -93
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -38,
+      "dy": -99
+    },
+    {
+      "pose": "windup",
+      "file": "3.png",
+      "dx": -56,
+      "dy": -93
+    },
+    {
+      "pose": "attack",
+      "file": "4.png",
+      "dx": -66,
+      "dy": -90
+    },
+    {
+      "pose": "special",
+      "file": "5.png",
+      "dx": -61,
+      "dy": -121
+    },
+    {
+      "pose": "burst",
+      "file": "6.png",
+      "dx": -71,
+      "dy": -120
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -56,
+      "dy": -101
+    },
+    {
+      "pose": "happy",
+      "file": "8.png",
+      "dx": -35,
+      "dy": -127
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 85
+}

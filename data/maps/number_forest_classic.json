@@ -1,0 +1,119 @@
+{
+  "_comment": "NUMBER FOREST. Coordinates are tiles [x, y]; rects are [x, y, w, h]. Layers apply in order: base, fills, props, border. Tile codes: g grass, G tall grass (wild encounters), p path, w water, r reeds, f flowers, T tree, R rock, B hut wall, D hut door.",
+  "id": "number_forest_classic",
+  "name": "Number Forest",
+  "size": [40, 28],
+  "base": "g",
+  "border": "T",
+  "player_spawn": [6, 7],
+  "fills": [
+    {"tile": "G", "rect": [14, 2, 12, 6]},
+    {"tile": "G", "rect": [3, 12, 9, 5]},
+    {"tile": "G", "rect": [23, 12, 9, 6]},
+    {"tile": "f", "rect": [8, 2, 2, 2]},
+    {"tile": "f", "rect": [27, 6, 2, 2]},
+    {"tile": "f", "rect": [2, 20, 3, 2]},
+    {"tile": "f", "rect": [35, 18, 3, 2]},
+    {"tile": "w", "rect": [30, 2, 6, 4]},
+    {"tile": "p", "rect": [1, 9, 38, 1]},
+    {"tile": "p", "rect": [20, 10, 1, 15]},
+    {"tile": "p", "rect": [20, 24, 15, 1]},
+    {"tile": "p", "rect": [34, 23, 1, 1]},
+    {"tile": "p", "rect": [5, 5, 1, 4]},
+    {"tile": "B", "rect": [3, 2, 4, 3]}
+  ],
+  "props": [
+    {"tile": "D", "cells": [[5, 4]]},
+    {"tile": "r", "cells": [[29, 4], [29, 3], [36, 3], [36, 5]]},
+    {"tile": "T", "cells": [[11, 2], [12, 4], [1, 6], [17, 3], [22, 5], [27, 2],
+                            [2, 11], [13, 11], [15, 12], [17, 14], [13, 16], [2, 18], [6, 19], [9, 18],
+                            [12, 21], [15, 23], [17, 25], [2, 23], [8, 25], [11, 24], [6, 22], [18, 18],
+                            [22, 11], [38, 11], [33, 13], [36, 16], [24, 20], [28, 22], [38, 20], [31, 19], [26, 26]]},
+    {"tile": "R", "cells": [[29, 20], [36, 25], [37, 21], [23, 26], [10, 13]]}
+  ],
+  "areas": [
+    {"id": "camp", "name": "Ranger Camp", "rect": [1, 1, 12, 8]},
+    {"id": "meadow", "name": "Whisper Meadow", "rect": [13, 1, 15, 8]},
+    {"id": "pond", "name": "Mirror Pond", "rect": [28, 1, 11, 8]},
+    {"id": "trail", "name": "Forest Trail", "rect": [1, 9, 38, 1]},
+    {"id": "grove", "name": "Sum Grove", "rect": [1, 10, 18, 17]},
+    {"id": "ridge", "name": "Arch Ridge", "rect": [19, 10, 20, 17]}
+  ],
+  "waypoints": {
+    "camp_fire": [8, 7],
+    "camp_sign": [11, 6],
+    "camp_door": [5, 5],
+    "trail_west": [14, 9],
+    "trail_east": [26, 9],
+    "trail_fork": [20, 12],
+    "pond_west": [31, 7],
+    "pond_east": [35, 7]
+  },
+  "interactables": [
+    {"id": "sign_camp", "kind": "sign", "pos": [10, 6], "name": "trail sign", "verb": "Read",
+     "title": "TRAIL SIGN",
+     "text": ["RANGER CAMP. Wild MATHMON hide in the TALL GRASS, the darker, swaying patches.", "East: Whisper Meadow and Mirror Pond.  South: Sum Grove and Arch Ridge, where the old stone arch waits."]},
+    {"id": "hut_door", "kind": "flavour", "pos": [5, 4], "name": "hut door", "verb": "Knock on",
+     "title": "ROWAN'S HUT",
+     "text": ["The door is warm from the sun. A note is pinned to it: 'Out on patrol. Practice makes progress! - Rowan'"]},
+    {"id": "campfire", "kind": "flavour", "pos": [8, 6], "name": "campfire", "verb": "Warm up at",
+     "title": "CAMPFIRE",
+     "text": ["The fire crackles. Sparks pop in twos and threes: 2, 4, 6, 8... skip counting is just multiplication in disguise."]},
+    {"id": "chest_meadow", "kind": "chest", "pos": [26, 3], "name": "mossy chest", "verb": "Open",
+     "item": "EXP Booster", "count": 1, "title": "MOSSY CHEST"},
+    {"id": "chest_grove", "kind": "chest", "pos": [4, 24], "name": "hidden chest", "verb": "Open",
+     "item": "Health Potion", "count": 2, "title": "HIDDEN CHEST"},
+    {"id": "chest_ridge", "kind": "chest", "pos": [37, 13], "name": "ridge chest", "verb": "Open",
+     "item": "Learning Crystal", "count": 1, "title": "RIDGE CHEST"},
+    {"id": "spring", "kind": "spring", "pos": [33, 6], "name": "Mirror Spring", "verb": "Rest at",
+     "title": "MIRROR SPRING",
+     "text": ["Cool water ripples over smooth stones. Your companion drinks and stretches."]},
+    {"id": "tablet", "kind": "flavour", "pos": [16, 20], "name": "stone tablet", "verb": "Read",
+     "title": "STONE TABLET",
+     "text": ["Old carved numbers: 4 × 3 = 3 + 3 + 3 + 3.", "Beneath it, someone has scratched: 'and 12 ÷ 3 = 4 undoes it!'"]},
+    {"id": "arch", "kind": "boss_gate", "pos": [34, 22], "solid": [[33, 22], [35, 22]], "name": "old stone arch", "verb": "Touch",
+     "title": "THE OLD STONE ARCH"}
+  ],
+  "npcs": [
+    {"id": "rowan", "name": "Rowan", "role": "Forest Ranger", "kind": "duel",
+     "look": {"hair": "#5a3a26", "skin": "#e0ae82", "clothes": "#4f7a52", "accent": "#f2bb52", "pants": "#3b4a3a", "shoes": "#2a1d17"},
+     "routine": [
+       {"waypoint": "camp_fire", "wait": 5, "face": "up"},
+       {"waypoint": "camp_sign", "wait": 4, "face": "left"},
+       {"waypoint": "camp_door", "wait": 5, "face": "up"}
+     ],
+     "greeting": ["Morning, partner! Want a friendly practice battle? Wrong answers never hurt here.", "Ready for another practice round?"],
+     "remarks": ["Tall grass is where the wild ones hide.", "Take your time - thinking is part of the battle.", "The arch only opens for steady practice."]},
+    {"id": "pip", "name": "Pip", "role": "Young Explorer", "kind": "talker",
+     "look": {"hair": "#e3a33d", "skin": "#c08a5e", "clothes": "#6eb1ce", "accent": "#fff7dc", "pants": "#2b3f6a", "shoes": "#141010"},
+     "routine": [
+       {"waypoint": "trail_west", "wait": 3, "face": "down"},
+       {"waypoint": "trail_fork", "wait": 2, "face": "down"},
+       {"waypoint": "trail_east", "wait": 3, "face": "down"}
+     ],
+     "lines": [
+       "Did you know any number times 1 is itself? 7 × 1 = 7!",
+       "When I add 9, I add 10 and take 1 away. 26 + 9 = 35!",
+       "There's a chest in the meadow. I saw it sparkle!",
+       "Halving is dividing by 2. Half of 18 is 9!"
+     ],
+     "remarks": ["9 × 9 = 81!", "Race you to the pond!", "I counted 24 trees. Or was it 42?"]},
+    {"id": "tamsin", "name": "Tamsin", "role": "Pond Keeper", "kind": "riddle",
+     "look": {"hair": "#d8d2c0", "skin": "#a8774f", "clothes": "#7c4f86", "accent": "#89c77c", "pants": "#2a2a35", "shoes": "#0b0b10"},
+     "routine": [
+       {"waypoint": "pond_west", "wait": 8, "face": "up"},
+       {"waypoint": "pond_east", "wait": 8, "face": "up"}
+     ],
+     "riddle": {
+       "question": "Riddle me this: I caught 6 fish each morning for 4 mornings. How many fish is that?",
+       "choices": ["10", "24", "64"],
+       "answer": "24",
+       "correct": "Exactly! 6 groups of 4 make 24. Take this crystal - it helps the thinking glow.",
+       "wrong": "Not quite. Think of 4 mornings, each with 6 fish. Come back and try again!",
+       "reward": "Learning Crystal",
+       "count": 1
+     },
+     "lines": ["The spring's water restores tired companions. Rest there whenever you need."],
+     "remarks": ["The fish are biting... in multiples of three.", "Shh. The pond is thinking."]}
+  ]
+}

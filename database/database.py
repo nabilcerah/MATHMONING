@@ -61,6 +61,11 @@ class Database:
                     item TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY(player_id, item)
                 );
+                CREATE TABLE IF NOT EXISTS world_flags (
+                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
+                    flag TEXT NOT NULL,
+                    PRIMARY KEY(player_id, flag)
+                );
                 CREATE TABLE IF NOT EXISTS recommendations (
                     recommendation_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,

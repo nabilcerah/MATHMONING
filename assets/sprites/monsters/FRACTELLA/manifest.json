@@ -1,0 +1,62 @@
+{
+  "name": "FRACTELLA",
+  "source": "FRACTELLA.png",
+  "poses": [
+    {
+      "pose": "idle",
+      "file": "0.png",
+      "dx": -43,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -45,
+      "dy": -83
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -50,
+      "dy": -90
+    },
+    {
+      "pose": "windup",
+      "file": "3.png",
+      "dx": -43,
+      "dy": -101
+    },
+    {
+      "pose": "attack",
+      "file": "4.png",
+      "dx": -62,
+      "dy": -85
+    },
+    {
+      "pose": "special",
+      "file": "5.png",
+      "dx": -55,
+      "dy": -91
+    },
+    {
+      "pose": "burst",
+      "file": "6.png",
+      "dx": -56,
+      "dy": -99
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -50,
+      "dy": -76
+    },
+    {
+      "pose": "happy",
+      "file": "8.png",
+      "dx": -40,
+      "dy": -85
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 86
+}

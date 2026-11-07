@@ -1,0 +1,62 @@
+{
+  "name": "VOLTIX",
+  "source": "VOLTIX.jpg",
+  "poses": [
+    {
+      "pose": "idle",
+      "file": "0.png",
+      "dx": -50,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -49,
+      "dy": -96
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -49,
+      "dy": -96
+    },
+    {
+      "pose": "windup",
+      "file": "3.png",
+      "dx": -50,
+      "dy": -84
+    },
+    {
+      "pose": "attack",
+      "file": "4.png",
+      "dx": -58,
+      "dy": -99
+    },
+    {
+      "pose": "special",
+      "file": "5.png",
+      "dx": -50,
+      "dy": -108
+    },
+    {
+      "pose": "burst",
+      "file": "6.png",
+      "dx": -63,
+      "dy": -116
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -49,
+      "dy": -90
+    },
+    {
+      "pose": "happy",
+      "file": "8.png",
+      "dx": -46,
+      "dy": -103
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 100
+}

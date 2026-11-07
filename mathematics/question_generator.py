@@ -20,8 +20,13 @@ class QuestionGenerator:
         profile = profile or {}
         choices = list(self.TOPICS)
         weak = [name for name in choices if profile.get(name, {}).get("accuracy", 1.0) < 0.6]
-        if weak and self.rng.random() < 0.68:
+        # Skills with little evidence also get priority, so every topic gets regular practice.
+        unpractised = [name for name in choices if profile.get(name, {}).get("attempted", 0) < 4]
+        roll = self.rng.random()
+        if weak and roll < 0.68:
             choices = weak
+        elif unpractised and roll < 0.9:
+            choices = unpractised
         return self.rng.choice(choices)
 
     def generate(self, difficulty="easy", topic=None, profile=None):

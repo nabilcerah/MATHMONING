@@ -1,0 +1,62 @@
+{
+  "name": "PYRON",
+  "source": "PYRON.jpg",
+  "poses": [
+    {
+      "pose": "idle",
+      "file": "0.png",
+      "dx": -39,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -38,
+      "dy": -96
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -37,
+      "dy": -96
+    },
+    {
+      "pose": "windup",
+      "file": "3.png",
+      "dx": -49,
+      "dy": -89
+    },
+    {
+      "pose": "attack",
+      "file": "4.png",
+      "dx": -58,
+      "dy": -89
+    },
+    {
+      "pose": "special",
+      "file": "5.png",
+      "dx": -29,
+      "dy": -111
+    },
+    {
+      "pose": "burst",
+      "file": "6.png",
+      "dx": -57,
+      "dy": -97
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -38,
+      "dy": -102
+    },
+    {
+      "pose": "happy",
+      "file": "8.png",
+      "dx": -44,
+      "dy": -96
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 79
+}

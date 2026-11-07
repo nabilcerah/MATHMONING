@@ -20,10 +20,11 @@ class Player:
 
     def add_exp(self, amount: int) -> bool:
         self.exp += max(0, amount)
-        if self.exp >= self.next_level_exp:
+        leveled = False
+        while self.exp >= self.next_level_exp:
             self.exp -= self.next_level_exp
             self.level += 1
             self.max_hp += 4
             self.hp = self.max_hp
-            return True
-        return False
+            leveled = True
+        return leveled

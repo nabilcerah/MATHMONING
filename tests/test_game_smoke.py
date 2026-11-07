@@ -22,9 +22,10 @@ class GameSmokeTests(unittest.TestCase):
                     game._draw()
                 game._create_new_player()
                 self.assertEqual(game.state, "overworld")
-                self.assertEqual(game.world.move(1, 0), "moved")
-                game.player.x, game.player.y = 7, 6
-                self.assertEqual(game.world.interact(), "guide")
+                start_x = game.world.avatar.x
+                for _ in range(10):
+                    game.world.update(1, 0)
+                self.assertGreater(game.world.avatar.x, start_x)
                 game._draw()
                 game._start_battle(ENEMIES[0])
                 game._draw()

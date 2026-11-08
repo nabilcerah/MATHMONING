@@ -1,0 +1,172 @@
+{
+ "_comment": "Professor Numeris's lab (tile map drawn in code). His notes and the locked drawer are historical records.",
+ "id": "village_lab",
+ "name": "Numeris Lab",
+ "size": [
+  12,
+  9
+ ],
+ "base": "F",
+ "border": "W",
+ "interior": true,
+ "player_spawn": [
+  6,
+  7
+ ],
+ "safe_spot": [
+  6,
+  6
+ ],
+ "exit_map": "number_forest",
+ "fills": [],
+ "props": [
+  {
+   "tile": "S",
+   "cells": [
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     3,
+     1
+    ],
+    [
+     8,
+     1
+    ],
+    [
+     9,
+     1
+    ],
+    [
+     10,
+     1
+    ]
+   ]
+  },
+  {
+   "tile": "C",
+   "cells": [
+    [
+     4,
+     3
+    ],
+    [
+     5,
+     3
+    ],
+    [
+     6,
+     3
+    ],
+    [
+     7,
+     3
+    ]
+   ]
+  },
+  {
+   "tile": "P",
+   "cells": [
+    [
+     1,
+     6
+    ],
+    [
+     10,
+     6
+    ]
+   ]
+  }
+ ],
+ "areas": [
+  {
+   "id": "village",
+   "name": "Numeris Lab",
+   "rect": [
+    0,
+    0,
+    12,
+    9
+   ],
+   "travel": [
+    6,
+    6
+   ]
+  }
+ ],
+ "waypoints": {},
+ "interactables": [
+  {
+   "id": "exit_lab",
+   "kind": "portal",
+   "pos": [
+    6,
+    8
+   ],
+   "name": "door",
+   "verb": "Leave",
+   "title": "STARTER VILLAGE",
+   "destination": "number_forest",
+   "arrive": [
+    11,
+    48
+   ],
+   "text": [
+    "Back outside."
+   ],
+   "door": true
+  },
+  {
+   "id": "lab_notes",
+   "kind": "record",
+   "record": "record_professor_notes",
+   "pos": [
+    2,
+    2
+   ],
+   "name": "research notes",
+   "verb": "Read",
+   "title": "RESEARCH NOTES"
+  },
+  {
+   "id": "locked_drawer",
+   "kind": "record",
+   "record": "record_journal",
+   "requires": "item:lab_key",
+   "locked_text": [
+    "A desk drawer, locked tight. The keyhole is old and rusty. The Professor never mentions it."
+   ],
+   "pos": [
+    9,
+    2
+   ],
+   "name": "locked drawer",
+   "verb": "Open",
+   "title": "THE LOCKED DRAWER"
+  },
+  {
+   "id": "lab_blackboard",
+   "kind": "sign",
+   "pos": [
+    5,
+    2
+   ],
+   "name": "blackboard",
+   "verb": "Read",
+   "title": "BLACKBOARD",
+   "painted": true,
+   "text": [
+    "'MISTAKES ARE JUST DATA!' is written at the top, underlined twice.",
+    "Below, smaller, half rubbed out: 'step 9 - check the carry'."
+   ]
+  }
+ ],
+ "npcs": [],
+ "encounters": []
+}

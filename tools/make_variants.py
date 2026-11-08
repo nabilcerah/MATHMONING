@@ -77,9 +77,19 @@ def recolour(image, shift, sat_mul, val_mul):
     return Image.fromarray(data.astype(np.uint8), "RGBA")
 
 
+# Story characters (lore update): recoloured from the existing character sheets.
+CHARACTER_VARIANTS = {
+    "VERA": ("LUNA", 0.72, 1.10, 0.92),               # violet Timekeeper coat
+    "STRANGER": ("LUNA", 0.70, 0.25, 0.55),           # the hooded stranger: grey and shadowed
+    "ABACUS": ("PROFESSOR_NUMERIS", 0.09, 1.20, 0.92),  # the village historian: warm browns
+}
+
+
 def main():
-    for name, (base, shift, sat_mul, val_mul) in VARIANTS.items():
-        source, target = MONSTERS / base, MONSTERS / name
+    jobs = [(MONSTERS / base, MONSTERS / name, name, base, *rest) for name, (base, *rest) in VARIANTS.items()]
+    characters = MONSTERS.parent / "characters"
+    jobs += [(characters / base, characters / name, name, base, *rest) for name, (base, *rest) in CHARACTER_VARIANTS.items()]
+    for source, target, name, base, shift, sat_mul, val_mul in jobs:
         target.mkdir(parents=True, exist_ok=True)
         manifest = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
         for pose in manifest["poses"]:

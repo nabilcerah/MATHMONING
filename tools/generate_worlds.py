@@ -64,6 +64,8 @@ WORLDS = {
                              "active": ["The seals answer to algebra: find the unknown, keep both sides balanced, and solve pairs together."],
                              "completed": ["The lab is ours again! Its gateway leads to the Geometry Kingdom."]}},
         "chests": [("B", "Greater Potion", 2), ("C", "Basic Mathball", 3)],
+        "records": [("B", "record_order_charter", "Order charter"), ("C", "record_vault_log", "vault log"),
+                    ("D", "record_vexa_notes", "old lab notes")],
         "sign": ["ALGEBRA CAVERN", "Monsters here think in unknowns. Every x has a value - find it!"],
     },
     "geometry_kingdom": {
@@ -95,6 +97,8 @@ WORLDS = {
                              "active": ["Areas, angles and solids - the three seals measure everything. Measure carefully!"],
                              "completed": ["The kingdom is square again - in the best way. Onward to Chronos!"]}},
         "chests": [("B", "Revive Crystal", 1), ("C", "Greater Potion", 2)],
+        "records": [("B", "record_euclid_chronicle", "Euclidian chronicle"),
+                    ("C", "record_builders_last", "builder's note"), ("D", "record_burnt_log", "burnt page")],
         "sign": ["GEOMETRY KINGDOM", "Every stone here was cut to an exact measure. So were its monsters."],
     },
     "chronos_dimension": {
@@ -127,6 +131,10 @@ WORLDS = {
                              "active": ["Patterns, hours and infinity - the three seals keep time itself."],
                              "completed": ["Time flows again! The whole of Mathea has its Numera back."]}},
         "chests": [("B", "Revive Crystal", 2), ("C", "Greater Potion", 3)],
+        "records": [("B", "record_great_clock", "Great Clock"), ("C", "record_frozen_village", "village register"),
+                    ("D", "record_engine_plan", "Engine plan")],
+        "story_npc": {"id": "vera", "name": "Vera Tallow", "role": "Timekeeper", "room": "D", "sheet": "characters/VERA",
+                      "visible_if": ["final:open"], "hidden_if": ["ending:done"]},
         "sign": ["CHRONOS DIMENSION", "Time stands still here. Only patterns still move."],
     },
 }
@@ -239,6 +247,19 @@ def objects_for(world_id, cfg, ground, corridor, grass):
     for i, (key, item, count) in enumerate(cfg["chests"]):
         objs.append({"id": f"{world_id}_chest{i + 1}", "kind": "chest", "pos": at(key, 7, 1), "name": "chest",
                      "verb": "Open", "item": item, "count": count, "title": "TREASURE CHEST"})
+    for i, (key, record_id, name) in enumerate(cfg.get("records", [])):
+        offset = {"B": (-1, 5), "C": (-2, -5), "D": (-5, 4)}[key]
+        objs.append({"id": f"{world_id}_record{i + 1}", "kind": "record", "record": record_id, "pos": at(key, *offset),
+                     "name": name, "verb": "Read", "title": name.upper()})
+    story = cfg.get("story_npc")
+    if story:
+        waypoints[f"{story['id']}_spot"] = at(story["room"], 0, 3)
+        taken.discard(tuple(waypoints[f"{story['id']}_spot"]))
+        npcs.append({"id": story["id"], "name": story["name"], "role": story["role"], "kind": "talker",
+                     "sheet": story["sheet"], "look": NPC_LOOKS["keeper"],
+                     "routine": [{"waypoint": f"{story['id']}_spot", "wait": 10, "face": "down"}],
+                     "visible_if": story["visible_if"], "hidden_if": story["hidden_if"],
+                     "lines": ["The Engine is waiting."], "remarks": ["3:14...", "Check every step."]})
     gate = dict(cfg["gate"])
     gate_pos = at("D", 3, -1)
     objs.append({"id": f"{world_id}_gate", "kind": "boss_gate", "pos": gate_pos, "verb": "Approach", **gate})

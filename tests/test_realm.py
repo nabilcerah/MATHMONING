@@ -1,3 +1,4 @@
+from tests.story_helpers import finish_story
 import os
 import random
 import tempfile
@@ -65,6 +66,7 @@ class RealmGameTests(unittest.TestCase):
         self.game = GameManager(database_path=self.path)
         self.game.player_name = "Explorer"
         self.game._create_new_player()
+        finish_story(self.game)
 
     def tearDown(self):
         self.game.llm.close()
@@ -78,6 +80,7 @@ class RealmGameTests(unittest.TestCase):
                 world.avatar.x, world.avatar.y = world.world.cell_to_feet((x + dx, y + dy))
                 world.avatar.facing = (-dx, -dy)
                 world.update()
+                finish_story(self.game)
                 return
         self.fail(f"no space next to {object_id}")
 

@@ -418,6 +418,144 @@
           "Energy Potion": 3
         }
       }
+    },
+    "echoes_of_the_tallyfolk": {
+      "title": "ECHOES OF THE TALLYFOLK",
+      "category": "history",
+      "giver": "abacus",
+      "lore": [
+        "tallyfolk",
+        "remainder"
+      ],
+      "topics": [
+        "addition"
+      ],
+      "summary": "Old Abacus wants every Tallyfolk inscription in Number Forest read and remembered.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "abacus",
+          "text": "Talk to Old Abacus in Starter Village."
+        },
+        {
+          "type": "flags_all",
+          "flags": [
+            "record:record_counting_stone",
+            "record:record_tally_stones",
+            "record:record_arch_inscription"
+          ],
+          "text": "Read the Counting Stone, the meadow tally stones and the Arch of Sums inscription."
+        },
+        {
+          "type": "talk",
+          "npc": "abacus",
+          "text": "Tell Old Abacus what the stones say."
+        }
+      ],
+      "rewards": {
+        "exp": 120,
+        "coins": 150,
+        "items": {
+          "Knowledge Tome": 1
+        }
+      }
+    },
+    "missing_mathmon": {
+      "title": "THE MISSING MATHMON",
+      "category": "mathmon",
+      "giver": "tobi",
+      "lore": [],
+      "topics": [
+        "division"
+      ],
+      "summary": "Tobi's DIVOWL, Sums, flew off to Pine Ridge when the Counting Stone flickered. Catch a DIVOWL to bring him home.",
+      "steps": [
+        {
+          "type": "capture_species",
+          "species": "DIVOWL",
+          "text": "Catch a DIVOWL (try Pine Ridge or the meadow)."
+        },
+        {
+          "type": "talk",
+          "npc": "tobi",
+          "text": "Bring Sums home to Tobi."
+        }
+      ],
+      "rewards": {
+        "exp": 100,
+        "coins": 120,
+        "items": {
+          "Advanced Mathball": 1
+        },
+        "flags": [
+          "quest_done:missing_mathmon"
+        ]
+      }
+    },
+    "the_professors_journal": {
+      "title": "THE PROFESSOR'S JOURNAL",
+      "category": "secret",
+      "giver": "",
+      "lore": [
+        "the_professor",
+        "the_incident"
+      ],
+      "topics": [],
+      "summary": "Keeper Tick gave you a rusty key the Professor left in Chronos twenty years ago. It fits a drawer in his lab.",
+      "steps": [
+        {
+          "type": "flag",
+          "flag": "record:record_journal",
+          "text": "Open the locked drawer in the Professor's lab."
+        }
+      ],
+      "rewards": {
+        "exp": 200,
+        "coins": 0,
+        "items": {}
+      }
+    },
+    "the_last_calculation": {
+      "title": "THE LAST CALCULATION",
+      "category": "main",
+      "giver": "vera",
+      "lore": [
+        "origin_engine",
+        "zero_point"
+      ],
+      "topics": [
+        "addition",
+        "fractions",
+        "integers",
+        "algebra",
+        "geometry",
+        "sequences"
+      ],
+      "summary": "Vera has begun the Last Calculation at the Origin Engine. Every lesson of your journey leads here.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "vera",
+          "text": "Speak to Vera at the Zero Point beneath the Time Spire."
+        },
+        {
+          "type": "challenge",
+          "id": "last_calculation",
+          "text": "Check the Last Calculation with Vera and the Professor."
+        },
+        {
+          "type": "flag",
+          "flag": "ending:done",
+          "text": "Decide what happens to the Engine."
+        }
+      ],
+      "rewards": {
+        "exp": 800,
+        "coins": 1000,
+        "items": {
+          "EXP Star": 2
+        }
+      }
     }
   },
   "challenges": {
@@ -730,6 +868,37 @@
         {
           "topic": "sequences",
           "min_difficulty": "mastery"
+        }
+      ]
+    },
+    "last_calculation": {
+      "title": "THE LAST CALCULATION",
+      "need": 5,
+      "intro": "The Origin Engine's nine dials turn towards you. Every chapter of your journey is in here. Check every step.",
+      "questions": [
+        {
+          "topic": "addition",
+          "min_difficulty": "advanced"
+        },
+        {
+          "topic": "fractions",
+          "min_difficulty": "advanced"
+        },
+        {
+          "topic": "integers",
+          "min_difficulty": "advanced"
+        },
+        {
+          "topic": "algebra",
+          "min_difficulty": "advanced"
+        },
+        {
+          "topic": "geometry",
+          "min_difficulty": "advanced"
+        },
+        {
+          "topic": "sequences",
+          "min_difficulty": "advanced"
         }
       ]
     }

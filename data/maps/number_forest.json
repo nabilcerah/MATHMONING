@@ -476,6 +476,22 @@
   "bram_spot2": [
    89,
    33
+  ],
+  "abacus_spot": [
+   11,
+   52
+  ],
+  "abacus_spot2": [
+   13,
+   52
+  ],
+  "tobi_spot": [
+   16,
+   67
+  ],
+  "tobi_spot2": [
+   17,
+   67
   ]
  },
  "interactables": [
@@ -962,6 +978,63 @@
    "text": [
     "The Recovery Center doors whoosh open."
    ]
+  },
+  {
+   "id": "counting_stone",
+   "kind": "record",
+   "record": "record_counting_stone",
+   "pos": [
+    21,
+    61
+   ],
+   "name": "Counting Stone",
+   "verb": "Read",
+   "title": "THE COUNTING STONE"
+  },
+  {
+   "id": "tally_stones",
+   "kind": "record",
+   "record": "record_tally_stones",
+   "pos": [
+    47,
+    60
+   ],
+   "name": "tally stones",
+   "verb": "Read",
+   "title": "TALLY STONES"
+  },
+  {
+   "id": "arch_inscription",
+   "kind": "record",
+   "record": "record_arch_inscription",
+   "pos": [
+    80,
+    99
+   ],
+   "name": "arch inscription",
+   "verb": "Read",
+   "title": "THE ARCH OF SUMS"
+  },
+  {
+   "id": "door_lab",
+   "kind": "portal",
+   "pos": [
+    10,
+    48
+   ],
+   "name": "Professor's lab",
+   "verb": "Enter",
+   "title": "NUMERIS LAB",
+   "destination": "village_lab",
+   "arrive": [
+    6,
+    7
+   ],
+   "door": true,
+   "painted": true,
+   "text": [
+    "The lab door creaks. It smells of old books and burnt toast."
+   ]
   }
  ],
  "npcs": [
@@ -1106,6 +1179,24 @@
    "remarks": [
     "The fish are biting... in multiples of three.",
     "Shh. The lake is thinking."
+   ],
+   "story_lines": [
+    {
+     "requires": [
+      "boss:numerex"
+     ],
+     "lines": [
+      "They say a cave opened in the ruins. Riddle me this: what is left over when the world is divided? ...I don't know either. Spooky!"
+     ]
+    },
+    {
+     "requires": [
+      "ending:done"
+     ],
+     "lines": [
+      "A remainder is where the next count begins. I've been telling everyone. Nobody believes me. Do you?"
+     ]
+    }
    ]
   },
   {
@@ -1189,6 +1280,84 @@
    "remarks": [
     "Measure twice, cut once!",
     "Length times width..."
+   ]
+  },
+  {
+   "id": "abacus",
+   "name": "Old Abacus",
+   "role": "Village Historian",
+   "kind": "talker",
+   "sheet": "characters/ABACUS",
+   "look": {
+    "hair": "#f0f0f0",
+    "skin": "#d9a57a",
+    "clothes": "#7a5a3a",
+    "accent": "#e2c35b",
+    "pants": "#3a3020",
+    "shoes": "#2a1d14"
+   },
+   "routine": [
+    {
+     "waypoint": "abacus_spot",
+     "wait": 8,
+     "face": "down"
+    },
+    {
+     "waypoint": "abacus_spot2",
+     "wait": 6,
+     "face": "left"
+    }
+   ],
+   "lines": [
+    "History is a puzzle with missing pieces!"
+   ],
+   "remarks": [
+    "Seventy-three years. Or two.",
+    "Have you read the arch?",
+    "Stones remember."
+   ]
+  },
+  {
+   "id": "tobi",
+   "name": "Tobi",
+   "role": "Village Kid",
+   "kind": "talker",
+   "look": {
+    "hair": "#4a2a1a",
+    "skin": "#f0c49b",
+    "clothes": "#e2c35b",
+    "accent": "#3f8a5a",
+    "pants": "#2e5aa0",
+    "shoes": "#2a1d14"
+   },
+   "routine": [
+    {
+     "waypoint": "tobi_spot",
+     "wait": 5,
+     "face": "down"
+    },
+    {
+     "waypoint": "tobi_spot2",
+     "wait": 5,
+     "face": "up"
+    }
+   ],
+   "lines": [
+    "Sums! Where are you, Sums?"
+   ],
+   "story_lines": [
+    {
+     "requires": [
+      "quest_done:missing_mathmon"
+     ],
+     "lines": [
+      "Sums is home! He shared his snack with me. Exactly half. Thanks!"
+     ]
+    }
+   ],
+   "remarks": [
+    "Sums? Sums!",
+    "DIVOWLs love Pine Ridge..."
    ]
   }
  ],

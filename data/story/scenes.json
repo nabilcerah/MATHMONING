@@ -1,0 +1,1535 @@
+{
+  "_comment": "Story scenes. trigger: {event, ...filters} must match a game event (opening, enter_world, talk, visit, interact, challenge, boss_before, boss_after, record, flag). requires/excludes: world flags. once (default true): plays once, remembered as 'scene:<id>'. Lines: s = speaker id (characters.json), t = text. choices.mode: 'explore' = ask as many as you like, then the exit option; 'decide' = pick one (sets flags that change the story). Effects: set (flags), lore (codex ids), quest (start), action (battle | challenge:<id> | ending:<id>).",
+  "scenes": {
+    "opening": {
+      "category": "main",
+      "backdrop": true,
+      "trigger": {
+        "event": "opening"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "Before the beginning there was the Null. Nothing could be counted, compared or measured - so nothing could be said to exist."
+        },
+        {
+          "s": "narrator",
+          "t": "Then five Axioms woke. 'There is one.' 'One can follow one.' 'Equal things stay equal.' 'Between two points, a line.' 'What changes, changes by a rule.'"
+        },
+        {
+          "s": "narrator",
+          "t": "Wherever an Axiom held, the world became real. That holding force is the NUMERA - and this world is MATHEA."
+        },
+        {
+          "s": "professor",
+          "t": "...Ahem! Sorry, I was reading the old legends out loud again. You must be the new Numera Trainer! I'm Professor Numeris."
+        },
+        {
+          "s": "professor",
+          "t": "Every trainer needs a partner MathMon. Choose wisely - or at least choose quickly, my tea is getting cold."
+        }
+      ],
+      "lore": [
+        "creation",
+        "the_professor"
+      ]
+    },
+    "prologue_village": {
+      "category": "main",
+      "trigger": {
+        "event": "enter_world"
+      },
+      "excludes": [
+        "chapter:prologue_done"
+      ],
+      "lines": [
+        {
+          "s": "professor",
+          "t": "Welcome to Starter Village! My lab is the orange house just north of here - don't mind the smell, that's research. Probably."
+        },
+        {
+          "s": "professor",
+          "t": "Take this: a NUM-LINK. I built it so we can send each other text messages while you explore. I'm hopeless with gadgets that talk."
+        }
+      ],
+      "choices": {
+        "mode": "explore",
+        "prompt": "Ask the Professor...",
+        "exit": "Let's begin!",
+        "options": [
+          {
+            "label": "What is the Numera?",
+            "lore": [
+              "numera",
+              "axiom_roots"
+            ],
+            "lines": [
+              {
+                "s": "professor",
+                "t": "Mathematical energy! Wherever the Axioms hold, reality can be counted - and counting holds it together. That 'holding' is the Numera."
+              },
+              {
+                "s": "professor",
+                "t": "It flows through five Axiom Roots under the ground. Each region sits on a different Root. That's why the forest grows in spirals and the caves in pairs!"
+              }
+            ]
+          },
+          {
+            "label": "Where do MathMon come from?",
+            "lore": [
+              "firstborn"
+            ],
+            "lines": [
+              {
+                "s": "professor",
+                "t": "Where Numera pools, it starts repeating itself. A pattern that learns to keep its shape becomes alive. That's a MathMon!"
+              },
+              {
+                "s": "professor",
+                "t": "Young ones copy the animals they see. Old, powerful ones stop copying and become... stranger. Living symbols. Shapes. Light. Fascinating, isn't it?"
+              }
+            ]
+          },
+          {
+            "label": "Why do battles use maths?",
+            "lore": [
+              "the_bond"
+            ],
+            "lines": [
+              {
+                "s": "professor",
+                "t": "A MathMon's pattern is steadied by understanding. When YOU truly work something out, your partner feels that clarity, and its move lands true."
+              },
+              {
+                "s": "professor",
+                "t": "Guessing makes the pattern wobble. And mistakes? Mistakes are just data! You learn, you try again. That's my motto."
+              }
+            ]
+          }
+        ]
+      },
+      "after": [
+        {
+          "s": "narrator",
+          "t": "Behind you, the Counting Stone in the village square flickers. Its carved numbers peel away and drift into the air like ash."
+        },
+        {
+          "s": "professor",
+          "t": "...That has never happened before."
+        },
+        {
+          "s": "narrator",
+          "t": "Far to the south-east, something pulses purple above the trees."
+        },
+        {
+          "s": "professor",
+          "t": "The old ruins. It's natural Numera decay, I expect. Yes. Decay. Probably. ...Definitely probably."
+        },
+        {
+          "s": "professor",
+          "t": "Your first mission: win a battle in the Green Meadow grass, east of here. Then head to the ANCIENT NUMBER RUINS and find out what's going on. Carefully!"
+        }
+      ],
+      "set": [
+        "chapter:prologue_done",
+        "met:rowan",
+        "numlink"
+      ],
+      "lore": [
+        "the_professor",
+        "numlink"
+      ]
+    },
+    "prof_ch1": {
+      "category": "professor",
+      "trigger": {
+        "event": "talk",
+        "npc": "rowan"
+      },
+      "chapter": "ch1",
+      "once": false,
+      "lines": [
+        {
+          "s": "professor",
+          "t": "Ah, my favourite trainer! Or my only trainer. Both, really. What's on your mind?"
+        }
+      ],
+      "choices": {
+        "mode": "explore",
+        "prompt": "Ask the Professor...",
+        "exit": "Nothing for now.",
+        "options": [
+          {
+            "label": "The ancient civilisations?",
+            "lore": [
+              "civilisations"
+            ],
+            "lines": [
+              {
+                "s": "professor",
+                "t": "Four of them! The Tallyfolk here, the Order of the Unknown, Euclidia the Kingdom of Form, and the Timekeepers. They all... faded, about a thousand years ago."
+              },
+              {
+                "s": "professor",
+                "t": "Natural decay of the Numera, I've always said. Tragic. Now, have you tried the Mathmart's new potions?"
+              }
+            ]
+          },
+          {
+            "label": "What's happening in the ruins?",
+            "lines": [
+              {
+                "s": "professor",
+                "t": "The Numera Seals there keep something sealed. If they're failing... well. Restore them and we'll find out. Three seals: sums, products and parts."
+              }
+            ]
+          },
+          {
+            "label": "Practice battle?",
+            "action": "battle",
+            "lines": [
+              {
+                "s": "professor",
+                "t": "Splendid! My DIVOWL has been practising its division all week."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "meadow_first": {
+      "category": "comm",
+      "trigger": {
+        "event": "visit",
+        "area": "meadow"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Num-Link test! Is this on? ...Good. Watch the MathMon in the grass. Healthy ones keep their shape. If one flickers or glitches - that's the instability."
+        },
+        {
+          "s": "numlink",
+          "t": "Also: look for the Tallyfolk counting stones in the meadow. Old Abacus in the village would love to hear what they say."
+        }
+      ]
+    },
+    "abacus_intro": {
+      "category": "npc",
+      "trigger": {
+        "event": "talk",
+        "npc": "abacus"
+      },
+      "lines": [
+        {
+          "s": "abacus",
+          "t": "A visitor! I'm Abacus, village historian. I've been studying the old stones for... oh, seventy-three years. Or seventy-two. You tell me - is 1953 to 2026 seventy-three years?"
+        },
+        {
+          "s": "abacus",
+          "t": "Ha! Testing you. Old habit. The Tallyfolk tested everyone, you know."
+        }
+      ],
+      "choices": {
+        "mode": "explore",
+        "prompt": "Ask Old Abacus...",
+        "exit": "Thanks, Abacus.",
+        "options": [
+          {
+            "label": "Who were the Tallyfolk?",
+            "lore": [
+              "tallyfolk"
+            ],
+            "lines": [
+              {
+                "s": "abacus",
+                "t": "The first people to befriend MathMon - by counting WITH them! One stone, one MathMon, one friend. They built the Arch of Sums and the first Seals."
+              }
+            ]
+          },
+          {
+            "label": "What do the Seals hold?",
+            "lore": [
+              "seals"
+            ],
+            "lines": [
+              {
+                "s": "abacus",
+                "t": "The songs say 'what remains'. Remains of what, I've never worked out. The Professor says it's all just old poetry. Hmph."
+              }
+            ]
+          },
+          {
+            "label": "Why did the Counting Stone flicker?",
+            "lines": [
+              {
+                "s": "abacus",
+                "t": "It never has, not in seventy-two years. Or three. When a stone forgets its numbers, the songs say, 'the remainder stirs'. Make of that what you will."
+              }
+            ]
+          }
+        ]
+      },
+      "lore": [
+        "abacus"
+      ],
+      "quest": "echoes_of_the_tallyfolk"
+    },
+    "abacus_later": {
+      "category": "npc",
+      "trigger": {
+        "event": "talk",
+        "npc": "abacus"
+      },
+      "requires": [
+        "scene:abacus_intro"
+      ],
+      "once": false,
+      "lines": [
+        {
+          "s": "abacus",
+          "t": "Found any new inscriptions? Every record you read goes into that journal of yours - your CODEX. Press TAB and look. History is a puzzle with missing pieces!"
+        }
+      ]
+    },
+    "ruins_first": {
+      "category": "comm",
+      "trigger": {
+        "event": "visit",
+        "area": "ridge"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "The air in the ruins tastes like static. Broken counting arches lean against each other. Somewhere, numbers are whispering."
+        },
+        {
+          "s": "numlink",
+          "t": "The Ancient Number Ruins! Careful - those seals are a thousand years old. Find all three. And read anything carved in stone; the Tallyfolk loved leaving notes."
+        }
+      ]
+    },
+    "seal_add_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_add"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "As the Seal of Sums glows again, you notice fresh scratches around its rim - and wet ink on a rune. Someone opened this seal recently."
+        },
+        {
+          "s": "numlink",
+          "t": "Recently? That can't... I mean, how curious! Anyway - well solved! Adding and subtracting are opposites: one undoes the other. That's why you can check a subtraction by adding."
+        }
+      ],
+      "lore": [
+        "broken_seals"
+      ]
+    },
+    "seal_mul_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_mul"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "The Seal of Products! Multiplying counts equal groups; dividing shares into equal groups. Same idea, opposite direction - just like adding and subtracting."
+        }
+      ]
+    },
+    "seal_frac_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_frac"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "A fraction is a number of equal parts. The bottom says how big each part is; the top says how many you have. Only parts of the SAME size can be added directly."
+        }
+      ]
+    },
+    "boss_intro_numerex": {
+      "category": "boss_intro",
+      "trigger": {
+        "event": "boss_before",
+        "flag": "boss:numerex"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "A NUMEREX rises from the shadows - but swollen, its markings crawling with numbers that never add up."
+        },
+        {
+          "s": "numlink",
+          "t": "Its pattern is full of remainders! It can't think straight. Every answer YOU work out steadies your partner. Breathe. Check your work. You can do this!"
+        }
+      ]
+    },
+    "boss_after_numerex": {
+      "category": "boss_defeat",
+      "trigger": {
+        "event": "boss_after",
+        "flag": "boss:numerex"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "The Beast shrinks back into an ordinary NUMEREX and slips away into the dark. On top of the arch, a hooded figure is watching you."
+        },
+        {
+          "s": "stranger",
+          "t": "So the forest's guardian is free. Good. That's one."
+        },
+        {
+          "s": "narrator",
+          "t": "The figure steps backwards off the arch - and is gone. Beneath the ruins, rock grinds open: a cave, glowing with crystal light."
+        },
+        {
+          "s": "numlink",
+          "t": "You did it! The Numera is flowing again! ...Wait. Someone was WATCHING you? Did they say anything?"
+        },
+        {
+          "s": "numlink",
+          "t": "...Probably a hiker. Lots of hikers in ruins. Now - that cave. The Order of the Unknown's caverns! Go carefully, and send me everything you find."
+        }
+      ],
+      "lore": [
+        "hooded_stranger",
+        "remainder"
+      ],
+      "chapter_card": "ch2"
+    },
+    "tobi_lost": {
+      "category": "quest",
+      "trigger": {
+        "event": "talk",
+        "npc": "tobi"
+      },
+      "lines": [
+        {
+          "s": "tobi",
+          "t": "Have you seen Sums? He's my DIVOWL. He always shares his snacks into equal piles... but since the Counting Stone flickered, he got scared and flew away!"
+        },
+        {
+          "s": "tobi",
+          "t": "He likes Pine Ridge, north through the pines. If you find a DIVOWL, could you catch him and bring him home? Please?"
+        }
+      ],
+      "quest": "missing_mathmon"
+    },
+    "rex_ch1": {
+      "category": "npc",
+      "trigger": {
+        "event": "talk",
+        "npc": "pip"
+      },
+      "chapter": "ch1",
+      "once": false,
+      "priority": -1,
+      "lines": [
+        {
+          "s": "rex",
+          "t": "You're heading to the ruins? Ha! I'll beat the Arithmetic Beast first. My VOLTIX multiplies faster than anyone. Want to test that?"
+        }
+      ],
+      "choices": {
+        "mode": "decide",
+        "options": [
+          {
+            "label": "Let's battle!",
+            "action": "battle",
+            "lines": []
+          },
+          {
+            "label": "Maybe later.",
+            "lines": [
+              {
+                "s": "rex",
+                "t": "Scared? ...Fine. I'll be right here. Practising. Not that I need to."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "rex_after_beast": {
+      "category": "npc",
+      "trigger": {
+        "event": "talk",
+        "npc": "pip"
+      },
+      "requires": [
+        "boss:numerex"
+      ],
+      "once": true,
+      "lines": [
+        {
+          "s": "rex",
+          "t": "You beat the Arithmetic Beast?! ...I was totally going to do that next."
+        },
+        {
+          "s": "rex",
+          "t": "...Okay, fine. That was amazing. I practise my times tables every night, you know. Don't tell anyone."
+        }
+      ],
+      "lore": [
+        "rex"
+      ]
+    },
+    "cavern_arrival": {
+      "category": "comm",
+      "trigger": {
+        "event": "visit",
+        "area": "cave_mouth"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "Crystals grow in pairs here, each one mirrored by another. On the walls, half-finished equations glow faintly, waiting for their missing numbers."
+        },
+        {
+          "s": "numlink",
+          "t": "The Order of the Unknown! They discovered that an 'x' is a promise: a value exists, even if you don't know it yet. They stored Numera inside those promises."
+        }
+      ],
+      "choices": {
+        "mode": "explore",
+        "prompt": "Reply on the Num-Link...",
+        "exit": "I'll explore.",
+        "options": [
+          {
+            "label": "How do you store energy in an x?",
+            "lore": [
+              "order_of_unknown"
+            ],
+            "lines": [
+              {
+                "s": "numlink",
+                "t": "An equation is a balance. Lock Numera on one side, and the x keeps it safe until someone solves for it. Lovely idea. Dangerous idea."
+              }
+            ]
+          },
+          {
+            "label": "Have you been here before?",
+            "lines": [
+              {
+                "s": "numlink",
+                "t": "Me? Oh - once. A long time ago. Very briefly. Hardly counts. ...Is that a SPHYNOX behind you? No? My mistake. Carry on!"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "seal_x1_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_x1"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Solving for x means undoing what was done to it, in reverse order. If x was multiplied then added to, take away first, then divide. Like taking off shoes before socks!"
+        }
+      ]
+    },
+    "seal_x2_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_x2"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "An equation is a balance scale. Whatever you do to one side, do to the other, and it stays level. Move all the x's to one side first."
+        }
+      ]
+    },
+    "seal_x3_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_x3"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Two equations sharing two unknowns! Add or subtract them so one unknown cancels out. The Order called that 'making the pair confess'. Ha!"
+        },
+        {
+          "s": "narrator",
+          "t": "Behind the last seal, dust has been swept from the floor. Someone has walked here - and not long ago."
+        }
+      ]
+    },
+    "boss_intro_guardian": {
+      "category": "boss_intro",
+      "trigger": {
+        "event": "boss_before",
+        "flag": "boss:guardian"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "A golden scarab turns slowly in the chamber. Its shell is cracked, and dark Remainder leaks through like smoke."
+        },
+        {
+          "s": "numlink",
+          "t": "That's no natural corruption. Someone INJECTED Remainder into it. ...Focus. Keep both sides of every equation balanced and you'll be fine."
+        }
+      ]
+    },
+    "boss_after_guardian": {
+      "category": "boss_defeat",
+      "trigger": {
+        "event": "boss_after",
+        "flag": "boss:guardian"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "As EQUINOX calms, the Remainder pouring out of it is pulled across the room - into a glass phial held by the hooded stranger."
+        },
+        {
+          "s": "stranger",
+          "t": "You keep freeing them. Every guardian you break open makes this faster for me. Thank you."
+        }
+      ],
+      "choices": {
+        "mode": "decide",
+        "prompt": "Say something...",
+        "options": [
+          {
+            "label": "Who are you?",
+            "set": [
+              "choice:asked_who"
+            ],
+            "lines": [
+              {
+                "s": "stranger",
+                "t": "Someone who checks her work. Unlike some people you know."
+              }
+            ]
+          },
+          {
+            "label": "What are you collecting?",
+            "set": [
+              "choice:asked_what"
+            ],
+            "lore": [
+              "remainder"
+            ],
+            "lines": [
+              {
+                "s": "stranger",
+                "t": "What remains. The Remainder. Every bit the ancients spilled - I'm putting it back where it belongs."
+              }
+            ]
+          },
+          {
+            "label": "Stop!",
+            "set": [
+              "choice:shouted"
+            ],
+            "lines": [
+              {
+                "s": "stranger",
+                "t": "That's exactly what someone should have said twenty years ago."
+              }
+            ]
+          }
+        ]
+      },
+      "after": [
+        {
+          "s": "narrator",
+          "t": "She is gone before you can move. Behind the guardian's chamber, a gateway hums to life."
+        },
+        {
+          "s": "numlink",
+          "t": "...A phial of Remainder. She's COLLECTING it. From every guardian. That's - that's impossible. Unless someone told her how. ...Go to the Kingdom. Please hurry."
+        }
+      ],
+      "lore": [
+        "collector"
+      ],
+      "chapter_card": "ch3"
+    },
+    "kingdom_arrival": {
+      "category": "comm",
+      "trigger": {
+        "event": "visit",
+        "area": "temple_gate"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "Every path here runs dead straight. Obelisks cast shadows at exact angles, and the hedges are trimmed into perfect right angles."
+        },
+        {
+          "s": "numlink",
+          "t": "Euclidia, the Kingdom of Form! Their buildings could never fall, as long as every angle was exact. They were wiped out by natural Numera decay. A tragedy."
+        }
+      ],
+      "lore": [
+        "euclidia"
+      ]
+    },
+    "seal_g1_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_g1"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Area counts the squares INSIDE a shape; perimeter walks the edge AROUND it. A 3 by 4 rectangle has area 12 but perimeter 14. Different questions, different answers!"
+        }
+      ]
+    },
+    "seal_g2_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_g2"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Angles on a straight line make 180 degrees, and so do the three angles in any triangle. The Euclidians carved that into every doorway."
+        }
+      ]
+    },
+    "seal_g3_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_g3"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Volume is layers of area: length times width, times how many layers tall. And for right-angled triangles - square the two short sides, add, then square-root!"
+        }
+      ]
+    },
+    "burnt_log_choice": {
+      "category": "secret",
+      "trigger": {
+        "event": "record",
+        "id": "record_burnt_log"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "You read the burnt page again. The handwriting is unmistakable - the same loops as the notes the Professor leaves on the Mathmart's noticeboard."
+        }
+      ],
+      "choices": {
+        "mode": "decide",
+        "prompt": "What will you do?",
+        "options": [
+          {
+            "label": "Message the Professor about it.",
+            "set": [
+              "choice:confronted"
+            ],
+            "lines": [
+              {
+                "s": "player",
+                "t": "Professor. I found a log in the Dragon Keep. 'I told the council it was natural decay. - A.N.' Your initials."
+              },
+              {
+                "s": "numlink",
+                "t": "............"
+              },
+              {
+                "s": "numlink",
+                "t": "When you reach Chronos, I will tell you everything. I promise. Please - just get there safely first."
+              }
+            ]
+          },
+          {
+            "label": "Keep it to yourself for now.",
+            "set": [
+              "choice:kept_secret"
+            ],
+            "lines": [
+              {
+                "s": "narrator",
+                "t": "You fold the page into your bag. Maybe there's an explanation. Maybe there isn't. Either way, the answer is ahead of you."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "boss_intro_dragon": {
+      "category": "boss_intro",
+      "trigger": {
+        "event": "boss_before",
+        "flag": "boss:dragon"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "The keep unfolds like paper. A dragon made of shapes from too many dimensions uncurls, and the room's angles stop adding up."
+        },
+        {
+          "s": "numlink",
+          "t": "Trust the rules, not your eyes! 180 degrees in a triangle - in ANY dimension."
+        }
+      ]
+    },
+    "boss_after_dragon": {
+      "category": "boss_defeat",
+      "trigger": {
+        "event": "boss_after",
+        "flag": "boss:dragon"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "The dragon folds itself small and still. The stranger's phial fills again - she is standing in the sundial's shadow."
+        },
+        {
+          "s": "stranger",
+          "t": "Three guardians. One left. Then the Engine. Tell the Professor I'm nearly finished - he'll know what that means."
+        },
+        {
+          "s": "numlink",
+          "t": "...I know what it means. Go to Chronos. I'll... I'll be ready to talk."
+        }
+      ],
+      "lore": [
+        "origin_engine"
+      ],
+      "chapter_card": "ch4"
+    },
+    "chronos_arrival": {
+      "category": "comm",
+      "trigger": {
+        "event": "visit",
+        "area": "clock_gate"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "Islands hang in the air, perfectly still. A bird hovers mid-flap. Every clock tower you can see shows exactly 3:14."
+        },
+        {
+          "s": "numlink",
+          "t": "I haven't been here in twenty years. ...It looks exactly the same. That's the problem, isn't it. Nothing here has moved in twenty years."
+        }
+      ],
+      "lore": [
+        "timekeepers"
+      ]
+    },
+    "tick_story": {
+      "category": "npc",
+      "trigger": {
+        "event": "talk",
+        "npc": "tick"
+      },
+      "requires": [
+        "scene:chronos_arrival"
+      ],
+      "lines": [
+        {
+          "s": "tick",
+          "t": "You came from the outside! Then you've met the girl in the hood. Vera. Little Vera Tallow. She used to run between these clock towers with her sums."
+        },
+        {
+          "s": "tick",
+          "t": "Her family's village is on the Tock Isles. Frozen at 3:14, the moment the Engine misfired. I'm the only one who kept ticking. Don't ask me why."
+        },
+        {
+          "s": "tick",
+          "t": "Oh - and this. A rusty key. Your Professor dropped it running out of here twenty years ago. I think it opens a drawer he'd rather forget."
+        }
+      ],
+      "lore": [
+        "vera"
+      ],
+      "quest": "the_professors_journal",
+      "set": [
+        "item:lab_key"
+      ]
+    },
+    "seal_t1_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_t1"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Patterns: find the jump between neighbours. For term number n, start at term 1 and add the jump (n - 1) times - not n times!"
+        }
+      ]
+    },
+    "seal_t2_explained": {
+      "category": "professor",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_t2"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Time counts in sixties, not hundreds! Count on to the next full hour first, then add what's left. The Timekeepers never got that wrong."
+        }
+      ]
+    },
+    "stranger_unmasked": {
+      "category": "main",
+      "trigger": {
+        "event": "challenge",
+        "id": "seal_t3"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "The Seal of Infinity flares - and the hooded stranger is standing beside it. She lowers her hood. A pocket watch hangs at her neck, stopped at 3:14."
+        },
+        {
+          "s": "vera",
+          "t": "My name is Vera Tallow. Twenty years ago I was the Professor's research partner. Did he ever mention me? No. He wouldn't."
+        }
+      ],
+      "choices": {
+        "mode": "explore",
+        "prompt": "Ask Vera...",
+        "exit": "Why tell me this?",
+        "options": [
+          {
+            "label": "What happened twenty years ago?",
+            "lore": [
+              "the_incident"
+            ],
+            "lines": [
+              {
+                "s": "vera",
+                "t": "We restarted the Origin Engine to cure the fading Numera. One step needed checking. He was sure it was right. He didn't check."
+              },
+              {
+                "s": "vera",
+                "t": "The Engine misfired. The Remainder burst out, and my village froze. My mother. My little brother. 3:14, forever."
+              }
+            ]
+          },
+          {
+            "label": "What are you trying to do?",
+            "lore": [
+              "vera"
+            ],
+            "lines": [
+              {
+                "s": "vera",
+                "t": "Finish the Last Calculation - correctly, this time. Gather every scrap of Remainder and compute the world exactly. No remainder. No errors."
+              },
+              {
+                "s": "vera",
+                "t": "A world where nothing can ever go wrong again. Where no one ever loses their family to one unchecked step. Tell me that's wrong."
+              }
+            ]
+          },
+          {
+            "label": "Is the Professor a bad person?",
+            "lines": [
+              {
+                "s": "vera",
+                "t": "He's a coward who became a kind teacher. Both are true. I've hated him for twenty years and I still use the way he taught me to carry a ten."
+              }
+            ]
+          }
+        ]
+      },
+      "after": [
+        {
+          "s": "vera",
+          "t": "Because you're the only one who has answered every question honestly. Climb the spire if you want. I'll be at the Engine. He knows where."
+        }
+      ],
+      "set": [
+        "vera:revealed"
+      ],
+      "lore": [
+        "vera"
+      ]
+    },
+    "professor_confession_confronted": {
+      "category": "professor",
+      "trigger": {
+        "event": "flag",
+        "flag": "vera:revealed"
+      },
+      "requires": [
+        "choice:confronted"
+      ],
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "You've met her. I promised you the truth, so here it is - no jokes."
+        },
+        {
+          "s": "numlink",
+          "t": "I skipped one check. I was proud and tired and sure. Her village froze, and I told the council it was 'natural decay', because I couldn't bear to say 'me'."
+        },
+        {
+          "s": "numlink",
+          "t": "I gave up the Engine and became a teacher, so that no student of mine would ever skip a check. 'Mistakes are just data.' I've been saying it to myself for twenty years."
+        },
+        {
+          "s": "numlink",
+          "t": "I'm coming to Chronos. It's long past time."
+        }
+      ],
+      "set": [
+        "professor:confessed"
+      ],
+      "lore": [
+        "the_professor",
+        "the_incident"
+      ]
+    },
+    "professor_confession_kept": {
+      "category": "professor",
+      "trigger": {
+        "event": "flag",
+        "flag": "vera:revealed"
+      },
+      "excludes": [
+        "choice:confronted"
+      ],
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "My Num-Link says the Seal of Infinity is restored. And... I can see who is standing next to you."
+        },
+        {
+          "s": "numlink",
+          "t": "You found my log in the Keep, didn't you. And you didn't say a word. Thank you for giving me the chance to say it myself."
+        },
+        {
+          "s": "numlink",
+          "t": "Everything Vera told you is true. I skipped one check, and I hid it. I'm coming to Chronos. Whatever happens at the Engine, I'll be there."
+        }
+      ],
+      "set": [
+        "professor:confessed"
+      ],
+      "lore": [
+        "the_professor",
+        "the_incident"
+      ]
+    },
+    "boss_intro_overlord": {
+      "category": "boss_intro",
+      "trigger": {
+        "event": "boss_before",
+        "flag": "boss:overlord"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "At the top of the spire coils INFINITY ZERO, the Engine's ancient guardian. Vera has filled it with every drop of Remainder she gathered."
+        },
+        {
+          "s": "numlink",
+          "t": "Everything you've learned - every sum, every x, every angle, every pattern. You won't need anything else. I believe in you."
+        }
+      ]
+    },
+    "boss_after_overlord": {
+      "category": "boss_defeat",
+      "trigger": {
+        "event": "boss_after",
+        "flag": "boss:overlord"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "The serpent uncoils and sinks into the floor. Beneath it, a stair of light leads down - to the Zero Point, where every Axiom Root crosses."
+        },
+        {
+          "s": "narrator",
+          "t": "At the bottom stands the ORIGIN ENGINE. And Vera, waiting for you."
+        }
+      ],
+      "set": [
+        "final:open"
+      ],
+      "lore": [
+        "zero_point"
+      ],
+      "chapter_card": "final"
+    },
+    "final_engine": {
+      "category": "main",
+      "trigger": {
+        "event": "talk",
+        "npc": "vera"
+      },
+      "requires": [
+        "final:open"
+      ],
+      "excludes": [
+        "challenge:last_calculation"
+      ],
+      "once": false,
+      "lines": [
+        {
+          "s": "vera",
+          "t": "The Last Calculation begins now. Every scrap of Remainder, every number in Mathea - summed, exactly, forever."
+        },
+        {
+          "s": "professor",
+          "t": "Vera."
+        },
+        {
+          "s": "narrator",
+          "t": "Professor Numeris steps off the stair of light, out of breath, glasses on his head."
+        },
+        {
+          "s": "professor",
+          "t": "I came. I should have come twenty years ago. I'm sorry. Not 'mistakes are data' sorry. Just sorry."
+        },
+        {
+          "s": "vera",
+          "t": "...Then help me check it. Every step. Out loud. You too, trainer - the Engine answers to understanding. Show it everything you've learned."
+        }
+      ],
+      "action": "challenge:last_calculation"
+    },
+    "final_choice": {
+      "category": "main",
+      "trigger": {
+        "event": "challenge",
+        "id": "last_calculation"
+      },
+      "once": false,
+      "excludes": [
+        "ending:done"
+      ],
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "The Engine's dials stop. Every answer checks. And still - at the very bottom of the calculation - something is left over."
+        },
+        {
+          "s": "vera",
+          "t": "A remainder. Even now. Even done perfectly. ...Why won't it come out even?"
+        }
+      ],
+      "choices": {
+        "mode": "decide",
+        "prompt": "The Engine is waiting...",
+        "options": [
+          {
+            "label": "Seal the Engine forever.",
+            "action": "ending:sealed",
+            "lines": []
+          },
+          {
+            "label": "Vera - it isn't a mistake.",
+            "action": "ending:open",
+            "lines": []
+          },
+          {
+            "label": "Show Vera the ancients' last record.",
+            "requires": [
+              "record:record_journal",
+              "records:twelve"
+            ],
+            "action": "ending:theorem",
+            "lines": []
+          }
+        ]
+      }
+    },
+    "ending_sealed": {
+      "category": "main",
+      "trigger": {
+        "event": "ending",
+        "id": "sealed"
+      },
+      "lines": [
+        {
+          "s": "narrator",
+          "t": "You pull the great lever. The Engine falls silent, and the Seal of the Zero Point closes over it with a sound like a book being shut."
+        },
+        {
+          "s": "vera",
+          "t": "Then my village stays at 3:14. ...At least no one else's will."
+        },
+        {
+          "s": "narrator",
+          "t": "She walks away up the stair of light and does not look back. The Professor watches her go for a long time."
+        },
+        {
+          "s": "professor",
+          "t": "Mathea is safe. That's what matters. ...Isn't it?"
+        },
+        {
+          "s": "narrator",
+          "t": "ENDING: THE SEALED ENGINE. The Numera flows again. Some questions stay unanswered."
+        }
+      ],
+      "set": [
+        "ending:sealed",
+        "ending:done"
+      ],
+      "lore": [
+        "ending"
+      ]
+    },
+    "ending_open": {
+      "category": "main",
+      "trigger": {
+        "event": "ending",
+        "id": "open"
+      },
+      "lines": [
+        {
+          "s": "player",
+          "t": "It isn't a mistake. When you divide and something's left over, that's where the next count starts. Without a remainder, nothing new could ever happen."
+        },
+        {
+          "s": "vera",
+          "t": "...Like my village. Nothing new. Nothing ever again."
+        },
+        {
+          "s": "professor",
+          "t": "The ancients were wrong to try. So were we. Let's turn it off, Vera. Together. And then I'll tell everyone what I did."
+        },
+        {
+          "s": "narrator",
+          "t": "The Engine powers down. Far above, on the Tock Isles, a single clock moves from 3:14 to 3:15."
+        },
+        {
+          "s": "narrator",
+          "t": "ENDING: THE OPEN REMAINDER. Time in Chronos has begun to tick again - slowly."
+        }
+      ],
+      "set": [
+        "ending:open",
+        "ending:done"
+      ],
+      "lore": [
+        "ending"
+      ]
+    },
+    "ending_theorem": {
+      "category": "secret",
+      "trigger": {
+        "event": "ending",
+        "id": "theorem"
+      },
+      "lines": [
+        {
+          "s": "player",
+          "t": "Look - the ancients' last record. And the Professor's journal. They both found the same thing at the very end."
+        },
+        {
+          "s": "inscription",
+          "t": "'The count did not come out even, and we called it ruin. We were wrong. What remains is where the next count begins. Keep it.'"
+        },
+        {
+          "s": "vera",
+          "t": "Where the next count begins... Then my family isn't stuck at the end of something. They're waiting at the start of something."
+        },
+        {
+          "s": "professor",
+          "t": "Then let's help them start. Not the calculation - the understanding. Check every step. Out loud. Together."
+        },
+        {
+          "s": "narrator",
+          "t": "Vera and the Professor work through the night. At dawn, every clock in Chronos strikes 3:15, and a village wakes up yawning, twenty years late for breakfast."
+        },
+        {
+          "s": "professor",
+          "t": "Mistakes are just data. It took me twenty years to learn what that means."
+        },
+        {
+          "s": "narrator",
+          "t": "TRUE ENDING: THE REMAINDER THEOREM. Thank you for playing MATHMON."
+        }
+      ],
+      "set": [
+        "ending:theorem",
+        "ending:done"
+      ],
+      "lore": [
+        "ending"
+      ]
+    },
+    "prof_epilogue": {
+      "category": "professor",
+      "trigger": {
+        "event": "talk",
+        "npc": "rowan"
+      },
+      "requires": [
+        "ending:done"
+      ],
+      "once": false,
+      "lines": [
+        {
+          "s": "professor",
+          "t": "I've started a new class: 'How To Check Your Work'. Vera is a guest lecturer. She's much stricter than me. The students love her."
+        },
+        {
+          "s": "professor",
+          "t": "There are still MathMon out there no one has met, and records no one has read. Go on - the world's not finished. That's the best thing about it."
+        }
+      ]
+    },
+    "rex_epilogue": {
+      "category": "npc",
+      "trigger": {
+        "event": "talk",
+        "npc": "pip"
+      },
+      "requires": [
+        "ending:done"
+      ],
+      "once": false,
+      "lines": [
+        {
+          "s": "rex",
+          "t": "Everyone's talking about you. ...Rematch? I've been learning fractions. Don't laugh. They're actually cool."
+        }
+      ],
+      "choices": {
+        "mode": "decide",
+        "options": [
+          {
+            "label": "Let's battle!",
+            "action": "battle",
+            "lines": []
+          },
+          {
+            "label": "Later, Rex.",
+            "lines": [
+              {
+                "s": "rex",
+                "t": "I'll be here. Practising. Obviously."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "prof_ch2": {
+      "category": "professor",
+      "trigger": {
+        "event": "talk",
+        "npc": "rowan"
+      },
+      "chapter": "ch2",
+      "once": false,
+      "lines": [
+        {
+          "s": "professor",
+          "t": "Back from the caves already? Don't tell me - you found the Order's equations! Marvellous. Did you, er... find any notes? Old ones? With initials?"
+        }
+      ],
+      "choices": {
+        "mode": "explore",
+        "prompt": "Ask the Professor...",
+        "exit": "I should go.",
+        "options": [
+          {
+            "label": "Who was watching me at the arch?",
+            "lines": [
+              {
+                "s": "professor",
+                "t": "A hiker. Almost certainly. Very determined hiker. ...Look, if you see them again, don't follow them alone. Promise me."
+              }
+            ]
+          },
+          {
+            "label": "How do I solve for x?",
+            "lines": [
+              {
+                "s": "professor",
+                "t": "Undo what was done to x, in reverse order. 3x + 4 = 19? Take away 4, then share by 3. x = 5. And then CHECK: 3 times 5 plus 4 is 19. Always check."
+              }
+            ]
+          },
+          {
+            "label": "Practice battle?",
+            "action": "battle",
+            "lines": [
+              {
+                "s": "professor",
+                "t": "Ha! Very well!"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "prof_ch3": {
+      "category": "professor",
+      "trigger": {
+        "event": "talk",
+        "npc": "rowan"
+      },
+      "chapter": "ch3",
+      "once": false,
+      "lines": [
+        {
+          "s": "professor",
+          "t": "Euclidia! I always wanted to walk those straight roads. I... never quite managed it. Funny how life goes."
+        }
+      ],
+      "choices": {
+        "mode": "explore",
+        "prompt": "Ask the Professor...",
+        "exit": "I should go.",
+        "options": [
+          {
+            "label": "Did the ancients cause the Unravelling?",
+            "requires": [
+              "record:record_euclid_chronicle"
+            ],
+            "lines": [
+              {
+                "s": "professor",
+                "t": "The Euclidians wrote that? ...Records can be wrong. Scholars disagree. That's - that's what history IS."
+              },
+              {
+                "s": "narrator",
+                "t": "He doesn't meet your eyes. He polishes his glasses, which are on his head."
+              }
+            ]
+          },
+          {
+            "label": "Area or perimeter?",
+            "lines": [
+              {
+                "s": "professor",
+                "t": "Area is how much carpet; perimeter is how much fence. Carpet inside, fence around. Never mix them up when you're buying carpet."
+              }
+            ]
+          },
+          {
+            "label": "Practice battle?",
+            "action": "battle",
+            "lines": [
+              {
+                "s": "professor",
+                "t": "Of course!"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "prof_ch4": {
+      "category": "professor",
+      "trigger": {
+        "event": "talk",
+        "npc": "rowan"
+      },
+      "chapter": "ch4",
+      "once": false,
+      "lines": [
+        {
+          "s": "professor",
+          "t": "You're in the middle of Chronos and you came back to see me? ...Thank you. I'm all right. Mostly."
+        }
+      ],
+      "choices": {
+        "mode": "explore",
+        "prompt": "Ask the Professor...",
+        "exit": "I should go.",
+        "options": [
+          {
+            "label": "Tell me about Vera.",
+            "requires": [
+              "vera:revealed"
+            ],
+            "lines": [
+              {
+                "s": "professor",
+                "t": "The best student I ever had. She checked everything twice. I used to tease her for it. I don't anymore."
+              }
+            ]
+          },
+          {
+            "label": "Why does time count in sixties?",
+            "lines": [
+              {
+                "s": "professor",
+                "t": "Very old habit! Sixty splits evenly into 2, 3, 4, 5, 6, 10, 12, 15, 20 and 30 - perfect for sharing hours. The Timekeepers loved it."
+              }
+            ]
+          },
+          {
+            "label": "Practice battle?",
+            "action": "battle",
+            "lines": [
+              {
+                "s": "professor",
+                "t": "A good distraction. Let's!"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "prof_final": {
+      "category": "professor",
+      "trigger": {
+        "event": "talk",
+        "npc": "rowan"
+      },
+      "chapter": "final",
+      "once": false,
+      "lines": [
+        {
+          "s": "professor",
+          "t": "I'm going to the Zero Point. You've done everything I asked and more. The rest is mine to face - but I'd like you there."
+        }
+      ]
+    },
+    "abacus_records_done": {
+      "category": "npc",
+      "trigger": {
+        "event": "talk",
+        "npc": "abacus"
+      },
+      "requires": [
+        "record:record_counting_stone",
+        "record:record_tally_stones",
+        "record:record_arch_inscription"
+      ],
+      "priority": 2,
+      "lines": [
+        {
+          "s": "abacus",
+          "t": "'Never complete the calculation'?! Seventy-three years I've read these stones, and I never found the arch's back side. You have sharp eyes."
+        },
+        {
+          "s": "abacus",
+          "t": "The Professor always told me the stones were 'just poetry'. Funny. He reads ancient scripts better than anyone alive."
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,7 @@
 """GDD 30 Definition of Done, driven through the real GameManager: start a game, follow the main
 quest through the ruins' puzzle gates to the boss, finish the side quests (including the bridge
 that unlocks a new area and the crystal that awakens the Evolution Shrine), evolve, save, restore."""
+from tests.story_helpers import finish_story
 import os
 import tempfile
 import unittest
@@ -25,6 +26,7 @@ class RegionFlowTests(unittest.TestCase):
         self.game = GameManager(database_path=self.path)
         self.game.player_name = "Ada"
         self.game._create_new_player()
+        finish_story(self.game)
         self.game.rng.seed(3)
 
     def tearDown(self):
@@ -40,6 +42,7 @@ class RegionFlowTests(unittest.TestCase):
                 world.avatar.x, world.avatar.y = world.world.cell_to_feet((x + dx, y + dy))
                 world.avatar.facing = (-dx, -dy)
                 world.update()
+                finish_story(self.game)
                 return
         self.fail(f"nothing walkable next to {cell}")
 
@@ -58,6 +61,7 @@ class RegionFlowTests(unittest.TestCase):
         self.assertEqual(world.target_id(), target_id)
         self.press()
         for _ in range(20):
+            finish_story(self.game)
             if not world.dialogue:
                 return
             world.dialogue.age = 10 ** 6
@@ -74,6 +78,7 @@ class RegionFlowTests(unittest.TestCase):
         self.assertTrue(screen.passed)
         screen.handle_key(pygame.K_RETURN)
         self.game._update()
+        finish_story(self.game)          # the Professor explains the maths behind the seal
         self.assertIsNone(self.game.states.overlay)
 
     def win(self, enemy, kind="wild"):
@@ -81,14 +86,16 @@ class RegionFlowTests(unittest.TestCase):
         game._start_battle(enemy, kind)
         finish_battle(game.battle, limit=3000)
         game._update()
+        finish_story(game)
         return game
 
     # ------------------------------------------------------------------ the region
     def test_number_forest_from_start_to_boss_victory(self):
         game = self.game
         quests = game.quests
-        self.assertEqual(quests.step_text("fading_numera"), "Meet Professor Numeris in Starter Village.")
-        self.talk_through("rowan", choose_first=False)          # tutorial pages, then "Not now"
+        # The prologue scene is the meeting with the Professor, so the first step is already done.
+        self.assertEqual(quests.step_index("fading_numera"), 1)
+        self.talk_through("rowan", choose_first=False)          # his chapter-1 questions, then leave
         self.assertEqual(quests.step_index("fading_numera"), 1)
         # A strong team so the test is about the flow, not grinding.
         for monster in game.party.party:
@@ -119,6 +126,7 @@ class RegionFlowTests(unittest.TestCase):
         finish_battle(game.battle, limit=4000)
         self.assertEqual(game.battle.outcome, "won")
         game._update()
+        self.assertIn("boss_after_numerex", finish_story(game))
         self.assertTrue(game.world.has_flag("boss:numerex"))
         self.assertEqual(quests.status("fading_numera"), "completed")
         self.assertTrue(game.world.has_flag("region:number_forest_complete"))

@@ -96,6 +96,8 @@ class QuestManager:
             return counters.get("wins", 0) >= step["count"]
         if kind == "capture":
             return counters.get("captures", 0) >= step["count"]
+        if kind == "capture_species":
+            return event == "capture" and data.get("species") in (step["species"], *step.get("also", []))
         if kind == "visit":
             return f"visited:{step['area']}" in flags
         if kind == "challenge":

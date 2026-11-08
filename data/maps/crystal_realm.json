@@ -155,14 +155,15 @@
     },
     {
       "id": "realm_tablet",
-      "kind": "flavour",
+      "kind": "record",
+      "record": "record_prism_archive",
       "pos": [
         15,
         20
       ],
-      "name": "crystal tablet",
+      "name": "Prism Archive",
       "verb": "Read",
-      "title": "CRYSTAL TABLET",
+      "title": "THE PRISM ARCHIVE",
       "text": [
         "Creatures here are made of light. They grow stronger, and so do their questions.",
         "Legends say a comet-dragon rides straight lines across Starfall Garden, seen only by those who read the Star Chart."

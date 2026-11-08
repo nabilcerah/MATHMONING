@@ -1,6 +1,7 @@
 """The items from 'Mathmon bug report.pdf':
 1 visual hints, 2 music and sound effects, 3 choosing a companion in the MathDex, 4 map crossings,
 5 a Mathmon Recovery Center that heals by solving maths, 6 a Mathmart with the requested items."""
+from tests.story_helpers import finish_story
 import os
 import random
 import tempfile
@@ -31,6 +32,7 @@ class GameCase(unittest.TestCase):
         self.folder = tempfile.TemporaryDirectory()
         self.game = GameManager(database_path=self.folder.name + "/bugs.sqlite3")
         self.game._create_new_player()
+        finish_story(self.game)
 
     def tearDown(self):
         self.game.llm.close()

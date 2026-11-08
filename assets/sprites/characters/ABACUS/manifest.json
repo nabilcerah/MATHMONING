@@ -1,0 +1,63 @@
+{
+  "name": "ABACUS",
+  "source": "PROFESSOR NUMERIS.jpg",
+  "poses": [
+    {
+      "pose": "stand",
+      "file": "0.png",
+      "dx": -19,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "1.png",
+      "dx": -27,
+      "dy": -96
+    },
+    {
+      "pose": "walk2",
+      "file": "2.png",
+      "dx": -31,
+      "dy": -96
+    },
+    {
+      "pose": "run",
+      "file": "3.png",
+      "dx": -29,
+      "dy": -96
+    },
+    {
+      "pose": "wave",
+      "file": "4.png",
+      "dx": -25,
+      "dy": -97
+    },
+    {
+      "pose": "cheer",
+      "file": "5.png",
+      "dx": -34,
+      "dy": -102
+    },
+    {
+      "pose": "surprised",
+      "file": "6.png",
+      "dx": -32,
+      "dy": -100
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -37,
+      "dy": -100
+    },
+    {
+      "pose": "fist",
+      "file": "8.png",
+      "dx": -23,
+      "dy": -100
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 38,
+  "variant_of": "PROFESSOR_NUMERIS"
+}

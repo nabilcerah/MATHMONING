@@ -1,5 +1,6 @@
 """GDD 2.2 worlds 2-4 (Algebra Cavern, Geometry Kingdom, Chronos Dimension): map integrity, portals,
 seals, bosses, quests and a playthrough of each world through the real GameManager."""
+from tests.story_helpers import finish_story
 import os
 import tempfile
 import unittest
@@ -124,6 +125,7 @@ class WorldPlaythroughTests(unittest.TestCase):
         self.game = GameManager(database_path=self.folder.name + "/worlds.sqlite3")
         self.game.player_name = "Explorer"
         self.game._create_new_player()
+        finish_story(self.game)
         for monster in self.game.party.party:
             monster.add_exp(10 ** 6)                     # level 20: the test is about the flow
         self.game.save_party()
@@ -140,6 +142,7 @@ class WorldPlaythroughTests(unittest.TestCase):
                 world.avatar.x, world.avatar.y = world.world.cell_to_feet((x + dx, y + dy))
                 world.avatar.facing = (-dx, -dy)
                 world.update()
+                finish_story(self.game)
                 return
         self.fail(f"nothing walkable next to {cell}")
 
@@ -154,6 +157,7 @@ class WorldPlaythroughTests(unittest.TestCase):
         self.assertEqual(world.target_id(), target_id)
         self.game._overworld_key(E)
         for _ in range(20):
+            finish_story(self.game)
             if not world.dialogue:
                 return
             world.dialogue.age = 10 ** 6
@@ -173,6 +177,7 @@ class WorldPlaythroughTests(unittest.TestCase):
         self.assertTrue(screen.passed)
         screen.handle_key(pygame.K_RETURN)
         self.game._update()
+        finish_story(self.game)
 
     def beat_boss(self):
         game = self.game
@@ -182,6 +187,7 @@ class WorldPlaythroughTests(unittest.TestCase):
         game.battle.battle.outcome, game.battle.battle.awaiting = "won", "over"
         game.battle.closed = True
         game._update()
+        finish_story(game)
 
     def travel(self, portal_id):
         self.interact(portal_id)
@@ -211,6 +217,7 @@ class WorldPlaythroughTests(unittest.TestCase):
                     game.battle.battle.outcome, game.battle.battle.awaiting = "won", "over"
                     game.battle.closed = True
                     game._update()
+                    finish_story(game)
                 if quest_id == "dimension_dragon":
                     travel = next(a for a in game.world.world.data["areas"] if a["id"] == "pillar_court")["travel"]
                     game.world.teleport(tuple(travel))

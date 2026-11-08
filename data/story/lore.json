@@ -1,0 +1,182 @@
+{
+  "_comment": "The CODEX. An entry appears when its 'unlock' flag is held (default 'lore:<id>'). Each part shows when its own 'unlock' flag is held (null = with the entry); locked parts show as '???' so the reader knows something is missing. Records also have 'pages': the in-world text shown when you read the object (kind 'record' in a map). Monster entries come from bestiary.json; chapter entries from chapters.json.",
+  "sections": ["world", "characters", "monsters", "regions", "records", "story"],
+  "section_titles": {"world": "WORLD HISTORY", "characters": "CHARACTERS", "monsters": "MATHMON", "regions": "REGIONS",
+                     "records": "HISTORICAL RECORDS", "story": "MAIN STORY"},
+  "entries": {
+    "creation": {"section": "world", "title": "The Null and the Five Axioms", "parts": [
+      {"text": "Before the beginning there was the Null: not emptiness, but something undefined. Nothing could be counted, so nothing could exist."},
+      {"text": "Five Axioms woke: 'There is one.' 'One can follow one.' 'Equal things stay equal.' 'Between two points, a line.' 'What changes, changes by a rule.' Where they held, Mathea became real."}]},
+    "numera": {"section": "world", "title": "The Numera", "parts": [
+      {"text": "Mathematical Energy - the force that 'holds' wherever an Axiom is true. Counting, balance, form and change all run on it."},
+      {"text": "When the Numera is disturbed, patterns stutter: numbers drift in the air, structures wake and MathMon turn wild.", "unlock": "chapter:prologue_done"}]},
+    "axiom_roots": {"section": "world", "title": "The Axiom Roots", "parts": [
+      {"text": "Five rivers of Numera run beneath Mathea. Each region sits on one: the Root of Counting (Number Forest), Balance (Algebra Cavern), Form (Geometry Kingdom) and Change (Chronos Dimension)."},
+      {"text": "The First Axiom, 'There is one', shattered into light when the world began. Its shards became the Crystal Realm.", "unlock": "visited:plaza"},
+      {"text": "All five Roots cross at one place: the Zero Point, where every count begins.", "unlock": "final:open"}]},
+    "firstborn": {"section": "world", "title": "The Firstborn", "parts": [
+      {"text": "Where Numera pooled, it began to repeat itself. A pattern that learned to keep its shape became alive: the first MathMon."},
+      {"text": "Young MathMon imitate the animals they see. Ancient ones stop imitating and become stranger - living symbols, shapes and light."}]},
+    "the_bond": {"section": "world", "title": "The Bond", "parts": [
+      {"text": "A MathMon's pattern is steadied by understanding. When its trainer truly works something out, that clarity flows into the partner and its move lands true. Guessing makes the pattern wobble."}]},
+    "civilisations": {"section": "world", "title": "The Four Civilisations", "parts": [
+      {"text": "The Tallyfolk (forest), the Order of the Unknown (caverns), Euclidia the Kingdom of Form, and the Timekeepers of Chronos. All faded about a thousand years ago."},
+      {"text": "The Professor says they faded through natural Numera decay.", "unlock": "lore:civilisations"},
+      {"text": "Euclidia's chronicle says otherwise: they faded because of something they did together.", "unlock": "record:record_euclid_chronicle"}]},
+    "tallyfolk": {"section": "world", "title": "The Tallyfolk", "parts": [
+      {"text": "The first people to befriend MathMon - by counting with them. One stone, one MathMon, one friend."},
+      {"text": "They raised the Arch of Sums and the first Numera Seals.", "unlock": "record:record_tally_stones"}]},
+    "order_of_unknown": {"section": "world", "title": "The Order of the Unknown", "parts": [
+      {"text": "Scholars of the Algebra Cavern who learned that an 'x' is a promise: a value exists even before you know it. They stored Numera inside equations."},
+      {"text": "Their charter forbade 'any reckoning of the whole'. Someone broke that rule.", "unlock": "record:record_order_charter"}]},
+    "euclidia": {"section": "world", "title": "Euclidia, Kingdom of Form", "parts": [
+      {"text": "Architects who shaped Numera into buildings that could never fall, as long as every angle was exact."},
+      {"text": "Their last builders wrote that the Unravelling 'came from our own hands'.", "unlock": "record:record_builders_last"}]},
+    "timekeepers": {"section": "world", "title": "The Timekeepers", "parts": [
+      {"text": "Measurers of the Root of Change, keepers of the Great Clock that sequences Mathea's days."},
+      {"text": "Twenty years ago their last village froze at 3:14.", "unlock": "record:record_frozen_village"}]},
+    "seals": {"section": "world", "title": "The Numera Seals", "parts": [
+      {"text": "Stone seals in every region, each guarded by a powerful MathMon. The old songs say they hold 'what remains'."},
+      {"text": "They were not failing. They were being opened.", "unlock": "lore:broken_seals"}]},
+    "broken_seals": {"section": "world", "title": "Fresh Scratches", "parts": [
+      {"text": "The Seal of Sums bore new tool marks and wet ink: someone had opened it recently."}]},
+    "remainder": {"section": "world", "title": "The Remainder", "parts": [
+      {"text": "A word carved on the Tallyfolk stones and spoken by the hooded stranger. The corruption has a name."},
+      {"text": "The Remainder is Numera that fits no pattern - left over when the ancients' great calculation 'did not come out even'.", "unlock": "record:record_arch_inscription"},
+      {"text": "It is not an error. In division, what is left over is where the next count begins. The Remainder is what lets anything new happen.", "unlock": "ending:done"}]},
+    "last_calculation": {"section": "world", "title": "The Last Calculation", "parts": [
+      {"text": "The four civilisations tried to compute the Final Number: the exact total of all Numera, so nothing could ever be uncertain again.", "unlock": null},
+      {"text": "The calculation left a Remainder, and the world unravelled.", "unlock": "record:record_arch_inscription"},
+      {"text": "The Origin Engine was built to run it.", "unlock": "record:record_engine_plan"}]},
+    "origin_engine": {"section": "world", "title": "The Origin Engine", "parts": [
+      {"text": "'The Engine', the stranger called it. Something the Professor 'will know'."},
+      {"text": "A machine at the Zero Point built by all four civilisations to perform the Last Calculation.", "unlock": "record:record_engine_plan"},
+      {"text": "Twenty years ago, two researchers restarted it.", "unlock": "lore:the_incident"}]},
+    "zero_point": {"section": "world", "title": "The Zero Point", "parts": [
+      {"text": "Beneath the Time Spire, where all five Axiom Roots cross. The Origin Engine waits there."}]},
+    "the_incident": {"section": "world", "title": "Twenty Years Ago", "parts": [
+      {"text": "Two researchers, 'N.' and 'V.', reopened the Order's Remainder vault.", "unlock": "record:record_vexa_notes"},
+      {"text": "They restarted the Origin Engine to cure the fading Numera. One step was never checked. The Engine misfired and a Timekeeper village froze at 3:14.", "unlock": "lore:the_incident"},
+      {"text": "N. told the council it was 'natural decay'.", "unlock": "record:record_burnt_log"}]},
+    "collector": {"section": "world", "title": "The Collector", "parts": [
+      {"text": "The hooded stranger draws the Remainder out of each freed guardian into a glass phial. She is gathering it all - on purpose."}]},
+    "numlink": {"section": "world", "title": "The Num-Link", "parts": [
+      {"text": "A pocket communicator built by Professor Numeris. Text only - 'I'm hopeless with gadgets that talk.'"}]},
+    "ending": {"section": "story", "title": "How It Ended", "parts": [
+      {"text": "You sealed the Origin Engine forever. Vera left alone.", "unlock": "ending:sealed"},
+      {"text": "You and the Professor persuaded Vera to stop. A clock in Chronos moved to 3:15.", "unlock": "ending:open"},
+      {"text": "The Remainder Theorem: what remains is where the next count begins. Vera's village woke at dawn.", "unlock": "ending:theorem"}]},
+
+    "the_professor": {"section": "characters", "title": "Professor Archibald Numeris", "parts": [
+      {"text": "Starter Village's MathMon researcher and your mentor. Brilliant, curious, forgetful (his glasses are usually on his head). Motto: 'Mistakes are just data!'"},
+      {"text": "His research notes jump from 'Year 0' to 'Year 20'. The pages in between are missing.", "unlock": "record:record_professor_notes"},
+      {"text": "A burnt log in the Dragon Keep is in his handwriting: 'I told the council it was natural decay.'", "unlock": "record:record_burnt_log"},
+      {"text": "He skipped one check twenty years ago, and hid it. He became a teacher so no student of his would ever skip one.", "unlock": "professor:confessed"},
+      {"text": "His journal: 'Every day I tell them mistakes are data. Every day I hide mine.'", "unlock": "record:record_journal"}]},
+    "vera": {"section": "characters", "title": "Vera Tallow", "parts": [
+      {"text": "A Timekeeper girl who once ran between the clock towers of Chronos with her sums.", "unlock": "lore:vera"},
+      {"text": "The hooded stranger. The Professor's former research partner. She wears a pocket watch stopped at 3:14 and wants to finish the Last Calculation so nothing can go wrong again.", "unlock": "vera:revealed"},
+      {"text": "She now guest-lectures in the Professor's class 'How To Check Your Work'.", "unlock": "ending:done"}],
+      "unlock": "lore:vera"},
+    "hooded_stranger": {"section": "characters", "title": "The Hooded Stranger", "parts": [
+      {"text": "Watched you free the Arithmetic Beast. 'That's one.'"},
+      {"text": "Collects the Remainder from each guardian.", "unlock": "lore:collector"},
+      {"text": "Revealed: Vera Tallow.", "unlock": "vera:revealed"}]},
+    "rex": {"section": "characters", "title": "Rex", "parts": [
+      {"text": "Your rival. Loud, fast, and secretly practises his times tables every night."}]},
+    "abacus": {"section": "characters", "title": "Old Abacus", "parts": [
+      {"text": "The village historian. Gets dates slightly wrong on purpose to see if you notice."}]},
+    "tobi": {"section": "characters", "title": "Tobi", "parts": [
+      {"text": "A village kid whose DIVOWL, Sums, flew away when the Counting Stone flickered."}], "unlock": "scene:tobi_lost"},
+    "vexa": {"section": "characters", "title": "Dr. Vexa", "parts": [
+      {"text": "A nervous, honest scientist of the Algebra Cavern. Twenty years ago she assisted two visiting researchers."}], "unlock": "met:vexa"},
+    "hypot": {"section": "characters", "title": "Sir Hypot", "parts": [
+      {"text": "Knight of Euclidia's last line. Formal, kind, and very fond of right angles."}], "unlock": "met:hypot"},
+    "tick": {"section": "characters", "title": "Keeper Tick", "parts": [
+      {"text": "The last Timekeeper still moving in time. He knew Vera as a child."}], "unlock": "met:tick"},
+
+    "region_forest": {"section": "regions", "title": "Number Forest", "unlock": "visited:village", "parts": [
+      {"text": "Starter Village: whitewashed houses, the Counting Stone, the Mathmart, the Sanctuary, the Recovery Center and the Professor's lab.", "unlock": "visited:village"},
+      {"text": "Green Meadow: grass grows in counting spirals. Tallyfolk tally stones stand among the flowers.", "unlock": "visited:meadow"},
+      {"text": "Ancient Number Ruins: fallen counting arches and three Numera Seals around the Arch of Sums.", "unlock": "visited:ridge"},
+      {"text": "Beyond: Pine Ridge, Waterfall Plateau, the Sunsand Desert, Mirror Beach and the farms - the Root of Counting runs under all of it.", "unlock": "visited:grove"}]},
+    "region_realm": {"section": "regions", "title": "Crystal Realm", "unlock": "visited:plaza", "parts": [
+      {"text": "Floating islands of light where the First Axiom shattered. The Prism Archive keeps the oldest record of all."}]},
+    "region_cavern": {"section": "regions", "title": "Algebra Cavern", "unlock": "visited:cave_mouth", "parts": [
+      {"text": "Crystals grow in balanced pairs; unsolved equations glow on the walls.", "unlock": "visited:cave_mouth"},
+      {"text": "The Glow Tunnels and Echo Hollow, where equations echo back half-finished.", "unlock": "visited:glow_tunnels"},
+      {"text": "The Lost Laboratory of the Order of the Unknown, with its Remainder vault.", "unlock": "visited:lost_lab"}]},
+    "region_kingdom": {"section": "regions", "title": "Geometry Kingdom", "unlock": "visited:temple_gate", "parts": [
+      {"text": "Euclidia: dead-straight roads, obelisks with exact shadows, hedges at perfect right angles.", "unlock": "visited:temple_gate"},
+      {"text": "The Garden and Pillar Courts, measured to the finger-width.", "unlock": "visited:pillar_court"},
+      {"text": "The Dragon Keep, folded into impossible shapes.", "unlock": "visited:dragon_keep"}]},
+    "region_chronos": {"section": "regions", "title": "Chronos Dimension", "unlock": "visited:clock_gate", "parts": [
+      {"text": "Islands hang still in the air. Every clock shows 3:14.", "unlock": "visited:clock_gate"},
+      {"text": "The Tick and Tock Isles - the frozen Timekeeper village.", "unlock": "visited:tock_isles"},
+      {"text": "The Time Spire, and beneath it the Zero Point.", "unlock": "visited:time_spire"}]},
+
+    "record_counting_stone": {"section": "records", "title": "The Counting Stone", "unlock": "record:record_counting_stone",
+      "pages": ["The village Counting Stone. Its carvings read: 'ONE, AND ONE MORE, AND ONE MORE. WE COUNT TOGETHER SO NOTHING IS FORGOTTEN.'",
+                "Below, newer marks: someone has scratched a tiny 'r' next to the last number. You can't tell how old it is."],
+      "parts": [{"text": "'We count together so nothing is forgotten.' Someone scratched an 'r' beside the last number."}]},
+    "record_tally_stones": {"section": "records", "title": "Tallyfolk Tally Stones", "unlock": "record:record_tally_stones",
+      "pages": ["Rows of tally marks, grouped in fives. Beside them, carved figures of people and MathMon counting side by side.",
+                "'WE BUILT THE ARCH OF SUMS SO THE COUNT WOULD ALWAYS BALANCE. WHAT REMAINS, WE SEALED.'"],
+      "parts": [{"text": "'We built the Arch of Sums so the count would always balance. What remains, we sealed.'"}]},
+    "record_arch_inscription": {"section": "records", "title": "Inscription on the Arch of Sums", "unlock": "record:record_arch_inscription",
+      "pages": ["'THE FOUR PEOPLES MET AT THE ZERO POINT TO RECKON THE WHOLE OF THE WORLD.'",
+                "'THE COUNT DID NOT COME OUT EVEN. WHAT REMAINED BROKE LOOSE, AND THE WORLD UNRAVELLED.'",
+                "'NEVER COMPLETE THE CALCULATION.'"],
+      "parts": [{"text": "'The count did not come out even. What remained broke loose, and the world unravelled. Never complete the calculation.'"}]},
+    "record_professor_notes": {"section": "records", "title": "The Professor's Research Notes", "unlock": "record:record_professor_notes",
+      "pages": ["Neat notebooks on the lab shelf: 'Numera Flow, Year 0', 'Remainder Theory (with V.), Year 0'...",
+                "...and then 'Teaching Notes, Year 20'. Nothing in between. Twenty years of research are simply missing."],
+      "parts": [{"text": "'Remainder Theory (with V.), Year 0' - then nothing until 'Teaching Notes, Year 20'."}]},
+    "record_journal": {"section": "records", "title": "The Professor's Journal", "unlock": "record:record_journal",
+      "pages": ["'Year 0, the night after. The Engine misfired because I didn't check the carry in step nine. I was sure. I was proud.'",
+                "'I told the council it was natural decay. Vera knows. She hasn't spoken to me since.'",
+                "'Every day I tell my students mistakes are data. Every day I hide mine. If anyone ever reads this: I'm sorry.'",
+                "Tucked inside: a copy of the ancients' last record. 'What remains is where the next count begins. Keep it.'"],
+      "parts": [{"text": "'Every day I tell my students mistakes are data. Every day I hide mine.' With it, a copy of the ancients' last record."}]},
+    "record_prism_archive": {"section": "records", "title": "The Prism Archive", "unlock": "record:record_prism_archive",
+      "pages": ["Light bends through the crystal into words: 'THERE IS ONE.'",
+                "'AND WHEN ONE SHATTERS, THERE ARE MANY. NOTHING IS LOST THAT IS ONLY DIVIDED.'"],
+      "parts": [{"text": "'Nothing is lost that is only divided.'"}]},
+    "record_order_charter": {"section": "records", "title": "Charter of the Order of the Unknown", "unlock": "record:record_order_charter",
+      "pages": ["'ARTICLE ONE: EVERY UNKNOWN IS A PROMISE. KEEP YOUR PROMISES.'",
+                "'ARTICLE NINE: NO MEMBER SHALL ATTEMPT A RECKONING OF THE WHOLE.' Someone has underlined it three times."],
+      "parts": [{"text": "'No member shall attempt a reckoning of the whole.' Underlined three times."}]},
+    "record_vault_log": {"section": "records", "title": "Remainder Vault Log", "unlock": "record:record_vault_log",
+      "pages": ["'Vault sealed, year of the Unravelling. Contents: Remainder, one part in nine.'",
+                "A newer line in different ink: 'Vault opened for study. Year 0. Two visitors.'"],
+      "parts": [{"text": "'Vault opened for study. Year 0. Two visitors.'"}]},
+    "record_vexa_notes": {"section": "records", "title": "Dr. Vexa's Old Notes", "unlock": "record:record_vexa_notes",
+      "pages": ["'Assisted N. and V. today. Brilliant pair. V. checks everything twice. N. checks nothing he's sure of.'",
+                "'They want to carry the vault's Remainder to the Zero Point. I don't like it. They say it will cure the fading Numera.'"],
+      "parts": [{"text": "'V. checks everything twice. N. checks nothing he's sure of.'"}]},
+    "record_euclid_chronicle": {"section": "records", "title": "The Euclidian Chronicle", "unlock": "record:record_euclid_chronicle",
+      "pages": ["'Our kingdom did not fall to decay, whatever later scholars may claim.'",
+                "'We joined the Last Calculation. When it failed, our angles stopped adding to one hundred and eighty, and our towers folded.'"],
+      "parts": [{"text": "'Our kingdom did not fall to decay, whatever later scholars may claim.'"}]},
+    "record_builders_last": {"section": "records", "title": "The Last Builder's Note", "unlock": "record:record_builders_last",
+      "pages": ["'The dragon that guards our keep was a friend once. We folded it to hold the Remainder. Forgive us, Dimensia.'",
+                "'The Unravelling came from our own hands.'"],
+      "parts": [{"text": "'The Unravelling came from our own hands.'"}]},
+    "record_burnt_log": {"section": "records", "title": "A Burnt Log Page", "unlock": "record:record_burnt_log",
+      "pages": ["Half a page, scorched at the edges, in looping handwriting:",
+                "'...Engine misfire, Year 0. Chronos village frozen. I told the council it was natural decay. I could not say it was me. - A.N.'"],
+      "parts": [{"text": "'I told the council it was natural decay. I could not say it was me. - A.N.'"}]},
+    "record_great_clock": {"section": "records", "title": "Face of the Great Clock", "unlock": "record:record_great_clock",
+      "pages": ["'WHAT CHANGES, CHANGES BY A RULE. KEEP THE RULE, AND TIME KEEPS YOU.'",
+                "The clock's hands are stopped at 3:14. Its pendulum hangs mid-swing."],
+      "parts": [{"text": "'Keep the rule, and time keeps you.' Stopped at 3:14."}]},
+    "record_frozen_village": {"section": "records", "title": "Register of the Tock Isles", "unlock": "record:record_frozen_village",
+      "pages": ["A village register, open on its last page. Names, and the time each family last signed in.",
+                "'TALLOW: Lina (mother), Teo (son). 3:14.' A third line has been added in fresher ink: 'Vera (daughter): away at the Engine.'"],
+      "parts": [{"text": "'Tallow: Lina (mother), Teo (son). 3:14. Vera (daughter): away at the Engine.'"}]},
+    "record_engine_plan": {"section": "records", "title": "Plan of the Origin Engine", "unlock": "record:record_engine_plan",
+      "pages": ["A carved diagram: five roots meeting in a circle at the Zero Point. Around it, the Engine - a calculation in stone, nine steps long.",
+                "At the bottom, in four different scripts: 'IF IT DOES NOT COME OUT EVEN, STOP.'"],
+      "parts": [{"text": "A nine-step calculation in stone. 'If it does not come out even, stop.'"}]}
+  }
+}

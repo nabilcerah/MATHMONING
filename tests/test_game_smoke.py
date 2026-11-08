@@ -1,4 +1,5 @@
 """End-to-end smoke test: menu -> new game -> overworld -> a full battle -> screens -> quit."""
+from tests.story_helpers import finish_story
 import os
 import tempfile
 import unittest
@@ -45,6 +46,7 @@ class GameSmokeTests(unittest.TestCase):
                     game._draw()
                 game.starter_selected = 3          # CHRONOX
                 game._create_new_player()
+                finish_story(game)
                 self.assertEqual(game.state, "overworld")
                 self.assertEqual([m.species_id for m in game.party.party], ["CHRONOX"])
                 self.assertIn("fading_numera", game.quests.active())
@@ -60,6 +62,7 @@ class GameSmokeTests(unittest.TestCase):
                 finish_battle(game.battle)
                 game._update()
                 self.assertEqual(game.state, "overworld")
+                self.assertEqual(finish_story(game), ["discover:VOLTIX"])
                 lead = game.party.lead
                 self.assertTrue(lead.exp > 0 or lead.level > 1)
                 self.assertGreater(game.repository.coins(game.player.player_id), 100)
@@ -91,6 +94,7 @@ class GameSmokeTests(unittest.TestCase):
             game = GameManager(database_path=folder + "/defeat.sqlite3")
             try:
                 game._create_new_player()
+                finish_story(game)
                 caught_before = game.repository.capture_records(game.player.player_id)
                 game._start_battle(monster_factory.create("GEOMAX", 15))
                 finish_battle(game.battle, answer_right=False, limit=2000)

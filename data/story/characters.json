@@ -1,0 +1,32 @@
+{
+  "_comment": "Who can speak in a scene. portrait = a character sprite folder (assets/sprites/<portrait>) or null for a text-only speaker. npc = the map NPC id this character is, if any.",
+  "characters": {
+    "professor": {"name": "Professor Numeris", "portrait": "characters/PROFESSOR_NUMERIS", "color": [242, 187, 82], "npc": "rowan"},
+    "numlink": {"name": "Num-Link: Prof. Numeris", "portrait": "characters/PROFESSOR_NUMERIS", "color": [110, 177, 206]},
+    "vera": {"name": "Vera Tallow", "portrait": "characters/VERA", "color": [190, 150, 255], "npc": "vera"},
+    "stranger": {"name": "Hooded Stranger", "portrait": "characters/STRANGER", "color": [150, 140, 170]},
+    "rex": {"name": "Rex", "portrait": "characters/REX", "color": [235, 112, 92], "npc": "pip"},
+    "abacus": {"name": "Old Abacus", "portrait": "characters/ABACUS", "color": [203, 170, 105], "npc": "abacus"},
+    "ilo": {"name": "Sage Ilo", "portrait": null, "color": [137, 199, 124], "npc": "keeper"},
+    "tobi": {"name": "Tobi", "portrait": null, "color": [249, 231, 180], "npc": "tobi"},
+    "mira": {"name": "Mira", "portrait": "characters/LUNA", "color": [137, 199, 124], "npc": "mira"},
+    "vexa": {"name": "Dr. Vexa", "portrait": null, "color": [120, 230, 200], "npc": "vexa"},
+    "hypot": {"name": "Sir Hypot", "portrait": null, "color": [200, 196, 184], "npc": "hypot"},
+    "tick": {"name": "Keeper Tick", "portrait": null, "color": [240, 200, 100], "npc": "tick"},
+    "narrator": {"name": "", "portrait": null, "color": [249, 231, 180]},
+    "inscription": {"name": "Ancient Inscription", "portrait": null, "color": [203, 170, 105]},
+    "player": {"name": "You", "portrait": "player", "color": [255, 247, 220]}
+  },
+  "categories": {
+    "main": {"label": "STORY", "color": [242, 187, 82]},
+    "professor": {"label": "PROFESSOR", "color": [110, 177, 206]},
+    "npc": {"label": "", "color": [249, 231, 180]},
+    "quest": {"label": "QUEST", "color": [137, 199, 124]},
+    "boss_intro": {"label": "BOSS", "color": [235, 112, 92]},
+    "boss_defeat": {"label": "AFTER THE BATTLE", "color": [235, 112, 92]},
+    "record": {"label": "HISTORICAL RECORD", "color": [203, 170, 105]},
+    "secret": {"label": "SECRET", "color": [190, 150, 255]},
+    "discovery": {"label": "NEW MATHMON", "color": [120, 230, 240]},
+    "comm": {"label": "NUM-LINK", "color": [110, 177, 206]}
+  }
+}

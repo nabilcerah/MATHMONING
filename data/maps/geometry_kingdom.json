@@ -271,6 +271,42 @@
    "title": "TREASURE CHEST"
   },
   {
+   "id": "geometry_kingdom_record1",
+   "kind": "record",
+   "record": "record_euclid_chronicle",
+   "pos": [
+    30,
+    17
+   ],
+   "name": "Euclidian chronicle",
+   "verb": "Read",
+   "title": "EUCLIDIAN CHRONICLE"
+  },
+  {
+   "id": "geometry_kingdom_record2",
+   "kind": "record",
+   "record": "record_builders_last",
+   "pos": [
+    29,
+    29
+   ],
+   "name": "builder's note",
+   "verb": "Read",
+   "title": "BUILDER'S NOTE"
+  },
+  {
+   "id": "geometry_kingdom_record3",
+   "kind": "record",
+   "record": "record_burnt_log",
+   "pos": [
+    46,
+    28
+   ],
+   "name": "burnt page",
+   "verb": "Read",
+   "title": "BURNT PAGE"
+  },
+  {
    "id": "geometry_kingdom_gate",
    "kind": "boss_gate",
    "pos": [

@@ -67,6 +67,10 @@ def panel(surface, rect, fill=None, border=None):
     rect = pygame.Rect(rect)
     fill = fill or PALETTE["night"]
     border = border or PALETTE["cream"]
+    if surface is _layer["canvas"]:
+        # Deferred text from whatever is underneath must not show through a box drawn on top of it.
+        cover = rect.inflate(4, 4)
+        _queue[:] = [entry for entry in _queue if not entry[1].colliderect(cover)]
     pygame.draw.rect(surface, PALETTE["ink"], rect.inflate(4, 4))
     pygame.draw.rect(surface, border, rect)
     pygame.draw.rect(surface, fill, rect.inflate(-4, -4))

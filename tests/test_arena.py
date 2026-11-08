@@ -1,3 +1,4 @@
+from tests.story_helpers import finish_story
 import os
 import random
 import statistics
@@ -169,6 +170,7 @@ class ArenaOnTheMapTests(unittest.TestCase):
             try:
                 game.player_name = "Visitor"
                 game._create_new_player()
+                finish_story(game)
                 world = game.world
                 x, y = world.objects["arena"]["pos"]
                 world.avatar.x, world.avatar.y = world.world.cell_to_feet((x, y + 1))

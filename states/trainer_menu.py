@@ -5,8 +5,8 @@ from config import PALETTE
 from game.ui import menu, panel, text
 from states.base import Screen
 
-CHOICES = ("PARTY", "BAG", "QUESTS", "MATHDEX", "PROFILE", "SAVE", "CLOSE")
-RECT = (214, 28, 100, 112)
+CHOICES = ("PARTY", "BAG", "QUESTS", "CODEX", "MATHDEX", "PROFILE", "SAVE", "CLOSE")
+RECT = (214, 24, 100, 127)
 
 
 class TrainerMenu(Screen):
@@ -37,8 +37,11 @@ class TrainerMenu(Screen):
     def draw(self, surface, frame=0):
         menu(surface, RECT, CHOICES, self.selected, 11, frame)
         coins = self.game.repository.coins(self.game.player.player_id)
-        panel(surface, (214, 146, 100, 30), PALETTE["night"])
-        text(surface, self.game.player.name[:12], (220, 149), 9, PALETTE["white"])
-        text(surface, f"{coins} coins", (220, 160), 9, PALETTE["gold"])
+        panel(surface, (214, 156, 100, 42), PALETTE["night"])
+        text(surface, self.game.player.name[:12], (220, 159), 9, PALETTE["white"])
+        text(surface, f"{coins} coins", (220, 170), 9, PALETTE["gold"])
+        if self.game.story:
+            chapter = self.game.story.chapter()
+            text(surface, chapter["number"][:14], (220, 181), 8, PALETTE["sky"])
         if self.notice:
-            text(surface, self.notice, (264, 184), 9, PALETTE["mint"], center=True)
+            text(surface, self.notice, (264, 206), 9, PALETTE["mint"], center=True)

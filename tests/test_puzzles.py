@@ -1,3 +1,4 @@
+from tests.story_helpers import finish_story
 import os
 import random
 import tempfile
@@ -116,6 +117,7 @@ class ShrineTests(unittest.TestCase):
             try:
                 game.player_name = "Solver"
                 game._create_new_player()
+                finish_story(game)
                 world = game.world
                 shrine = world.objects["shrine_sequence"]
                 exp_before = game.party.lead.exp + game.party.lead.level * 1000
@@ -124,6 +126,7 @@ class ShrineTests(unittest.TestCase):
                 world.avatar.x, world.avatar.y = world.world.cell_to_feet((x, y + 1))
                 world.avatar.facing = (0, -1)
                 world.update()
+                finish_story(game)
                 self.assertIn("new puzzle", world.prompt())
                 enter = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e, unicode="", mod=0)
                 game._overworld_key(enter)          # open the shrine dialogue

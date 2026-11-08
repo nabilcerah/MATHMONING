@@ -271,6 +271,42 @@
    "title": "TREASURE CHEST"
   },
   {
+   "id": "algebra_cavern_record1",
+   "kind": "record",
+   "record": "record_order_charter",
+   "pos": [
+    29,
+    17
+   ],
+   "name": "Order charter",
+   "verb": "Read",
+   "title": "ORDER CHARTER"
+  },
+  {
+   "id": "algebra_cavern_record2",
+   "kind": "record",
+   "record": "record_vault_log",
+   "pos": [
+    28,
+    29
+   ],
+   "name": "vault log",
+   "verb": "Read",
+   "title": "VAULT LOG"
+  },
+  {
+   "id": "algebra_cavern_record3",
+   "kind": "record",
+   "record": "record_vexa_notes",
+   "pos": [
+    46,
+    28
+   ],
+   "name": "old lab notes",
+   "verb": "Read",
+   "title": "OLD LAB NOTES"
+  },
+  {
    "id": "algebra_cavern_gate",
    "kind": "boss_gate",
    "pos": [

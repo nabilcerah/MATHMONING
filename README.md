@@ -16,7 +16,7 @@ python -m venv .venv
 |---|---|
 | WASD / arrows | Move, choose |
 | E / Enter | Talk, interact, confirm |
-| Tab | Trainer menu (party, bag, quests, MathDex, profile, save) |
+| Tab | Trainer menu (party, bag, quests, Codex, MathDex, profile, save) |
 | Esc | Pause / back |
 | 1–4 | Menu shortcuts (battle actions, moves) |
 | H / W | Hint / worked example while answering |
@@ -43,6 +43,11 @@ Menus also work with the mouse.
   MATHMON RECOVERY CENTER heals your team when you solve Nurse Hana's problems.
 - **Hints you can see:** press H while answering and an animated picture (number line, fraction bars, balance
   scale, shapes...) shows the strategy.
+- **The story:** a prologue, four chapters and a final chapter with three endings, told in pixel dialogue
+  boxes (portraits, typewriter text, choices; ESC skips ahead). Find historical records in every world, uncover
+  what Professor Numeris has been hiding, and learn who the hooded stranger is. Everything you learn goes into
+  the **Codex (Tab → Codex)**: world history, characters, every MathMon, regions, records and the main story.
+  The lore bible is [docs/LORE.md](docs/LORE.md); the story data lives in `data/story/`.
 - **Learning profile (Tab → Profile):** mastery per topic, your history, and the AI log showing every
   agent decision step by step.
 

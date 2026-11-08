@@ -5,7 +5,8 @@ from game.ui import panel, text, wrapped
 from monsters.monster_data import quests
 from states.base import Screen
 
-CATEGORY_COLORS = {"main": "gold", "side": "sky", "exploration": "mint"}
+CATEGORY_COLORS = {"main": "gold", "side": "sky", "exploration": "mint", "history": "cream", "mathmon": "leaf",
+                   "secret": "coral"}
 
 
 class QuestScreen(Screen):
@@ -24,6 +25,7 @@ class QuestScreen(Screen):
         return 34, 15, 4, 130
 
     def draw(self, surface, frame=0):
+        self._surface = surface
         self.draw_frame(surface, "QUEST LOG")
         manager = self.game.quests
         if not self.entries:
@@ -60,10 +62,23 @@ class QuestScreen(Screen):
                 used = wrapped(surface, f"{mark} {entry['text']}", (146, y, 162, 20), 8, c, 9, 2)
                 y += (used - 1) * 9
             y += 10
-            if y > 160:
+            if y > 148:
                 break
+        self._draw_lore(quest)
         rewards = quest.get("rewards", {})
         parts = ([f"{rewards['exp']} EXP"] if rewards.get("exp") else []) + \
                 ([f"{rewards['coins']}c"] if rewards.get("coins") else []) + \
                 [f"{k} x{v}" for k, v in rewards.get("items", {}).items()]
         wrapped(surface, "Reward: " + ", ".join(parts), (144, 166, 166, 14), 8, PALETTE["gold"], 9, 1)
+
+    def _draw_lore(self, quest):
+        """Quests link to the story: their Codex entries, shown once unlocked (??? until then)."""
+        story = getattr(self.game, "story", None)
+        if not story or not quest.get("lore"):
+            return
+        from world.story_manager import lore
+        entries = lore()["entries"]
+        names = [entries[i]["title"] if story.has(f"lore:{i}") or story.has(f"record:{i}") else "???"
+                 for i in quest["lore"] if i in entries]
+        surface = self._surface
+        wrapped(surface, "Codex: " + ", ".join(names), (144, 155, 166, 10), 8, PALETTE["sky"], 9, 1)

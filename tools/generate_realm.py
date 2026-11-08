@@ -100,8 +100,8 @@ def map_data(ground, path, bridge, spires):
             {"id": "portal_home", "kind": "portal", "pos": [8, 22], "destination": "number_forest",
              "arrive": [79, 102], "name": "crystal portal", "verb": "Enter", "title": "CRYSTAL PORTAL",
              "text": ["The portal hums with forest air. Step through to return to the Number Forest?"]},
-            {"id": "realm_tablet", "kind": "flavour", "pos": [15, 20], "name": "crystal tablet", "verb": "Read",
-             "title": "CRYSTAL TABLET",
+            {"id": "realm_tablet", "kind": "record", "record": "record_prism_archive", "pos": [15, 20],
+             "name": "Prism Archive", "verb": "Read", "title": "THE PRISM ARCHIVE",
              "text": ["Creatures here are made of light. They grow stronger, and so do their questions.",
                       "Legends say a comet-dragon rides straight lines across Starfall Garden, seen only by those "
                       "who read the Star Chart."]},
@@ -109,9 +109,9 @@ def map_data(ground, path, bridge, spires):
              "name": "Star Chart", "verb": "Study", "title": "STAR CHART",
              "text": ["A sky map is carved into the crystal. Three stars are missing from their places."]},
             {"id": "chest_glimmer", "kind": "chest", "pos": [28, 5], "name": "crystal chest", "verb": "Open",
-             "item": "EXP Booster", "count": 2, "title": "CRYSTAL CHEST"},
+             "item": "Basic Mathball", "count": 2, "title": "CRYSTAL CHEST"},
             {"id": "chest_shard", "kind": "chest", "pos": [38, 42], "name": "geode chest", "verb": "Open",
-             "item": "Learning Crystal", "count": 2, "title": "GEODE CHEST"},
+             "item": "Energy Potion", "count": 2, "title": "GEODE CHEST"},
         ],
         "npcs": [],
     }

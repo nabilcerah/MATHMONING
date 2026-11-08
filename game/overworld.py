@@ -152,7 +152,9 @@ class Overworld:
         self.avatar = Avatar(*self.world.cell_to_feet(start))
         self.avatar.sheet = self.avatar_sheet()
         self.player.x, self.player.y = start
-        self.npcs = [NPC(spec, self.world, self.rng) for spec in self.world.data.get("npcs", [])]
+        self.scene_for = None           # story hook: callable(event, **info) -> scene id or None
+        self.npcs = [NPC(spec, self.world, self.rng) for spec in self.world.data.get("npcs", [])
+                     if self._npc_visible(spec)]
         self.objects = {entry["id"]: entry for entry in self.world.data.get("interactables", [])}
         self.target = None
         self.dialogue = None
@@ -197,6 +199,19 @@ class Overworld:
         if self.repository and self.player.player_id:
             self.repository.set_world_flag(self.player.player_id, flag)
         self.world.apply_flags(self.flags)
+        if hasattr(self, "npcs"):
+            self._refresh_npcs()
+
+    def _npc_visible(self, spec):
+        """Story NPCs can appear or leave as the story moves on (visible_if / hidden_if flags)."""
+        return all(flag in self.flags for flag in spec.get("visible_if", [])) and \
+            not any(flag in self.flags for flag in spec.get("hidden_if", []))
+
+    def _refresh_npcs(self):
+        wanted = [spec for spec in self.world.data.get("npcs", []) if self._npc_visible(spec)]
+        if [n.id for n in self.npcs] != [spec["id"] for spec in wanted]:
+            current = {n.id: n for n in self.npcs}
+            self.npcs = [current.get(spec["id"]) or NPC(spec, self.world, self.rng) for spec in wanted]
 
     def refresh_flags(self):
         if self.repository and self.player.player_id:
@@ -204,6 +219,7 @@ class Overworld:
             if hasattr(self.repository, "capture_records"):
                 self.records = self.repository.capture_records(self.player.player_id)
         self.world.apply_flags(self.flags)
+        self._refresh_npcs()
 
     def _emit(self, kind, **data):
         if self.on_event:
@@ -456,12 +472,26 @@ class Overworld:
         dialogue = npc.spec.get("dialogue", {})
         return list(dialogue.get(key) or dialogue.get("any") or fallback)
 
+    def _story_lines(self, npc):
+        """The last 'story_lines' entry whose flags are all held: NPCs react to the story."""
+        lines = None
+        for entry in npc.spec.get("story_lines", []):
+            if all(flag in self.flags for flag in entry.get("requires", [])):
+                lines = entry["lines"]
+        return lines
+
     def _talk(self, npc):
         """NPC dialogue comes from structured map data (GDD 10.4); quest NPCs pick their lines by quest state."""
         npc.begin_talk(self.avatar)
         first_meeting = not self.has_flag(f"met:{npc.id}")
+        scene = self.scene_for("talk", npc=npc.id) if self.scene_for else None
         self.set_flag(f"met:{npc.id}")
         title, subtitle = npc.name.upper(), npc.role
+        if scene:
+            # A story scene takes over the conversation (shown by the game's scene screen).
+            self._emit("talk", npc=npc.id)
+            self.talking_to = npc
+            return ("scene", scene, npc.id)
         if npc.kind == "quest":
             quest_id = npc.spec.get("quest")
             pages = self._npc_pages(npc, self.quest_status(quest_id), ["Hello!"])
@@ -494,7 +524,8 @@ class Overworld:
             self.open_dialogue(title, [riddle["question"]], subtitle, choices, npc, "npc")
         else:
             self._emit("talk", npc=npc.id)
-            self.open_dialogue(title, [npc.next_line() or "Hello there!"], subtitle, speaker=npc, kind="npc")
+            lines = self._story_lines(npc) or [npc.next_line() or "Hello there!"]
+            self.open_dialogue(title, lines, subtitle, speaker=npc, kind="npc")
         return None
 
     def _choose(self, action):
@@ -559,6 +590,13 @@ class Overworld:
             return None
         if kind == "clinic":
             return "clinic"
+        if kind == "record":
+            needed = entry.get("requires")
+            if needed and not self.has_flag(needed):
+                self.open_dialogue(title, entry.get("locked_text", ["It won't open."]))
+                return None
+            self._emit("interact", object=object_id)
+            return ("record", entry["record"])
         if kind == "evolution":
             self.open_dialogue(title, entry.get("text", []), choices=[("Approach the shrine", "evolution"), ("Later", "close")])
             return None
@@ -614,6 +652,10 @@ class Overworld:
             return base + "  - evolve monsters"
         if kind == "clinic":
             return base + "  - heal with maths"
+        if kind == "record":
+            if target.get("requires") and not self.has_flag(target["requires"]):
+                return base + "  - locked"
+            return base + ("  - read" if self.has_flag(f"record:{target['record']}") else "  - historical record")
         if kind == "shrine":
             return base + ("  - solved today" if self.shrine_done(target["id"]) else "  - new puzzle!")
         if kind == "portal":
@@ -958,6 +1000,14 @@ class Overworld:
                 pygame.draw.circle(surface, (96, 98, 104), (x + 8, y + 7), 8)
                 pygame.draw.circle(surface, (140, 144, 150), (x + 8, y + 7), 6)
                 pygame.draw.circle(surface, glow, (x + 8, y + 7), 3)
+        elif kind == "record":
+            read = self.has_flag(f"record:{entry['record']}")
+            pygame.draw.ellipse(surface, shadow, (x + 1, y + 11, 14, 5))
+            pygame.draw.rect(surface, (120, 104, 84), (x + 3, y + 1, 10, 13))
+            pygame.draw.rect(surface, (170, 150, 120), (x + 4, y + 2, 8, 11))
+            glow = (120, 100, 70) if read else ((242, 187, 82) if (frame // 20) % 2 else (200, 160, 90))
+            for row in range(3):
+                pygame.draw.line(surface, glow, (x + 5, y + 4 + row * 3), (x + 10, y + 4 + row * 3))
         elif kind == "clinic":
             pulse = (frame // 8) % 6
             pygame.draw.ellipse(surface, shadow, (x - 1, y + 11, 18, 5))
@@ -1062,6 +1112,7 @@ class Overworld:
             fresh = (kind == "chest" and not self.has_flag(f"opened:{object_id}")) or \
                     (kind == "shrine" and not self.shrine_done(object_id)) or \
                     (kind in ("sign", "flavour") and not self.has_flag(f"seen:{object_id}")) or \
+                    (kind == "record" and not self.has_flag(f"record:{entry['record']}")) or \
                     (kind == "challenge" and not self.has_flag(f"challenge:{entry['challenge']}") and
                      (not entry.get("requires_quest") or self.quest_status(entry["requires_quest"]) == "active"))
             if fresh:

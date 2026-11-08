@@ -46,12 +46,13 @@ from states.sanctuary_state import SanctuaryScreen
 from states.shop_state import ShopScreen
 from states.trainer_menu import TrainerMenu
 from world.quest_manager import QuestManager
+from world.story_manager import StoryManager, chapters as story_chapters
 
 SEALS = ("challenge:seal_add", "challenge:seal_mul", "challenge:seal_frac")
 
 
 class GameManager:
-    MAPS = ("number_forest", "crystal_realm", "village_shop", "village_sanctuary",
+    MAPS = ("number_forest", "crystal_realm", "village_shop", "village_sanctuary", "village_lab",
             "algebra_cavern", "geometry_kingdom", "chronos_dimension", "village_recovery")
     BOSS_FLAG = "boss:numerex"
     MENU_CHOICES = ("NEW GAME", "CONTINUE", "SETTINGS", "EXIT")
@@ -97,6 +98,10 @@ class GameManager:
         self.trials = None
         self.monster_battle = None
         self.recovery_text = ""
+        self.story = None
+        self.story_queue = []            # scenes and chapter cards waiting to be shown, in order
+        self.story_busy = False
+        self.opening_flags = set()       # the opening plays before the save exists
         self.menu_selected = 0
         self.starter_selected = 0
         self.avatar_selected = 0
@@ -259,6 +264,9 @@ class GameManager:
             self.avatar_selected = 1 - self.avatar_selected
         elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
             self.state = "starter"
+            if "scene:opening" not in self.opening_flags:
+                preview = StoryManager(self.opening_flags.__contains__, self.opening_flags.add)
+                self._push_scene(preview, preview.scene("opening"))
         elif event.key == pygame.K_ESCAPE:
             self.state = "name"
 
@@ -299,13 +307,14 @@ class GameManager:
         species_id = tuple(STARTERS)[self.starter_selected]
         player_id = self.repository.create_player(self.player_name or "Rookie", species_id)
         self.repository.set_world_flag(player_id, f"avatar:{Overworld.AVATARS[self.avatar_selected]}")
+        for flag in self.opening_flags | {"game:started"}:
+            self.repository.set_world_flag(player_id, flag)
+        self.opening_flags = set()
         record = self.repository.load_player()
         self._load(record)
-        messages = self.quests.start_auto_quests()
+        self.quests.start_auto_quests()
         self._enter_world()
-        self.world.set_message(f"{STARTERS[species_id].name} joins your journey! Talk to Professor Numeris in the "
-                               "village square.", 300)
-        del messages
+        self.world.set_message(f"{STARTERS[species_id].name} joins your journey!", 200)
 
     def _continue_game(self):
         record = self.repository.load_player()
@@ -328,6 +337,123 @@ class GameManager:
                                    self.repository.world_flags(record.player_id))
         self.orchestrator.quest_manager = self.quests
         self.orchestrator.region = world if world in curriculum.REGION_TOPICS else "number_forest"
+        self.story = StoryManager(self._has_flag, self._set_flag)
+        self.story_queue, self.story_busy = [], False
+        self._migrate_story()
+
+    # ================================================================== story
+    def _flags(self):
+        return self.world.flags if self.world else self.repository.world_flags(self.player.player_id)
+
+    def _has_flag(self, flag):
+        return flag in self._flags()
+
+    def _set_flag(self, flag):
+        if self.world:
+            self.world.set_flag(flag)
+        else:
+            self.repository.set_world_flag(self.player.player_id, flag)
+
+    def _migrate_story(self):
+        """Saves from before the story existed start in the right chapter without replaying the prologue."""
+        if self._has_flag("game:started"):
+            return
+        story = self.story
+        story.set_flag("game:started")
+        flags = self._flags()
+        if "met:rowan" in flags or any(f.startswith("boss:") for f in flags):
+            for flag in ("chapter:prologue_done", "scene:opening", "scene:prologue_village", "numlink"):
+                story.set_flag(flag)
+            current = story.chapter()["id"]
+            for chapter in story_chapters():
+                if chapter["id"] != current and self._has_flag(chapter["starts"]):
+                    story.mark_card_shown(chapter["id"])
+
+    def story_event(self, event, then=None, **info):
+        """Report a game event to the story; queue the matching scene (if any). Returns True if one was queued."""
+        if not self.story:
+            return False
+        scene_id = self.story.scene_for(event, **info)
+        if scene_id:
+            self.play_scene(scene_id, then)
+            return True
+        if then:
+            then()
+        return False
+
+    def play_scene(self, scene_id, then=None, npc=None):
+        self.story_queue.append(("scene", scene_id, then, npc))
+        self._run_story_queue()
+
+    def _queue_chapter_card(self):
+        chapter = self.story.pending_chapter_card() if self.story else None
+        if chapter and not any(item[0] == "card" and item[1]["id"] == chapter["id"] for item in self.story_queue):
+            self.story_queue.append(("card", chapter, None, None))
+
+    def _run_story_queue(self):
+        if self.story_busy or not self.story_queue:
+            return
+        kind, payload, then, npc = self.story_queue.pop(0)
+        self.story_busy = True
+        if kind == "card":
+            from states.codex_state import ChapterCard
+            self.story.mark_card_shown(payload["id"])
+            self.states.push(ChapterCard(self, payload), lambda screen: self._story_closed(None, then))
+            return
+        scene = self.story.scene(payload)
+        self._push_scene(self.story, scene, then, npc)
+
+    def _push_scene(self, story, scene, then=None, npc=None):
+        from states.scene_state import SceneScreen
+        avatar = self.world.avatar.sheet if self.world else f"characters/{Overworld.AVATARS[self.avatar_selected]}"
+        screen = SceneScreen(self, story, scene, avatar)
+        screen.npc_id = npc
+        if story is self.story:
+            self.states.push(screen, lambda s: self._story_closed(s, then))
+        else:
+            self.states.push(screen)       # the opening: no save yet, nothing else to do
+
+    def _story_closed(self, screen, then):
+        self.story_busy = False
+        if screen is not None:
+            result = screen.result or {}
+            if self.world and getattr(self.world, "talking_to", None):
+                self.world.talking_to.end_talk()
+                self.world.talking_to = None
+            for quest_id in result.get("quests", []):
+                self._quest_feedback(self.quests.start(quest_id), [])
+            for action in result.get("actions", []):
+                self._story_action(action, screen)
+            new_flags = result.get("flags", [])
+            if new_flags:
+                messages, done = self.quests.notify("flag", flag=new_flags[-1])
+                self._quest_feedback(messages, done)
+                for flag in new_flags:
+                    scene_id = self.story.scene_for("flag", flag=flag)
+                    if scene_id:
+                        self.story_queue.append(("scene", scene_id, None, None))
+                if self.world:
+                    self.world.refresh_flags()
+                self._refresh_boss_gate()
+            self.save_all()
+        self._queue_chapter_card()
+        if then:
+            then()
+        self._run_story_queue()
+
+    def _story_action(self, action, screen):
+        if action == "battle":
+            npc_id = getattr(screen, "npc_id", None)
+            spec = next((n.spec for n in self.world.npcs if n.id == npc_id), {}) if self.world else {}
+            duel = spec.get("battle_with") or {"species": "DIVOWL", "level": 2}
+            enemy = monster_factory.create(duel["species"], duel["level"])
+            self._start_battle(enemy, "trainer", spec.get("name", ""))
+        elif action.startswith("challenge:"):
+            self.open_challenge(action.split(":", 1)[1])
+        elif action.startswith("ending:"):
+            scene_id = self.story.scene_for("ending", id=action.split(":", 1)[1])
+            if scene_id:
+                self.story_queue.append(("scene", scene_id, None, None))
 
     def _play_music(self, boss=False):
         if boss:
@@ -345,8 +471,13 @@ class GameManager:
         self._refresh_boss_gate()
         self.save_timer = 0
         self.states.clear()
+        self.story_queue, self.story_busy = [], False
         self.state = "overworld"
         self._play_music()
+        self.world.scene_for = self.story.scene_for if self.story else None
+        self._queue_chapter_card()
+        self.story_event("enter_world")
+        self._run_story_queue()
 
     # ================================================================== saving
 
@@ -406,7 +537,8 @@ class GameManager:
                                            f"{monster.name} evolved! Keep practising {curriculum.label(monster.mastery_topic).lower()}.")
 
     def open_screen(self, name):
-        screens = {"party": PartyScreen, "bag": InventoryScreen, "quests": QuestScreen, "mathdex": DexScreen,
+        from states.codex_state import CodexScreen
+        screens = {"codex": CodexScreen, "party": PartyScreen, "bag": InventoryScreen, "quests": QuestScreen, "mathdex": DexScreen,
                    "profile": ProfileScreen, "shop": ShopScreen, "sanctuary": SanctuaryScreen,
                    "evolution": EvolutionScreen}
         screen = screens[name](self)
@@ -449,6 +581,8 @@ class GameManager:
                                         else ""), 260)
         self.save_all()
         self._refresh_boss_gate()
+        if screen.result:
+            self.story_event("challenge", id=screen.challenge_id)
 
     # ================================================================== quests & world events
     def on_world_event(self, kind, **data):
@@ -465,6 +599,8 @@ class GameManager:
             return
         messages, done = self.quests.notify(kind, **data)
         self._quest_feedback(messages, done)
+        if kind == "visit":
+            self.story_event("visit", area=data.get("area"))
 
     def _quest_feedback(self, messages, completed, prefix=""):
         for quest_id in completed:
@@ -513,6 +649,12 @@ class GameManager:
 
     def _world_action(self, action):
         if not action:
+            return
+        if isinstance(action, tuple) and action[0] == "scene":
+            self.play_scene(action[1], npc=action[2])
+            return
+        if isinstance(action, tuple) and action[0] == "record":
+            self.read_record(action[1])
             return
         if action == "arena":
             self.arena = ArenaScreen(self.repository, self.orchestrator, self.player, self.party.lead.spec,
@@ -569,12 +711,21 @@ class GameManager:
                                          "AI Game Master: " + advice.extra.get("boss_advice", "")],
                                  choices=[(gate.get("fight", "Fight!"), "boss_fight"), ("Prepare first", "close")])
 
+    def read_record(self, record_id):
+        """Historical records: read the text, add it to the Codex, then let the story react."""
+        def after():
+            messages, done = self.quests.notify("flag", flag=f"record:{record_id}")
+            self._quest_feedback(messages, done)
+            self.story_event("record", id=record_id)
+        self.play_scene(f"record:{record_id}", after)
+
     def _start_boss(self):
         gate = self.boss_gate() or {}
         cfg = encounters()["boss"]
         enemy = monster_factory.create(gate.get("boss", cfg["species"]), gate.get("level", cfg["level"]))
         self.boss_in_progress = gate
-        self._start_battle(enemy, "boss")
+        self.story_event("boss_before", then=lambda: self._start_battle(enemy, "boss"),
+                         flag=gate.get("flag", self.BOSS_FLAG))
 
     def _travel_to_map(self, map_id, cell):
         self.player.world = map_id
@@ -656,6 +807,8 @@ class GameManager:
         if outcome == "defeated":
             self._recover()
             return
+        new_species = battle.enemy.species_id if battle.battle.kind == "wild" and self.story and \
+            not self._has_flag(f"discovered:{battle.enemy.species_id}") else None
         self.save_all()
         self.state = "overworld"
         self.world.resume()
@@ -672,7 +825,7 @@ class GameManager:
                 messages += more
                 done += finished
         elif outcome == "captured":
-            more, done = self.quests.notify("capture")
+            more, done = self.quests.notify("capture", species=battle.enemy.species_id)
             messages += more
         lead = {"won": "Victory! Your team grows stronger.", "captured": "Captured! Press TAB > PARTY to see your team.",
                 "fled": "You got away safely."}.get(outcome, "")
@@ -680,12 +833,17 @@ class GameManager:
             gate = getattr(self, "boss_in_progress", None) or self.boss_gate() or {}
             lead = gate.get("victory", "The boss is defeated!")
             self.boss_in_progress = None
+            self._quest_feedback(messages, done, lead)
+            self.story_event("boss_after", flag=gate.get("flag", self.BOSS_FLAG))
+            return
         self._quest_feedback(messages, done, lead)
+        if new_species:
+            self.play_scene(f"discover:{new_species}")
 
     def _recover(self):
         """GDD 4.1 / 22: Game Over -> Recovery. Nothing is ever deleted; you wake at the nearest safe spot."""
         self.party.heal_all(rules()["defeat"]["recover_fraction"])
-        if self.player.world in ("number_forest", "village_shop", "village_sanctuary", "village_recovery"):
+        if self.player.world in ("number_forest", "village_shop", "village_sanctuary", "village_recovery", "village_lab"):
             self.player.world, (self.player.x, self.player.y) = "village_recovery", (14, 10)
         else:
             self.player.x, self.player.y = self.world.world.safe_spot

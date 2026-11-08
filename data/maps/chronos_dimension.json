@@ -134,6 +134,10 @@
   "merchant_spot": [
    15,
    27
+  ],
+  "vera_spot": [
+   50,
+   27
   ]
  },
  "interactables": [
@@ -271,6 +275,42 @@
    "title": "TREASURE CHEST"
   },
   {
+   "id": "chronos_dimension_record1",
+   "kind": "record",
+   "record": "record_great_clock",
+   "pos": [
+    29,
+    16
+   ],
+   "name": "Great Clock",
+   "verb": "Read",
+   "title": "GREAT CLOCK"
+  },
+  {
+   "id": "chronos_dimension_record2",
+   "kind": "record",
+   "record": "record_frozen_village",
+   "pos": [
+    28,
+    30
+   ],
+   "name": "village register",
+   "verb": "Read",
+   "title": "VILLAGE REGISTER"
+  },
+  {
+   "id": "chronos_dimension_record3",
+   "kind": "record",
+   "record": "record_engine_plan",
+   "pos": [
+    46,
+    28
+   ],
+   "name": "Engine plan",
+   "verb": "Read",
+   "title": "ENGINE PLAN"
+  },
+  {
    "id": "chronos_dimension_gate",
    "kind": "boss_gate",
    "pos": [
@@ -386,6 +426,41 @@
    "remarks": [
     "Fresh capsules!",
     "Fair prices, far from home."
+   ]
+  },
+  {
+   "id": "vera",
+   "name": "Vera Tallow",
+   "role": "Timekeeper",
+   "kind": "talker",
+   "sheet": "characters/VERA",
+   "look": {
+    "hair": "#d0a040",
+    "skin": "#e9b48e",
+    "clothes": "#5a3f8a",
+    "accent": "#f2bb52",
+    "pants": "#2e3240",
+    "shoes": "#2a1d14"
+   },
+   "routine": [
+    {
+     "waypoint": "vera_spot",
+     "wait": 10,
+     "face": "down"
+    }
+   ],
+   "visible_if": [
+    "final:open"
+   ],
+   "hidden_if": [
+    "ending:done"
+   ],
+   "lines": [
+    "The Engine is waiting."
+   ],
+   "remarks": [
+    "3:14...",
+    "Check every step."
    ]
   }
  ]

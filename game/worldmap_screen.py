@@ -121,6 +121,9 @@ class WorldMapScreen:
                 pygame.draw.rect(surface, PALETTE["gold"], (mx - 1, my - 1, 3, 3))
             elif kind == "spring":
                 pygame.draw.circle(surface, PALETTE["sky"], (int(mx), int(my)), 2)
+            elif kind == "arena":
+                pygame.draw.rect(surface, PALETTE["ink"], (mx - 3, my - 3, 7, 7))
+                pygame.draw.rect(surface, PALETTE["coral"], (mx - 2, my - 2, 5, 5))
             elif kind == "shrine" and not self.overworld.shrine_done(entry["id"]):
                 pygame.draw.rect(surface, PALETTE["ink"], (mx - 2, my - 3, 5, 7))
                 pygame.draw.rect(surface, (190, 150, 255), (mx - 1, my - 2, 3, 5))

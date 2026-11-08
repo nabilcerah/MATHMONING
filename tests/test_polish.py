@@ -172,8 +172,10 @@ class BossGateTests(unittest.TestCase):
         profile = {"division": {"attempted": 16, "accuracy": 0.88}, "subtraction": {"attempted": 8, "accuracy": 0.88},
                    "addition": {"attempted": 3, "accuracy": 1.0}, "multiplication": {"attempted": 3, "accuracy": 0.67}}
         picks = [generator.choose_topic(profile) for _ in range(400)]
-        needed = picks.count("addition") + picks.count("multiplication")
+        # Everything with fewer than 4 attempts (including never-tried new topics) gets priority.
+        needed = sum(1 for topic in picks if profile.get(topic, {}).get("attempted", 0) < 4)
         self.assertGreater(needed, 300)
+        self.assertLess(picks.count("division") + picks.count("subtraction"), 100)
 
 
 class MenuPolishTests(unittest.TestCase):

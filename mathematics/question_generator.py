@@ -3,11 +3,18 @@ import random
 import uuid
 from collections import deque
 
+from mathematics import extra_topics
 from mathematics.question_bank import MathQuestion
 
 
+def topic_label(topic):
+    """Readable topic name: "place_value" -> "PLACE VALUE"."""
+    return extra_topics.LABELS.get(topic, str(topic).replace("_", " ").upper())
+
+
 class QuestionGenerator:
-    TOPICS = ("addition", "subtraction", "multiplication", "division")
+    CORE_TOPICS = ("addition", "subtraction", "multiplication", "division")
+    TOPICS = CORE_TOPICS + tuple(extra_topics.BUILDERS)
     EXTENSION_TOPICS = ("algebra",)
     DIFFICULTY_ORDER = ("easy", "intermediate", "advanced")
 
@@ -36,6 +43,8 @@ class QuestionGenerator:
         # explorable world still draws only from its arithmetic topic set.
         if topic not in self.TOPICS + self.EXTENSION_TOPICS:
             topic = self.choose_topic(profile)
+        if topic in extra_topics.BUILDERS:
+            return self._extra(topic, difficulty, profile)
         bounds = {"easy": (2, 12), "intermediate": (8, 35), "advanced": (16, 99)}[difficulty]
         low, high = bounds
         a = self.rng.randint(low, high)
@@ -81,7 +90,21 @@ class QuestionGenerator:
         return MathQuestion(question_id, topic, difficulty, prompt, str(answer), explain, hint,
                             self._ability(topic), {"easy": 6, "intermediate": 9, "advanced": 13}[difficulty], concept)
 
+    def _extra(self, topic, difficulty, profile):
+        for _ in range(20):  # avoid repeating a recent prompt
+            built = extra_topics.BUILDERS[topic](self.rng, difficulty)
+            if built["prompt"] not in self.recent_prompts:
+                break
+        self.recent_prompts.append(built["prompt"])
+        question_id = uuid.uuid4().hex
+        self.recent_ids.append(question_id)
+        return MathQuestion(question_id, topic, difficulty, built["prompt"], built["answer"], built["explanation"],
+                            built["hint"], self._ability(topic), {"easy": 6, "intermediate": 9, "advanced": 13}[difficulty],
+                            built["concept"], built["steps"], built["visual"])
+
     @staticmethod
     def _ability(topic):
         return {"addition": "Addition Strike", "subtraction": "Tidal Reversal", "algebra": "Algebra Beam",
-                "multiplication": "Multiplication Blast", "division": "Division Current"}[topic]
+                "multiplication": "Multiplication Blast", "division": "Division Current",
+                "fractions": "Fraction Slice", "place_value": "Place Value Pulse", "shapes": "Shape Shield",
+                "time_money": "Clockwork Coin"}[topic]

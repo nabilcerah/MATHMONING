@@ -6,13 +6,16 @@ import pygame
 from config import PALETTE, VIRTUAL_WIDTH
 from game.creatures import ENEMIES, STARTERS, WILD_BY_NAME, bond_topic, creature_spec, draw_creature, leader_spec
 from game.ui import heart, menu, meter, panel, text, wrapped
+from mathematics.question_generator import QuestionGenerator, topic_label
 from mathematics.solution_steps import steps_for
+from mathematics import battle_puzzles
+from mathematics.puzzles import evaluate_expression
 
 
 class Battle:
     ACTIONS = ("ATTACK", "SKILLS", "ITEMS", "AI MENTOR", "FLEE")
     ITEMS = ("Health Potion", "EXP Booster", "Learning Crystal")
-    BOSS_TOPICS = ("addition", "subtraction", "multiplication", "division")
+    BOSS_TOPICS = QuestionGenerator.TOPICS  # NUMEREX tests every skill in turn
     TOPIC_FOR_SKILL = {
         "Addition Spark": "addition", "Solar Addition": "addition",
         "Multiplication Flare": "multiplication", "Multiplication Nova": "multiplication",
@@ -30,6 +33,7 @@ class Battle:
         "Vector Beam": "addition", "Axis Nova": "multiplication",
     }
     ENEMY_TURN_DELAY = 42
+    PUZZLE_CHANCE = 1 / 3     # share of ATTACKs served as a quick puzzle instead of a plain question
     MAX_TRIES = 3
     COMBO_STEP = 0.1          # +10% damage per correct answer in a row
     COMBO_CAP = 5             # ... up to x1.5
@@ -101,6 +105,7 @@ class Battle:
         self.ko_offer = False     # a knocked-out wild MATHMON can still be captured
         self.ko_selected = 0
         self.is_trainer = False  # a rival's MATHMON belongs to them and cannot be captured
+        self.last_puzzle_format = None
         self.bond_cooldown = 0
         self.bond_offered = False
         if not self.is_boss and hasattr(repository, "set_world_flag"):
@@ -220,7 +225,7 @@ class Battle:
         elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             if self.answer.strip():
                 self._submit()
-        elif event.unicode and event.unicode in "0123456789.-/" and len(self.answer) < 14:
+        elif event.unicode and event.unicode in self._allowed_keys() and len(self.answer) < 16:
             self.answer += event.unicode
 
     def _choose_action(self):
@@ -252,17 +257,34 @@ class Battle:
 
     # ------------------------------------------------------------------- rules
     def _start_question(self, topic=None, multiplier=1.0):
+        chosen_by_player = topic is not None  # SKILLS pick a topic; keep those as plain questions
         if self.is_boss:
             topic = self.BOSS_TOPICS[self.boss_round % len(self.BOSS_TOPICS)]
         result = self.orchestrator.next_question(self.player.player_id, topic)
-        self.question = self._at_least(result["question"], self.spec.min_difficulty)
+        question = self._at_least(result["question"], self.spec.min_difficulty)
+        if not chosen_by_player and not self.is_boss and self.rng.random() < self.PUZZLE_CHANCE:
+            # Same skill and difficulty, served as a puzzle (never the same format twice in a row).
+            puzzle = battle_puzzles.puzzle_for(question.topic, question.difficulty, self.rng, self.last_puzzle_format)
+            if puzzle is not None:
+                question = puzzle
+                self.last_puzzle_format = puzzle.format
+        self.question = question
         self.last_question = self.question
         self.answer = ""
         self.wrong_count = 0
         self.damage_multiplier = multiplier
         self.question_frames = 0
         self.state = "question"
-        self.feedback = f"{self.question.difficulty.title()} challenge. Press H for a hint."
+        if self.is_puzzle:
+            label = battle_puzzles.FORMAT_LABELS[self.question.format].title()
+            extra = "  Type it like 3x5+8." if self.question.format == "target" else ""
+            self.feedback = f"Puzzle attack: {label}! Hits harder.{extra}"
+        else:
+            self.feedback = f"{self.question.difficulty.title()} challenge. Press H for a hint."
+
+    @property
+    def is_puzzle(self):
+        return bool(self.question) and getattr(self.question, "format", "standard") != "standard"
 
     # ------------------------------------------------------------- befriending
     def _start_bond(self):
@@ -407,8 +429,16 @@ class Battle:
     def combo_multiplier(self):
         return 1 + self.COMBO_STEP * min(self.combo, self.COMBO_CAP)
 
+    def _allowed_keys(self):
+        if self.question and getattr(self.question, "format", "") == "target":
+            return "0123456789+-x*()"
+        return "0123456789.-/"
+
     def critical_window(self):
-        return self.CRITICAL_SECONDS.get(self.question.difficulty, 5) * 60 if self.question else 0
+        if not self.question:
+            return 0
+        seconds = self.CRITICAL_SECONDS.get(self.question.difficulty, 5)
+        return seconds * 60 * (2 if self.is_puzzle else 1)  # puzzles take more thinking
 
     def _is_critical(self):
         # question_frames stays 0 when nothing has been timed (e.g. scripted turns).
@@ -418,7 +448,17 @@ class Battle:
         if self.bond:
             self._submit_bond()
             return
-        decision = self.orchestrator.submit_answer(self.player.player_id, self.question, self.answer)
+        submitted = self.answer
+        if getattr(self.question, "format", "") == "target":
+            numbers = list(self.question.visual[1])
+            value = evaluate_expression(self.answer, numbers)
+            if value is None:
+                self.answer, self.answer_shake = "", 14
+                self.feedback = (f"Use {numbers[0]}, {numbers[1]} and {numbers[2]} once each with + − x, "
+                                 "like 3x5+8. That one doesn't count as a try.")
+                return
+            submitted = str(value)
+        decision = self.orchestrator.submit_answer(self.player.player_id, self.question, submitted)
         if not decision.correct:
             self.wrong_count += 1
             self.answer = ""
@@ -678,17 +718,23 @@ class Battle:
         panel(surface, (7, 128, 193, 83), PALETTE["night"])
         if self.state == "question" and self.question:
             if self.bond:
-                header = f"CAPTURE CHALLENGE  •  {self.question.topic.upper()}  {self.bond['round'] + 1}/{self.BOND_ROUNDS}"
+                header = f"CAPTURE CHALLENGE  •  {topic_label(self.question.topic)}  {self.bond['round'] + 1}/{self.BOND_ROUNDS}"
                 text(surface, header, (14, 134), 10, PALETTE["mint"])
+            elif self.is_puzzle:
+                label = battle_puzzles.FORMAT_LABELS[self.question.format]
+                text(surface, f"PUZZLE ATTACK  •  {label}", (14, 134), 10, (190, 150, 255))
             else:
-                text(surface, f"{self.question.topic.upper()}  •  {self.question.difficulty.upper()}", (14, 134), 10, PALETTE["gold"])
-            wrapped(surface, self.question.prompt, (14, 148, 174, 20), 17, PALETTE["white"], 17, 1)
+                text(surface, f"{topic_label(self.question.topic)}  •  {self.question.difficulty.upper()}", (14, 134), 10, PALETTE["gold"])
+            prompt_size = 17 if len(self.question.prompt) <= 16 else 11
+            wrapped(surface, self.question.prompt, (14, 147 if prompt_size == 17 else 145, 178, 24), prompt_size,
+                    PALETTE["white"], prompt_size if prompt_size == 17 else 12, 1 if prompt_size == 17 else 2)
             jiggle = self._shake(self.answer_shake)
             box = PALETTE["coral"] if self.answer_shake else PALETTE["ink"]
             pygame.draw.rect(surface, box, (13 + jiggle, 171, 176, 23))
             pygame.draw.rect(surface, PALETTE["ink"], (14 + jiggle, 172, 174, 21))
             caret = "_" if frame % 50 < 28 else " "
-            text(surface, "> " + self.answer + caret, (19 + jiggle, 177), 15, PALETTE["cream"])
+            shown = self.answer.replace("*", "×").replace("x", "×")
+            text(surface, "> " + shown + caret, (19 + jiggle, 177), 15, PALETTE["cream"])
             wrapped(surface, self.feedback, (14, 196, 178, 12), 9, PALETTE["mint"], 10, 1)
         else:
             wrapped(surface, self.feedback, (15, 137, 177, 63), 12, PALETTE["white"], 13, 5)
@@ -719,6 +765,14 @@ class Battle:
             for i in range(self.BOND_ROUNDS):
                 state = results[i] if i < len(results) else None
                 self._heart(surface, 214 + i * 14, 197, state)
+        elif self.state == "question" and self.question and self.question.visual:
+            panel(surface, (206, 128, 107, 83), PALETTE["night"])
+            self._draw_visual(surface, self.question.visual)
+            tries_left = self.MAX_TRIES - self.wrong_count
+            for i in range(self.MAX_TRIES):
+                color = PALETTE["mint"] if i < tries_left else PALETTE["deep"]
+                pygame.draw.rect(surface, color, (214 + i * 9, 198, 6, 6))
+            text(surface, "TRIES", (244, 197), 9, PALETTE["muted"])
         elif self.state == "question":
             panel(surface, (206, 128, 107, 83), PALETTE["night"])
             text(surface, "BATTLE TIP", (214, 137), 11, PALETTE["gold"])
@@ -752,6 +806,72 @@ class Battle:
             text(surface, title, (216, 143), 12, PALETTE["gold"])
             text(surface, "ENTER to continue" if self.outcome else "ENTER to go back", (216, 160), 9, PALETTE["white"])
         self._draw_footer(surface, frame)
+
+    def _draw_visual(self, surface, visual):
+        """Small diagram for shapes (a labelled rectangle) and time (a clock face) questions."""
+        import math
+        kind = visual[0]
+        if kind == "rect":
+            w, h = visual[1], visual[2]
+            unit = 7 if isinstance(h, str) else max(4, min(10, 64 // max(w, h if isinstance(h, int) else 1)))
+            box_w = w * unit
+            box_h = (h if isinstance(h, int) else 5) * unit
+            box_w, box_h = min(box_w, 72), min(box_h, 44)
+            x, y = 259 - box_w // 2, 160 - box_h // 2
+            pygame.draw.rect(surface, PALETTE["deep"], (x, y, box_w, box_h))
+            if isinstance(h, int):
+                for gx in range(1, w):
+                    pygame.draw.line(surface, PALETTE["night"], (x + gx * box_w // w, y), (x + gx * box_w // w, y + box_h))
+                for gy in range(1, h):
+                    pygame.draw.line(surface, PALETTE["night"], (x, y + gy * box_h // h), (x + box_w, y + gy * box_h // h))
+            pygame.draw.rect(surface, PALETTE["sky"], (x, y, box_w, box_h), 1)
+            text(surface, str(w), (259, y - 7), 9, PALETTE["cream"], center=True)
+            text(surface, str(h), (x + box_w + 7, 160), 9, PALETTE["cream"], center=True)
+        elif kind == "sequence":
+            terms = list(visual[1]) + ["?"]
+            for i, value in enumerate(terms):
+                cx, cy = 222 + i * 19, 160 + (3 if i % 2 else -3)
+                pygame.draw.circle(surface, (120, 116, 112), (cx, cy), 9)
+                pygame.draw.circle(surface, (190, 150, 255) if value == "?" else (176, 170, 160), (cx, cy), 8)
+                text(surface, str(value), (cx, cy), 8 if len(str(value)) > 2 else 9, PALETTE["ink"], center=True)
+        elif kind == "balance":
+            left, right = visual[1], visual[2]
+            pygame.draw.rect(surface, (120, 86, 54), (257, 146, 4, 28))
+            pygame.draw.line(surface, PALETTE["cream"], (222, 148), (296, 146), 2)
+            for x, label in ((222, left), (296, right)):
+                pygame.draw.ellipse(surface, PALETTE["gold"], (x - 16, 156, 32, 7))
+                text(surface, label, (x, 170), 9, PALETTE["white"], center=True)
+        elif kind == "target":
+            numbers, goal = visual[1], visual[2]
+            for i, n in enumerate(numbers):
+                x = 215 + i * 22
+                pygame.draw.rect(surface, PALETTE["sky"], (x, 150, 19, 19), 1)
+                text(surface, str(n), (x + 10, 160), 10, PALETTE["white"], center=True)
+            pygame.draw.circle(surface, PALETTE["gold"], (296, 160), 12, 1)
+            text(surface, str(goal), (296, 160), 10, PALETTE["gold"], center=True)
+        elif kind == "magic":
+            grid = visual[1]
+            for r in range(3):
+                for c in range(3):
+                    x, y = 240 + c * 13, 141 + r * 13
+                    value = grid[r][c]
+                    pygame.draw.rect(surface, (190, 150, 255) if value is None else PALETTE["deep"], (x, y, 12, 12))
+                    text(surface, "?" if value is None else str(value), (x + 6, y + 6), 8,
+                         PALETTE["ink"] if value is None else PALETTE["cream"], center=True)
+        elif kind == "clock":
+            hour, minute = visual[1], visual[2]
+            cx, cy, r = 259, 160, 24
+            pygame.draw.circle(surface, PALETTE["cream"], (cx, cy), r)
+            pygame.draw.circle(surface, PALETTE["ink"], (cx, cy), r, 2)
+            for tick in range(12):
+                angle = math.radians(tick * 30)
+                pygame.draw.line(surface, PALETTE["ink"], (cx + math.sin(angle) * (r - 4), cy - math.cos(angle) * (r - 4)),
+                                 (cx + math.sin(angle) * (r - 2), cy - math.cos(angle) * (r - 2)))
+            m_angle = math.radians(minute * 6)
+            h_angle = math.radians((hour % 12) * 30 + minute * 0.5)
+            pygame.draw.line(surface, PALETTE["ink"], (cx, cy), (cx + math.sin(h_angle) * 12, cy - math.cos(h_angle) * 12), 3)
+            pygame.draw.line(surface, PALETTE["coral"], (cx, cy), (cx + math.sin(m_angle) * 19, cy - math.cos(m_angle) * 19), 2)
+            text(surface, "START", (259, 136), 8, PALETTE["muted"], center=True)
 
     def _draw_footer(self, surface, frame):
         if self.screen_flash:

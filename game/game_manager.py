@@ -15,6 +15,7 @@ from game.creatures import ENEMIES, STARTERS, WILD_BY_NAME, canonical_name, crea
 from game.mathdex import MathDex
 from game.worldmap_screen import WorldMapScreen
 from game.puzzle_screen import PuzzleScreen
+from game.arena import ArenaScreen
 from game.overworld import Overworld
 from game.player import Player
 from game import ui
@@ -52,6 +53,7 @@ class GameManager:
         self.map_screen = None
         self.puzzle = None
         self.puzzle_id = None
+        self.arena = None
         self.state = "menu"
         self.menu_selected = 0
         self.starter_selected = 0
@@ -136,6 +138,15 @@ class GameManager:
                         self.state = "menu"
         elif self.state == "overworld":
             self._overworld_key(event)
+        elif self.state == "arena" and self.arena:
+            self.arena.handle_key(event.key, event.unicode)
+            if self.arena.closed:
+                summary = self.arena.summary
+                self.arena = None
+                self.state = "overworld"
+                self.world.refresh_flags()
+                self._refresh_boss_gate()
+                self.world.set_message(summary or "Come back to the Arena any time!", 220)
         elif self.state == "puzzle" and self.puzzle:
             self.puzzle.handle_key(event.key, event.unicode)
             if self.puzzle.closed:
@@ -243,6 +254,12 @@ class GameManager:
             self.state = "dex"
             return
         action = self.world.handle_key(event.key)
+        if action == "arena":
+            from game.creatures import leader_spec
+            self.arena = ArenaScreen(self.repository, self.orchestrator, self.player,
+                                     leader_spec(self.player, self.world.flags), self.world.avatar.sheet, self.rng)
+            self.state = "arena"
+            return
         if isinstance(action, tuple) and action[0] == "travel_map":
             self._travel_to_map(action[1], action[2])
             return
@@ -267,8 +284,8 @@ class GameManager:
                 progress = master.boss_progress(profile, self.player.level)
                 ready = sum(1 for line in progress if line.endswith("READY"))
                 pages = ["The gate hums, but its stones stay dark. Three READY number skills will open the seal "
-                         f"(you have {ready}/{master.SKILLS_NEEDED}).",
-                         "   ".join(progress[:2]), "   ".join(progress[2:])]
+                         f"(you have {ready}/{master.SKILLS_NEEDED})."]
+                pages += ["   ".join(progress[i:i + 2]) for i in range(0, len(progress), 2)]
                 if self.player.level < master.BOSS_LEVEL:
                     pages.append(f"Your companion must also reach Lv {master.BOSS_LEVEL}.")
                 pages.append("Tip: ATTACK questions now favour the skills you still need. Practise in tall grass or press B.")
@@ -359,6 +376,8 @@ class GameManager:
                     self.world.set_message("Back on the Number Forest trail.")
         if self.state == "puzzle" and self.puzzle:
             self.puzzle.update()
+        if self.state == "arena" and self.arena:
+            self.arena.update()
         if self.state == "overworld" and self.world:
             event = self.world.update(*self._held_direction())
             self.save_timer = getattr(self, "save_timer", 0) + 1
@@ -404,6 +423,8 @@ class GameManager:
             self.map_screen.draw(self.canvas, self.frame)
         elif self.state == "puzzle" and self.puzzle:
             self.puzzle.draw(self.canvas, self.frame)
+        elif self.state == "arena" and self.arena:
+            self.arena.draw(self.canvas, self.frame)
         elif self.state == "battle" and self.battle:
             self.battle.draw(self.canvas, self.frame)
         elif self.state == "profile":
@@ -531,22 +552,22 @@ class GameManager:
         evolved_name = creature_spec(record.creature, record.level).name
         text(self.canvas, f"{record.name}   {evolved_name}   LV {record.level}", (18, 34), 12, PALETTE["white"])
         meter(self.canvas, 195, 48, 104, 7, summary["summary"]["correct"], max(1, summary["summary"]["attempted"]), PALETTE["mint"], f"ACCURACY {accuracy}%")
-        labels = ("addition", "subtraction", "multiplication", "division")
+        from mathematics.question_generator import QuestionGenerator, topic_label
+        labels = QuestionGenerator.TOPICS
         for i, topic in enumerate(labels):
-            x = 10 + (i % 2) * 153
-            y = 69 + (i // 2) * 43
-            panel(self.canvas, (x, y, 145, 37), PALETTE["night"], PALETTE["leaf"])
+            x = 10 + (i % 4) * 75
+            y = 66 + (i // 4) * 42
+            panel(self.canvas, (x, y, 70, 37), PALETTE["night"], PALETTE["leaf"])
             stats = topics.get(topic, {})
             pct = round(stats.get("accuracy", 0) * 100)
-            text(self.canvas, topic.upper(), (x + 7, y + 5), 10, PALETTE["cream"])
-            text(self.canvas, f"{pct}%   MASTERY {stats.get('mastery', 0)}", (x + 7, y + 19), 10, PALETTE["white"])
-            if stats:
-                meter(self.canvas, x + 90, y + 25, 47, 5, stats.get("mastery", 0), 100, PALETTE["sky"])
+            text(self.canvas, topic_label(topic), (x + 5, y + 4), 8, PALETTE["cream"])
+            text(self.canvas, f"{pct}%  M{stats.get('mastery', 0)}", (x + 5, y + 16), 9, PALETTE["white"])
+            meter(self.canvas, x + 5, y + 28, 60, 5, stats.get("mastery", 0), 100, PALETTE["sky"])
         if topics:
             strongest = max(topics, key=lambda key: topics[key].get("accuracy", 0))
             untried = [name for name in labels if name not in topics]
             weakest = untried[0] if untried else min(topics, key=lambda key: topics[key].get("mastery", 0))
-            focus_line = f"STRONGEST: {strongest.upper()}   NEXT FOCUS: {weakest.upper()}"
+            focus_line = f"STRONGEST: {topic_label(strongest)}   NEXT FOCUS: {topic_label(weakest)}"
         else:
             focus_line = "STRONGEST: —   NEXT FOCUS: YOUR FIRST PRACTICE"
         text(self.canvas, focus_line, (13, 153), 9, PALETTE["cream"])

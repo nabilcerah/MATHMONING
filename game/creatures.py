@@ -106,7 +106,9 @@ ENEMIES = (VOLTIX, DIVOWL, FRACTELLA, BOSS)
 WILD = (VOLTIX, DIVOWL, FRACTELLA, CHRONOX, PRISMVOLT, OPALOWL, GEMELLA, GRAPHION)
 WILD_BY_NAME = {spec.name: spec for spec in WILD}
 TOPIC_COLORS = {"addition": (137, 199, 124), "subtraction": (110, 177, 206),
-                "multiplication": (242, 187, 82), "division": (235, 112, 92), "": (220, 200, 240)}
+                "multiplication": (242, 187, 82), "division": (235, 112, 92), "": (220, 200, 240),
+                "fractions": (240, 150, 200), "place_value": (180, 160, 240), "shapes": (120, 210, 190),
+                "time_money": (230, 200, 120)}
 
 
 def leader_spec(player, flags):
@@ -128,7 +130,8 @@ def encounter_for(area_id, rng):
 
 def bond_topic(spec, rng):
     """Bond challenges use the creature's topic; topic-less rare creatures mix all four."""
-    return spec.topic or rng.choice(("addition", "subtraction", "multiplication", "division"))
+    from mathematics.question_generator import QuestionGenerator
+    return spec.topic or rng.choice(QuestionGenerator.TOPICS)
 
 
 def draw_creature(surface, spec, anchor, height, pose="idle", flip=False, tint=None):

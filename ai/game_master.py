@@ -5,8 +5,10 @@ class GameMasterAgent:
     def recommendation(self, profile, level=1):
         if not profile:
             return "Explore Number Forest and meet the forest guide to begin your training."
-        weakest = min(profile.items(), key=lambda item: (item[1].get("mastery", 0), item[1].get("accuracy", 0)))[0]
-        stats = profile[weakest]
+        from mathematics.question_generator import topic_label
+        weakest_id = min(profile.items(), key=lambda item: (item[1].get("mastery", 0), item[1].get("accuracy", 0)))[0]
+        stats = profile[weakest_id]
+        weakest = topic_label(weakest_id).lower()
         if stats.get("attempted", 0) < 4:
             return f"A few more {weakest} challenges will reveal your learning pattern."
         if stats.get("mastery", 0) >= 65 and level >= 3:
@@ -26,18 +28,20 @@ class GameMasterAgent:
         ready = sum(1 for stats in profile.values() if self.skill_ready(stats))
         return level >= self.BOSS_LEVEL and ready >= self.SKILLS_NEEDED
 
-    def boss_progress(self, profile, level, topics=("addition", "subtraction", "multiplication", "division")):
+    def boss_progress(self, profile, level, topics=None):
         """Readable checklist lines explaining what still keeps the seal closed."""
+        from mathematics.question_generator import QuestionGenerator, topic_label
         lines = []
-        for topic in topics:
+        for topic in topics or QuestionGenerator.TOPICS:
             stats = profile.get(topic, {})
             attempted, mastery = stats.get("attempted", 0), stats.get("mastery", 0)
+            name = topic_label(topic).title()
             if self.skill_ready(stats):
-                lines.append(f"{topic.title()}: READY")
+                lines.append(f"{name}: READY")
             elif attempted < self.MIN_ATTEMPTS:
-                lines.append(f"{topic.title()}: {attempted}/{self.MIN_ATTEMPTS} questions tried")
+                lines.append(f"{name}: {attempted}/{self.MIN_ATTEMPTS} questions tried")
             else:
-                lines.append(f"{topic.title()}: mastery {mastery}/{self.MIN_MASTERY}, keep practising")
+                lines.append(f"{name}: mastery {mastery}/{self.MIN_MASTERY}, keep practising")
         return lines
 
     @staticmethod

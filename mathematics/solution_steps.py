@@ -93,6 +93,8 @@ def _algebra(c, o, t):
 
 def steps_for(question):
     """Ordered steps that solve ``question``; the last step always states the answer."""
+    if getattr(question, "steps", ()):
+        return list(question.steps)  # topics that build their own worked steps
     prompt = question.prompt
     try:
         if question.topic == "algebra":

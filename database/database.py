@@ -66,6 +66,12 @@ class Database:
                     flag TEXT NOT NULL,
                     PRIMARY KEY(player_id, flag)
                 );
+                CREATE TABLE IF NOT EXISTS arena_stats (
+                    player_id INTEGER PRIMARY KEY REFERENCES players(player_id) ON DELETE CASCADE,
+                    rating INTEGER NOT NULL DEFAULT 1000, wins INTEGER NOT NULL DEFAULT 0,
+                    losses INTEGER NOT NULL DEFAULT 0, streak INTEGER NOT NULL DEFAULT 0,
+                    best_streak INTEGER NOT NULL DEFAULT 0
+                );
                 CREATE TABLE IF NOT EXISTS recommendations (
                     recommendation_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,

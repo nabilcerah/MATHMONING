@@ -481,6 +481,8 @@ class Overworld:
             return None
         if kind == "boss_gate":
             return "boss"
+        if kind == "arena":
+            return "arena"
         if kind == "portal":
             needed = entry.get("requires")
             if needed and not self.has_flag(needed):
@@ -521,6 +523,8 @@ class Overworld:
         if kind == "portal":
             needed = target.get("requires")
             return base + ("  - dormant" if needed and not self.has_flag(needed) else "  - travel")
+        if kind == "arena":
+            return base + "  - race AI rivals!"
         if kind == "boss_gate":
             return base + ("  - the boss awaits!" if self.boss_ready else "  - still sealed")
         return base
@@ -771,6 +775,23 @@ class Overworld:
             pygame.draw.rect(surface, (96, 88, 110), (left, y - 16, 3 * TILE, 8))
             pygame.draw.rect(surface, (130, 120, 146), (left + 2, y - 14, 3 * TILE - 4, 4))
             pygame.draw.rect(surface, PALETTE["gold"], (left + 22, y - 15, 4, 6))
+        elif kind == "arena":
+            # A small stadium, 3 tiles wide and 2 tall, entrance facing south.
+            left, top = x - TILE, y - TILE - 8
+            pygame.draw.ellipse(surface, shadow, (left - 2, y + 10, 3 * TILE + 4, 8))
+            pygame.draw.rect(surface, (120, 104, 160), (left, top + 10, 3 * TILE, TILE + 14))
+            pygame.draw.rect(surface, (150, 134, 196), (left + 2, top + 12, 3 * TILE - 4, 6))
+            for col in range(left + 4, left + 3 * TILE - 2, 6):
+                pygame.draw.rect(surface, (96, 82, 130), (col, top + 20, 3, TILE + 2))
+            pygame.draw.ellipse(surface, (196, 70, 70), (left - 3, top, 3 * TILE + 6, 16))
+            pygame.draw.ellipse(surface, (226, 106, 92), (left, top + 2, 3 * TILE, 9))
+            for i, color in enumerate(((242, 187, 82), (110, 177, 206), (137, 199, 124))):
+                fx = left + 8 + i * 15
+                pygame.draw.line(surface, (60, 50, 60), (fx, top - 8), (fx, top + 2))
+                wave = (frame // 8 + i) % 2
+                pygame.draw.rect(surface, color, (fx + 1, top - 8 + wave, 6, 4))
+            pygame.draw.rect(surface, (40, 30, 50), (x + 3, y - 2, 10, 18))
+            pygame.draw.rect(surface, (242, 187, 82), (x + 2, y - 4, 12, 3))
         elif kind == "portal":
             needed = entry.get("requires")
             awake = not needed or self.has_flag(needed)

@@ -115,6 +115,21 @@ class PlayerRepository:
             db.execute("DELETE FROM world_flags WHERE player_id=? AND substr(flag, 1, ?)=?",
                        (player_id, len(prefix), prefix))
 
+    def arena_stats(self, player_id):
+        with self.database.connect() as db:
+            row = db.execute("SELECT rating, wins, losses, streak, best_streak FROM arena_stats WHERE player_id=?",
+                             (player_id,)).fetchone()
+            return dict(row) if row else {"rating": 1000, "wins": 0, "losses": 0, "streak": 0, "best_streak": 0}
+
+    def save_arena_stats(self, player_id, stats):
+        with self.database.connect() as db:
+            db.execute("""INSERT INTO arena_stats(player_id, rating, wins, losses, streak, best_streak)
+                          VALUES (?, ?, ?, ?, ?, ?)
+                          ON CONFLICT(player_id) DO UPDATE SET rating=excluded.rating, wins=excluded.wins,
+                          losses=excluded.losses, streak=excluded.streak, best_streak=excluded.best_streak""",
+                       (player_id, stats["rating"], stats["wins"], stats["losses"], stats["streak"],
+                        stats["best_streak"]))
+
     def add_recommendation(self, player_id, message):
         with self.database.connect() as db:
             db.execute("INSERT INTO recommendations(player_id, message) VALUES (?, ?)", (player_id, message[:220]))

@@ -1,5 +1,5 @@
 {
-  "_comment": "Story scenes. trigger: {event, ...filters} must match a game event (opening, enter_world, talk, visit, interact, challenge, boss_before, boss_after, record, flag). requires/excludes: world flags. once (default true): plays once, remembered as 'scene:<id>'. Lines: s = speaker id (characters.json), t = text. choices.mode: 'explore' = ask as many as you like, then the exit option; 'decide' = pick one (sets flags that change the story). Effects: set (flags), lore (codex ids), quest (start), action (battle | challenge:<id> | ending:<id>).",
+  "_comment": "Story scenes. trigger: {event, ...filters} must match a game event (opening, enter_world, talk, visit, interact, challenge, boss_before, boss_after, record, flag). requires/excludes: world flags. once (default true): plays once, remembered as 'scene:<id>'. Lines: s = speaker id (characters.json), t = text. choices.mode: 'explore' = ask as many as you like, then the exit option; 'decide' = pick one (sets flags that change the story). Effects: set (flags), lore (codex ids), quest (start), action (battle | challenge:<id> | ending:<id>). cutscene: steps played before the first line; a line's 'cut': steps played before that line (walk, face, emote, camera, wait, fade, shake, flash, place - see states/cutscene.py).",
   "scenes": {
     "opening": {
       "category": "main",
@@ -45,11 +45,27 @@
       "lines": [
         {
           "s": "professor",
-          "t": "Welcome to Starter Village! My lab is the orange house just north of here - don't mind the smell, that's research. Probably."
+          "t": "Welcome to Starter Village! There you are - I've been looking everywhere for you. My lab is the house with the orange roof, up the path to the north-west. Don't mind the smell, that's research. Probably.",
+          "cut": [
+            {
+              "do": "camera",
+              "to": "door_lab"
+            },
+            {
+              "do": "wait",
+              "t": 0.5
+            }
+          ]
         },
         {
           "s": "professor",
-          "t": "Take this: a NUM-LINK. I built it so we can send each other text messages while you explore. I'm hopeless with gadgets that talk."
+          "t": "Take this: a NUM-LINK. I built it so we can send each other text messages while you explore. I'm hopeless with gadgets that talk.",
+          "cut": [
+            {
+              "do": "camera",
+              "to": "player"
+            }
+          ]
         }
       ],
       "choices": {
@@ -138,6 +154,41 @@
       "lore": [
         "the_professor",
         "numlink"
+      ],
+      "cutscene": [
+        {
+          "do": "place",
+          "who": "rowan",
+          "at": "village_north"
+        },
+        {
+          "do": "wait",
+          "t": 0.4
+        },
+        {
+          "do": "camera",
+          "to": "rowan"
+        },
+        {
+          "do": "emote",
+          "who": "rowan",
+          "emote": "!"
+        },
+        {
+          "do": "walk",
+          "who": "rowan",
+          "to": "player"
+        },
+        {
+          "do": "face",
+          "who": "player",
+          "to": "rowan"
+        },
+        {
+          "do": "emote",
+          "who": "rowan",
+          "emote": "♪"
+        }
       ]
     },
     "prof_ch1": {
@@ -211,6 +262,13 @@
         {
           "s": "numlink",
           "t": "Also: look for the Tallyfolk counting stones in the meadow. Old Abacus in the village would love to hear what they say."
+        }
+      ],
+      "cutscene": [
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "!"
         }
       ]
     },
@@ -307,6 +365,17 @@
           "s": "numlink",
           "t": "The Ancient Number Ruins! Careful - those seals are a thousand years old. Find all three. And read anything carved in stone; the Tallyfolk loved leaving notes."
         }
+      ],
+      "cutscene": [
+        {
+          "do": "shake",
+          "t": 0.4
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "?"
+        }
       ]
     },
     "seal_add_explained": {
@@ -370,6 +439,21 @@
           "s": "numlink",
           "t": "Its pattern is full of remainders! It can't think straight. Every answer YOU work out steadies your partner. Breathe. Check your work. You can do this!"
         }
+      ],
+      "cutscene": [
+        {
+          "do": "shake",
+          "t": 0.8
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "!"
+        },
+        {
+          "do": "wait",
+          "t": 0.2
+        }
       ]
     },
     "boss_after_numerex": {
@@ -389,7 +473,17 @@
         },
         {
           "s": "narrator",
-          "t": "The figure steps backwards off the arch - and is gone. Beneath the ruins, rock grinds open: a cave, glowing with crystal light."
+          "t": "The figure steps backwards off the arch - and is gone. Beneath the ruins, rock grinds open: a cave, glowing with crystal light.",
+          "cut": [
+            {
+              "do": "shake",
+              "t": 1.0
+            },
+            {
+              "do": "wait",
+              "t": 0.4
+            }
+          ]
         },
         {
           "s": "numlink",
@@ -404,7 +498,21 @@
         "hooded_stranger",
         "remainder"
       ],
-      "chapter_card": "ch2"
+      "chapter_card": "ch2",
+      "cutscene": [
+        {
+          "do": "flash"
+        },
+        {
+          "do": "wait",
+          "t": 0.6
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "♪"
+        }
+      ]
     },
     "tobi_lost": {
       "category": "quest",
@@ -422,7 +530,14 @@
           "t": "He likes Pine Ridge, north through the pines. If you find a DIVOWL, could you catch him and bring him home? Please?"
         }
       ],
-      "quest": "missing_mathmon"
+      "quest": "missing_mathmon",
+      "cutscene": [
+        {
+          "do": "emote",
+          "who": "tobi",
+          "emote": "sweat"
+        }
+      ]
     },
     "rex_ch1": {
       "category": "npc",
@@ -457,7 +572,14 @@
             ]
           }
         ]
-      }
+      },
+      "cutscene": [
+        {
+          "do": "emote",
+          "who": "pip",
+          "emote": "!"
+        }
+      ]
     },
     "rex_after_beast": {
       "category": "npc",
@@ -495,6 +617,27 @@
           "t": "Crystals grow in pairs here, each one mirrored by another. On the walls, half-finished equations glow faintly, waiting for their missing numbers."
         },
         {
+          "s": "vexa",
+          "t": "Wait - you came through the ruins? Then you're the trainer who beat the Arithmetic Beast! I'm Dr. Vexa. My old lab is sealed deeper in by three Variable Seals. Warm up with a few battles, then restore them.",
+          "cut": [
+            {
+              "do": "emote",
+              "who": "vexa",
+              "emote": "!"
+            },
+            {
+              "do": "walk",
+              "who": "vexa",
+              "to": "player"
+            },
+            {
+              "do": "face",
+              "who": "player",
+              "to": "vexa"
+            }
+          ]
+        },
+        {
           "s": "numlink",
           "t": "The Order of the Unknown! They discovered that an 'x' is a promise: a value exists, even if you don't know it yet. They stored Numera inside those promises."
         }
@@ -526,7 +669,11 @@
             ]
           }
         ]
-      }
+      },
+      "set": [
+        "met:vexa"
+      ],
+      "quest": "unknown_guardian"
     },
     "seal_x1_explained": {
       "category": "professor",
@@ -585,6 +732,21 @@
         {
           "s": "numlink",
           "t": "That's no natural corruption. Someone INJECTED Remainder into it. ...Focus. Keep both sides of every equation balanced and you'll be fine."
+        }
+      ],
+      "cutscene": [
+        {
+          "do": "shake",
+          "t": 0.8
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "!"
+        },
+        {
+          "do": "wait",
+          "t": 0.2
         }
       ]
     },
@@ -662,7 +824,21 @@
       "lore": [
         "collector"
       ],
-      "chapter_card": "ch3"
+      "chapter_card": "ch3",
+      "cutscene": [
+        {
+          "do": "flash"
+        },
+        {
+          "do": "wait",
+          "t": 0.6
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "♪"
+        }
+      ]
     },
     "kingdom_arrival": {
       "category": "comm",
@@ -676,13 +852,38 @@
           "t": "Every path here runs dead straight. Obelisks cast shadows at exact angles, and the hedges are trimmed into perfect right angles."
         },
         {
+          "s": "hypot",
+          "t": "Halt, traveller! ...Ah, a trainer! I'm Sir Hypot, knight of Euclidia. The Dimension Dragon folded our castle into impossible shapes. Restore the three Geometry Seals in the Pillar Court and the keep will open.",
+          "cut": [
+            {
+              "do": "emote",
+              "who": "hypot",
+              "emote": "!"
+            },
+            {
+              "do": "walk",
+              "who": "hypot",
+              "to": "player"
+            },
+            {
+              "do": "face",
+              "who": "player",
+              "to": "hypot"
+            }
+          ]
+        },
+        {
           "s": "numlink",
           "t": "Euclidia, the Kingdom of Form! Their buildings could never fall, as long as every angle was exact. They were wiped out by natural Numera decay. A tragedy."
         }
       ],
       "lore": [
         "euclidia"
-      ]
+      ],
+      "set": [
+        "met:hypot"
+      ],
+      "quest": "dimension_dragon"
     },
     "seal_g1_explained": {
       "category": "professor",
@@ -789,6 +990,21 @@
           "s": "numlink",
           "t": "Trust the rules, not your eyes! 180 degrees in a triangle - in ANY dimension."
         }
+      ],
+      "cutscene": [
+        {
+          "do": "shake",
+          "t": 0.8
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "!"
+        },
+        {
+          "do": "wait",
+          "t": 0.2
+        }
       ]
     },
     "boss_after_dragon": {
@@ -814,7 +1030,21 @@
       "lore": [
         "origin_engine"
       ],
-      "chapter_card": "ch4"
+      "chapter_card": "ch4",
+      "cutscene": [
+        {
+          "do": "flash"
+        },
+        {
+          "do": "wait",
+          "t": 0.6
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "♪"
+        }
+      ]
     },
     "chronos_arrival": {
       "category": "comm",
@@ -828,13 +1058,38 @@
           "t": "Islands hang in the air, perfectly still. A bird hovers mid-flap. Every clock tower you can see shows exactly 3:14."
         },
         {
+          "s": "tick",
+          "t": "...tick... tock... Oh! Someone is still moving in time! I'm Keeper Tick. The Infinite Overlord stopped every clock. Restore the three Time Seals on the isles, then climb the Time Spire.",
+          "cut": [
+            {
+              "do": "emote",
+              "who": "tick",
+              "emote": "!"
+            },
+            {
+              "do": "walk",
+              "who": "tick",
+              "to": "player"
+            },
+            {
+              "do": "face",
+              "who": "player",
+              "to": "tick"
+            }
+          ]
+        },
+        {
           "s": "numlink",
           "t": "I haven't been here in twenty years. ...It looks exactly the same. That's the problem, isn't it. Nothing here has moved in twenty years."
         }
       ],
       "lore": [
         "timekeepers"
-      ]
+      ],
+      "set": [
+        "met:tick"
+      ],
+      "quest": "infinite_overlord"
     },
     "tick_story": {
       "category": "npc",
@@ -968,6 +1223,20 @@
       ],
       "lore": [
         "vera"
+      ],
+      "cutscene": [
+        {
+          "do": "flash"
+        },
+        {
+          "do": "shake",
+          "t": 0.5
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "!"
+        }
       ]
     },
     "professor_confession_confronted": {
@@ -1051,6 +1320,21 @@
           "s": "numlink",
           "t": "Everything you've learned - every sum, every x, every angle, every pattern. You won't need anything else. I believe in you."
         }
+      ],
+      "cutscene": [
+        {
+          "do": "shake",
+          "t": 0.8
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "!"
+        },
+        {
+          "do": "wait",
+          "t": 0.2
+        }
       ]
     },
     "boss_after_overlord": {
@@ -1075,7 +1359,21 @@
       "lore": [
         "zero_point"
       ],
-      "chapter_card": "final"
+      "chapter_card": "final",
+      "cutscene": [
+        {
+          "do": "flash"
+        },
+        {
+          "do": "wait",
+          "t": 0.6
+        },
+        {
+          "do": "emote",
+          "who": "player",
+          "emote": "♪"
+        }
+      ]
     },
     "final_engine": {
       "category": "main",

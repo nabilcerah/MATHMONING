@@ -672,8 +672,9 @@ class Overworld:
     # ------------------------------------------------------------------ camera
     def _camera_goal(self):
         width, height = self.world.pixel_size()
-        gx = self.avatar.x - VIRTUAL_WIDTH / 2
-        gy = self.avatar.y - 8 - VIEW_HEIGHT / 2
+        fx, fy = getattr(self, "camera_focus", None) or (self.avatar.x, self.avatar.y)   # cutscenes may pan
+        gx = fx - VIRTUAL_WIDTH / 2
+        gy = fy - 8 - VIEW_HEIGHT / 2
         # Rooms smaller than the screen (shop, clinic) sit in the middle instead of the top-left corner.
         gx = (width - VIRTUAL_WIDTH) / 2 if width <= VIRTUAL_WIDTH else max(0, min(width - VIRTUAL_WIDTH, gx))
         gy = (height - VIEW_HEIGHT) / 2 if height <= VIEW_HEIGHT else max(0, min(height - VIEW_HEIGHT, gy))
@@ -687,6 +688,10 @@ class Overworld:
             self.cam_x = gx
         if abs(gy - self.cam_y) < 0.3:
             self.cam_y = gy
+
+    def camera_settled(self):
+        gx, gy = self._camera_goal()
+        return abs(gx - self.cam_x) < 1 and abs(gy - self.cam_y) < 1
 
     def to_screen(self, x, y):
         return int(round(x - self.cam_x)), int(round(y - self.cam_y)) + VIEW_TOP
@@ -1215,6 +1220,8 @@ class Overworld:
 
     # ---- HUD, banner, prompt, dialogue
     def _draw_hud(self, surface, frame):
+        if getattr(self, "cinematic", False):
+            return          # cutscenes hide the HUD (states/cutscene.py draws letterbox bars instead)
         if self.banner_frames:
             elapsed = 150 - self.banner_frames
             slide = min(elapsed, self.banner_frames, 12)

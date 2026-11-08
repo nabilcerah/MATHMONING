@@ -8,6 +8,9 @@
   one path and may change the story. Options can be locked behind flags.
 * Num-Link messages appear as a communicator at the top of the screen; historical records as
   parchment. The box slides in when a scene starts.
+* Cutscenes (states/cutscene.py): a scene's "cutscene" steps play before its first line and a
+  line's "cut" steps play before that line - characters walk over, emotes pop up, the camera
+  pans, the screen fades. ENTER/ESC skips a cutscene.
 """
 import pygame
 
@@ -15,6 +18,7 @@ from config import PALETTE
 from game import audio, monster_sprites, ui
 from game.ui import panel, text, wrapped
 from states.base import CONFIRM, DOWN, UP, Screen
+from states.cutscene import Cutscene, draw_bars
 from world.story_manager import categories, characters
 
 REVEAL_SPEED = 2
@@ -40,13 +44,45 @@ class SceneScreen(Screen):
         self.actions, self.quests, self.new_flags = [], [], []
         self.last_line = None
         self.opaque = bool(scene.get("backdrop"))     # e.g. the opening: a full dark backdrop
-        self._next_line()
+        # Cutscenes need the overworld (its characters and camera); without it they are skipped.
+        world = getattr(game, "world", None) if game is not None else None
+        self.world = world if world is not None and getattr(game, "state", "overworld") == "overworld"             and hasattr(world, "npcs") and not self.opaque else None
+        self.cutscene = self.director = None
+        self._after_cut = None
+        self.cinematic = False
+        if scene.get("cutscene") and self.world:
+            self._run_cut(scene["cutscene"], self._next_line)
+        else:
+            self._next_line()
+
+    # ------------------------------------------------------------------ cutscenes
+    def _run_cut(self, steps, then):
+        self.cutscene = self.director = Cutscene(self.world, steps)
+        self.cinematic = True
+        self.line = None
+        self._after_cut = then
+        if self.cutscene.finished:
+            self._end_cut()
+
+    def _end_cut(self):
+        self.cutscene = None
+        self.frames = 0                     # the dialogue box slides in again
+        then, self._after_cut = self._after_cut, None
+        if then:
+            then()
+
+    def _show(self, line):
+        self.line = self.last_line = line
+        self.age = 0
 
     # ------------------------------------------------------------------ flow
     def _next_line(self):
         if self.queue:
-            self.line = self.last_line = self.queue.pop(0)
-            self.age = 0
+            line = self.queue.pop(0)
+            if line.get("cut") and self.world:
+                self._run_cut(line["cut"], lambda: self._show(line))
+            else:
+                self._show(line)
             return
         if self.choices and not self._choices_finished():
             self.in_choice, self.selected = True, 0
@@ -92,6 +128,8 @@ class SceneScreen(Screen):
         self._next_line()
 
     def _finish(self):
+        if self.director is not None:
+            self.director.release()
         flags, actions, quest = self.story.finish(self.scene)
         self.new_flags += flags
         self.actions += actions
@@ -119,6 +157,11 @@ class SceneScreen(Screen):
             self.handle_key(event.key, getattr(event, "unicode", ""))
 
     def handle_key(self, key, unicode=""):
+        if self.cutscene is not None:
+            if key in CONFIRM or key == pygame.K_ESCAPE:
+                self.cutscene.skip()
+                self._end_cut()
+            return
         if self.in_choice:
             options = self.options()
             if key in UP:
@@ -142,6 +185,11 @@ class SceneScreen(Screen):
                 self._next_line()
 
     def update(self):
+        if self.cutscene is not None:
+            self.cutscene.update()
+            if self.cutscene.finished:
+                self._end_cut()
+            return
         self.age += 1
         self.frames += 1
 
@@ -169,6 +217,12 @@ class SceneScreen(Screen):
     def draw(self, surface, frame=0):
         label, color = self._style()
         slide = max(0, SLIDE_FRAMES - self.frames) * 6
+        if self.cutscene is not None:
+            dx, dy = self.cutscene.offset()
+            if dx or dy:
+                surface.scroll(dx, dy)
+            self.cutscene.draw(surface, frame)
+            return
         if self.opaque:
             ui.begin_frame()
             surface.fill(PALETTE["ink"])
@@ -179,6 +233,8 @@ class SceneScreen(Screen):
             shade = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
             shade.fill((*PALETTE["ink"], min(150, self.frames * 20)))
             surface.blit(shade, (0, 0))
+        if self.cinematic:
+            self.director.draw(surface, frame, bars=True)
         if self.in_choice:
             self._draw_choices(surface, frame, color)
         line = self.line or (self.last_line if self.in_choice else None)
@@ -187,9 +243,12 @@ class SceneScreen(Screen):
         speaker = line.get("s", "narrator")
         info = characters().get(speaker, {})
         shown = line["t"][:max(1, self.age * REVEAL_SPEED)]
-        if self.category == "comm" or speaker == "numlink":
+        if speaker == "numlink":          # only the Professor's messages use the communicator
             self._draw_comm(surface, info, shown, frame, slide)
             return
+        if self.category == "comm":       # other speakers in a Num-Link scene talk in person
+            style = categories().get("main", categories()["npc"])
+            label, color = style["label"], tuple(style["color"])
         record = self.category == "record"
         rect = pygame.Rect(6, 150 + slide, 308, 64)
         fill = (236, 220, 180) if record else PALETTE["night"]
@@ -201,8 +260,9 @@ class SceneScreen(Screen):
             left = rect.x + 48
         if info.get("name"):
             name_w = ui.measure(info["name"], 10)[0] + 12
-            panel(surface, (left - 4, rect.y - 15, name_w, 16), PALETTE["ink"], tuple(info.get("color", color)))
-            text(surface, info["name"], (left + 2, rect.y - 13), 10, tuple(info.get("color", color)))
+            tab = pygame.Rect(left - 4, rect.y - 18, name_w, 17)
+            panel(surface, tab, PALETTE["ink"], tuple(info.get("color", color)))
+            text(surface, info["name"], (tab.centerx, tab.centery), 10, tuple(info.get("color", color)), center=True)
         if label:
             text(surface, label, (rect.right - 8, rect.y + 4), 7, color, align="right")
         if record and self.scene.get("title"):

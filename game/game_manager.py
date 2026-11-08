@@ -466,8 +466,12 @@ class GameManager:
             audio.music(self.player.world)      # each world has its own theme
 
     def _enter_world(self):
+        # Events the new map fires while it loads (e.g. "visit" for the area you arrive in) are held
+        # until the map is ready - otherwise the reset below would throw their story scenes away.
+        self._world_loading, self._held_world_events = True, []
         self.world = Overworld(self.player, self.rng, self.repository, self.player.world, self.party, self.quests,
                                self.on_world_event)
+        self._world_loading = False
         self._refresh_boss_gate()
         self.save_timer = 0
         self.states.clear()
@@ -477,6 +481,9 @@ class GameManager:
         self.world.scene_for = self.story.scene_for if self.story else None
         self._queue_chapter_card()
         self.story_event("enter_world")
+        held, self._held_world_events = self._held_world_events, []
+        for kind, data in held:
+            self.on_world_event(kind, **data)
         self._run_story_queue()
 
     # ================================================================== saving
@@ -586,6 +593,9 @@ class GameManager:
 
     # ================================================================== quests & world events
     def on_world_event(self, kind, **data):
+        if getattr(self, "_world_loading", False):
+            self._held_world_events.append((kind, data))
+            return
         if not self.quests:
             return
         if kind == "visit" and data.get("first") and data.get("area") in encounters()["areas"]:

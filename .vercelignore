@@ -8,3 +8,4 @@ tests/
 assets/monsterassets/
 assets/Characters/
 **/__pycache__/
+.vbuild/

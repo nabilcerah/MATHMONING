@@ -7,3 +7,5 @@ saves/*.sqlite3-*
 build/
 
 .vercel
+.env*
+.vbuild/

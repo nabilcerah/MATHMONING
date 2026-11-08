@@ -1,6 +1,6 @@
 """GDD 19: safe answer checking. Player input is NEVER passed to eval() or to sympy.parse_expr
 (which uses eval internally). Numbers go through a regex parser; algebra goes through the small
-recursive-descent parser below, which builds SymPy objects directly.
+recursive-descent parser below, which builds exact polynomials (mathematics/polynomial.py).
 
     validate("10/12", "5/6", "fraction")            -> correct (equivalent fraction)
     validate("10/12", "5/6", "simplified_fraction") -> not correct: "write it in simplest form"
@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass
 from fractions import Fraction
 
-import sympy
+from mathematics.polynomial import Polynomial
 
 ANSWER_TYPES = ("integer", "number", "fraction", "simplified_fraction", "decimal", "expression",
                 "simplified_expression", "equation", "time", "choice")
@@ -167,10 +167,10 @@ class _Parser:
         kind, value = self.peek()
         if kind == "num":
             self.take()
-            return sympy.Rational(value)
+            return Polynomial.constant(Fraction(value))
         if kind == "var":
             self.take()
-            return sympy.Symbol(value)
+            return Polynomial.variable(value)
         if value == "(":
             self.take("(")
             inner = self.expr()
@@ -180,15 +180,20 @@ class _Parser:
 
 
 def parse_expression(text):
-    """Text -> SymPy expression, built without eval. Raises ExpressionError."""
+    """Text -> exact Polynomial, built without eval. Raises ExpressionError."""
     text = clean(text)
     if not text or len(text) > MAX_LENGTH:
         raise ExpressionError("empty or too long")
-    return _Parser(_tokens(text)).parse()
+    try:
+        return _Parser(_tokens(text)).parse()
+    except ExpressionError:
+        raise
+    except (ValueError, ZeroDivisionError) as error:  # e.g. dividing by a letter
+        raise ExpressionError(str(error)) from error
 
 
 def _equivalent(a, b):
-    return sympy.simplify(sympy.expand(a - b)) == 0
+    return (a - b) == 0
 
 
 # ---------------------------------------------------------------------------- validation
@@ -212,9 +217,7 @@ def validate(submitted, expected, answer_type="number", decimals=None):
     value = parse_number(text)
     if value is None:
         try:
-            value = Fraction(str(sympy.nsimplify(parse_expression(text))))
-            if not value.denominator:
-                raise ValueError
+            value = parse_expression(text).value
         except (ExpressionError, ValueError, TypeError, ZeroDivisionError):
             return ValidationResult(False, False, "I couldn't read that. Try a number like 7, -3, 3/4 or 0.75.")
         computed = True
@@ -262,7 +265,7 @@ def _validate_expression(text, expected, answer_type):
     if not _equivalent(got, want):
         return ValidationResult(False, True)
     if answer_type == "simplified_expression" and _term_count(text) > _term_count(expected):
-        # SymPy combines like terms by itself, so compare what the learner actually typed.
+        # The parser combines like terms by itself, so compare what the learner actually typed.
         return ValidationResult(False, True, "Right idea! Now collect like terms to simplify it.")
     return ValidationResult(True, True)
 
@@ -294,7 +297,7 @@ class AnswerValidator:
             raise ValueError("Empty or long answer")
         tree = ast.parse(text, mode="eval")   # parsed to a syntax tree only; never evaluated
         result = cls._number(tree.body)
-        return sympy.Rational(result.numerator, result.denominator)
+        return Fraction(result.numerator, result.denominator)
 
     @classmethod
     def check(cls, submitted, expected):

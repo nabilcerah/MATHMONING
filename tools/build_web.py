@@ -8,6 +8,7 @@ runtime (code, data, processed sprites, map tiles) into build/mathmon first. Raw
 saves, tests and the virtual environment stay out, keeping the download small.
 Requires: pip install pygbag
 """
+import json
 import shutil
 import subprocess
 import sys
@@ -39,6 +40,14 @@ def stage():
     print(f"staged {size / 1_000_000:.1f} MB in {STAGE}")
 
 
+def write_deploy_files(web):
+    """Let `vercel --prod` run straight from the output folder: serve the files as a plain static site
+    (no Python detection, no build step) and never upload local .env files."""
+    (web / "vercel.json").write_text(json.dumps(
+        {"framework": None, "installCommand": "", "buildCommand": "", "outputDirectory": "."}, indent=2) + "\n")
+    (web / ".vercelignore").write_text(".env\n.env.*\n")
+
+
 def main():
     stage()
     serve = "--serve" in sys.argv
@@ -49,6 +58,7 @@ def main():
     print(" ".join(command))
     subprocess.run(command, check=True)
     if not serve:
+        write_deploy_files(STAGE / "build" / "web")
         print(f"\nDone. Upload this folder to Vercel:\n  {STAGE / 'build' / 'web'}")
 
 

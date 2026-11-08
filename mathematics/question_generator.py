@@ -182,7 +182,6 @@ def verify_draft(draft):
     """Prove a template's answer independently of the template's own arithmetic."""
     from mathematics.answer_validator import parse_expression, parse_number, parse_time
     from mathematics.question_engine.safe_eval import safe_eval
-    import sympy
     answer = draft["answer"]
     checked = False
     if draft.get("expression"):
@@ -193,19 +192,17 @@ def verify_draft(draft):
         checked = True
     if draft.get("equation"):
         lhs, rhs = draft["equation"]
-        x = sympy.Symbol("x")
         value = parse_number(answer)
         if value is None:
             return False
-        sub = sympy.Rational(value.numerator, value.denominator)
-        if sympy.simplify(parse_expression(lhs).subs(x, sub) - parse_expression(rhs).subs(x, sub)) != 0:
+        if parse_expression(lhs).subs("x", value) != parse_expression(rhs).subs("x", value):
             return False
         checked = True
     if draft.get("same_as"):
         original, simplified = draft["same_as"]
-        if sympy.expand(parse_expression(original) - parse_expression(simplified)) != 0:
+        if parse_expression(original) != parse_expression(simplified):
             return False
-        if sympy.expand(parse_expression(simplified) - parse_expression(answer)) != 0:
+        if parse_expression(simplified) != parse_expression(answer):
             return False
         checked = True
     if draft.get("minutes"):

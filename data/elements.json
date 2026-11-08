@@ -1,0 +1,8 @@
+{
+  "_comment": "GDD section 5. 'beats' maps attacker element -> the element it is super effective against. The reverse is not very effective; anything else is neutral.",
+  "elements": ["Crystal", "Earth", "Dark", "Time"],
+  "beats": {"Crystal": "Time", "Time": "Dark", "Dark": "Earth", "Earth": "Crystal"},
+  "multipliers": {"super": 1.5, "neutral": 1.0, "weak": 0.75},
+  "messages": {"super": "It's super effective!", "neutral": "A normal attack!", "weak": "It's not very effective."},
+  "colors": {"Crystal": [240, 150, 230], "Earth": [203, 170, 105], "Dark": [170, 120, 230], "Time": [240, 200, 100]}
+}

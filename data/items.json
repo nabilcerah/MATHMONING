@@ -1,0 +1,15 @@
+{
+  "_comment": "GDD 7.9 and 12. use: where it can be used (battle, field, both, key = never consumed by use). effect values are fractions of max HP or Focus points. price 0 = not sold.",
+  "items": {
+    "Health Potion":     {"effect": "heal", "amount": 0.3, "use": "both",   "price": 20, "description": "Restores 30% of max HP."},
+    "Greater Potion":    {"effect": "heal", "amount": 0.6, "use": "both",   "price": 45, "description": "Restores 60% of max HP."},
+    "Focus Crystal":     {"effect": "focus", "amount": 2,  "use": "battle", "price": 30, "description": "Restores 2 Focus in battle."},
+    "Math Capsule":      {"effect": "capture",             "use": "battle", "price": 25, "description": "Captures a weakened wild monster after a binding challenge."},
+    "Revival Crystal":   {"effect": "revive", "amount": 0.3, "use": "both", "price": 60, "description": "Revives a fainted monster with 30% HP."},
+    "Evolution Crystal": {"effect": "key",                 "use": "key",    "price": 0,  "description": "Awakens the Evolution Shrine. Not used up."},
+    "Stone Charm":       {"effect": "charm", "species": ["GEOMAX", "GEOMAXIMUS"], "guard": 0.9, "use": "key", "price": 0,
+                          "description": "Bram's thanks. GEOMAX and GEOMAXIMUS take 10% less damage while you carry it."},
+    "Crystal Shard":    {"effect": "sell",                "use": "key",    "price": 0,  "sell": 30, "description": "A shard from the Crystal Seal. Sell it at the shop."}
+  },
+  "shop": ["Health Potion", "Greater Potion", "Focus Crystal", "Math Capsule", "Revival Crystal"]
+}

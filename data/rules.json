@@ -1,0 +1,34 @@
+{
+  "_comment": "Every tunable combat/progression number from the GDD (sections 5-9). Code reads these; nothing is hardcoded.",
+  "party": {"max_party": 3, "storage_capacity": 20},
+  "answer_multipliers": {"first_try": 1.0, "after_hint": 0.85, "second_attempt": 0.75, "failed": 0.0},
+  "learning_scores": {"first_try": 1.0, "after_hint": 0.75, "second_attempt": 0.75, "worked_example": 0.5, "failed": 0.0},
+  "damage": {
+    "attack_weight": 0.5,
+    "defence_base": 100,
+    "defence_weight": 2,
+    "mastery_floor": 0.9,
+    "mastery_range": 0.2,
+    "minimum": 1,
+    "enemy_scale": {"wild": 0.7, "trainer": 0.85, "boss": 1.0}
+  },
+  "focus": {"max": 3, "gain_on_correct_normal": 1, "start": 0},
+  "shield": {"incoming_multiplier": 0.5},
+  "debuff": {"attack_multiplier": 0.8},
+  "escape": {"base": 50, "per_speed": 3, "min": 20, "max": 90},
+  "capture": {"base": 20, "hp_weight": 50, "knowledge_bonus": 15, "min": 5, "max": 90},
+  "exp": {
+    "level_base": 60, "level_step": 20, "max_level": 20,
+    "battle_base": 20, "battle_per_level": 5,
+    "shared_fraction": 0.35,
+    "capture_base": 10, "capture_per_level": 2,
+    "boss_multiplier": 2.0,
+    "discovery": 15
+  },
+  "coins": {"battle_base": 8, "battle_per_level": 2, "boss_bonus": 150, "start": 100},
+  "evolution": {"min_level": 12, "min_mastery": 60, "min_evidence": 10},
+  "mastery": {"window": 20, "mastered_min_evidence": 10,
+              "bands": [[0, "Foundation"], [40, "Developing"], [70, "Proficient"], [85, "Mastered"]]},
+  "defeat": {"recover_fraction": 1.0},
+  "starting_items": {"Health Potion": 3, "Math Capsule": 5, "Focus Crystal": 1}
+}

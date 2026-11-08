@@ -15,7 +15,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 STAGE = ROOT / "build" / "mathmon"
-CODE = ("main.py", "config.py", "game", "ai", "battle_engine", "mathematics", "database", "data")
+CODE = ("main.py", "config.py", "game", "states", "world", "monsters", "combat", "ai", "battle_engine", "mathematics",
+        "database", "data")
 ASSETS = ("assets/sprites", "assets/backgrounds", "assets/fonts", "assets/sounds")
 SKIP = shutil.ignore_patterns("__pycache__", "*.pyc", ".gitkeep", "number_forest_world.png", "_preview.jpg")
 

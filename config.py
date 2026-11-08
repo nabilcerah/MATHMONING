@@ -26,7 +26,7 @@ WINDOW_SCALE = 3
 FPS = 60
 TITLE = "MATHMON — Train Your Mind. Evolve Your Power."
 DATABASE_PATH = SAVE_DIR / "mathmon.sqlite3"
-ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
+ANTHROPIC_MODEL = "claude-haiku-5-5"
 
 PALETTE = {
     "ink": (19, 25, 42), "night": (28, 42, 65), "deep": (40, 65, 82),

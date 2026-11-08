@@ -11,9 +11,10 @@ import pygame
 
 from config import PALETTE, ROOT, VIRTUAL_WIDTH
 from game.actors import NPC, Avatar
-from game.creatures import creature_spec, draw_creature, encounter_for, wild_level
-from game.team import Team
+from game.creatures import draw_creature
 from game.sprites import frame_for
+from monsters.monster_data import challenges, species
+from world.encounter_manager import EncounterManager
 from game.ui import heart, menu, meter, panel, text, wrap_lines, wrapped
 from game.world_map import TILE, load_map
 
@@ -71,8 +72,9 @@ class Roamer:
     NOTICE_RANGE = 52
     TOUCH_RANGE = 11
 
-    def __init__(self, spec, zone, world, rng, avoid=None, level=1):
-        self.spec, self.zone, self.world, self.rng = spec, zone, world, rng
+    def __init__(self, species_id, zone, world, rng, avoid=None, level=1):
+        self.species_id = species_id
+        self.spec, self.zone, self.world, self.rng = species(species_id), zone, world, rng
         self.level = level
         cells = zone["cells"]
         if avoid is not None:
@@ -122,22 +124,31 @@ class Roamer:
 class Overworld:
     CHUNK = 8            # fog-of-war granularity in tiles
     REVEAL_RADIUS = 1    # chunks revealed around the player in each direction
-    MAX_ROAMERS_PER_ZONE = 3
-    RESPAWN_FRAMES = (60 * 20, 60 * 40)
-    GRASS_ENCOUNTER_ODDS = 20  # random ambush chance per tile walked in tall grass (1 in N)
+    MAX_ROAMERS_PER_ZONE = 2
+    RESPAWN_FRAMES = (60 * 25, 60 * 50)
 
-    def __init__(self, player, rng=None, repository=None, map_id="number_forest"):
+    def __init__(self, player, rng=None, repository=None, map_id="number_forest", party=None, quests=None,
+                 on_event=None):
         self.player = player
         self.rng = rng or random.Random()
         self.repository = repository
+        self.party = party
+        self.quests = quests            # world.quest_manager.QuestManager (read: statuses)
+        self.on_event = on_event        # callback(kind, **data) for quest/discovery hooks
+        self.encounters = EncounterManager(self.rng)
         self.world = load_map(map_id)
         # The forest keeps its original flag names; other maps prefix theirs (fog chunks are per map).
         self.chunk_prefix = "chunk:" if map_id == "number_forest" else f"chunk@{map_id}:"
         self.flags = set(repository.world_flags(player.player_id)) if repository and player.player_id else set()
+        self.world.apply_flags(self.flags)
+        self.records = repository.capture_records(player.player_id) if repository and player.player_id and \
+            hasattr(repository, "capture_records") else {}
         saved = (player.x, player.y)
         if self.world.map_id == "number_forest" and self.world.background and MAP_VERSION_FLAG not in self.flags:
             saved = self.world.spawn  # an old tile-map position means nothing on the painted world
         start = self.world.nearest_walkable(saved)
+        if self.world.barriers and not self.world.reachable_from_spawn(start):
+            start = self.world.nearest_walkable(self.world.safe_spot)  # stuck behind a closed barrier
         self.avatar = Avatar(*self.world.cell_to_feet(start))
         self.avatar.sheet = self.avatar_sheet()
         self.player.x, self.player.y = start
@@ -150,6 +161,7 @@ class Overworld:
         self.area_id, self.area_name = "", self.world.name
         self.banner_frames = 0
         self.grass_distance = 0.0
+        self.steps = 0
         self.encounter_grace = 90
         self.boss_ready = False
         self.dirty = False
@@ -157,8 +169,8 @@ class Overworld:
         self.age = 0
         self.encounter_spec = None
         self.encounter_level = None
-        self._team = None
         self.duel_spec = None
+        self.duel_name = ""
         import datetime
         self.today = datetime.date.today().isoformat()  # shrines offer a fresh puzzle each day
         self.zones = self._encounter_zones()
@@ -184,19 +196,23 @@ class Overworld:
         self.flags.add(flag)
         if self.repository and self.player.player_id:
             self.repository.set_world_flag(self.player.player_id, flag)
-        if flag.startswith(("dex_friend:", "companion:")):
-            self._team = None
+        self.world.apply_flags(self.flags)
 
     def refresh_flags(self):
         if self.repository and self.player.player_id:
             self.flags = set(self.repository.world_flags(self.player.player_id))
-        self._team = None  # members may have levelled, healed or joined
+            if hasattr(self.repository, "capture_records"):
+                self.records = self.repository.capture_records(self.player.player_id)
+        self.world.apply_flags(self.flags)
+
+    def _emit(self, kind, **data):
+        if self.on_event:
+            self.on_event(kind, **data)
 
     @property
     def team(self):
-        if getattr(self, "_team", None) is None and self.repository and self.player.player_id:
-            self._team = Team(self.repository, self.player, self.flags)
-        return getattr(self, "_team", None)
+        """The GDD party (kept under the old name for older callers)."""
+        return self.party
 
     AVATARS = ("ALEX", "LUNA")
 
@@ -206,11 +222,9 @@ class Overworld:
         return f"characters/{name}"
 
     def companion_spec(self):
-        from game.creatures import WILD_BY_NAME
-        # Ignore companions from older saves whose species is no longer in the roster.
-        chosen = [flag.split(":", 1)[1] for flag in self.flags
-                  if flag.startswith("companion:") and flag.split(":", 1)[1] in WILD_BY_NAME]
-        return creature_spec(chosen[0]) if chosen else creature_spec(self.player.creature, self.player.level)
+        """Your lead monster follows you around."""
+        lead = self.party.lead if self.party else None
+        return lead.spec if lead else species("FRACTELLA")
 
     def set_message(self, message, frames=210):
         self.message = str(message)
@@ -220,6 +234,7 @@ class Overworld:
         """Called after a battle: short grace period before the next wild encounter."""
         self.encounter_grace = 150
         self.grass_distance = 0.0
+        self.encounters.after_battle()   # GDD 10.3: a 7-step cooldown after every battle
 
     # ----------------------------------------------------------- wild roamers
     def _encounter_zones(self):
@@ -231,7 +246,7 @@ class Overworld:
                 continue
             area_id, _ = self.world.area_at((x0 + w // 2, y0 + h // 2))
             extra = entry if isinstance(entry, dict) else {}
-            quota = extra.get("quota") or max(1, min(self.MAX_ROAMERS_PER_ZONE, round(len(cells) / 40)))
+            quota = extra.get("quota") or max(1, min(self.MAX_ROAMERS_PER_ZONE, round(len(cells) / 50)))
             zones.append({"rect": (x0, y0, w, h), "cells": cells, "area": area_id, "quota": quota,
                           "species": extra.get("species"), "requires": extra.get("requires")})
         return zones
@@ -248,22 +263,11 @@ class Overworld:
                     self._spawn_roamer(zone)
 
     def _spawn_roamer(self, zone, avoid=None):
-        level = wild_level(zone["area"], self.rng)
+        """Visible roamers come from the same region encounter table; rare species never roam."""
+        species_id, level = self.encounters.pick(zone["area"], exclude_rare=True)
         if zone.get("species"):
-            from game.creatures import WILD_BY_NAME
-            self.roamers.append(Roamer(WILD_BY_NAME[zone["species"]], zone, self.world, self.rng, avoid, level))
-            return
-        spec = encounter_for(zone["area"], self.rng)
-        # Rare creatures (like CHRONOX) appear at most once on the map at a time.
-        for _ in range(8):
-            if spec.rarity > 2 or not any(r.spec is spec for r in self.roamers):
-                break
-            spec = encounter_for(zone["area"], self.rng)
-        if spec.rarity <= 2 and any(r.spec is spec for r in self.roamers):
-            from game.creatures import WILD
-            common = [s for s in WILD if zone["area"] in s.habitat and s.rarity > 2] or [s for s in WILD if s.rarity > 2]
-            spec = self.rng.choice(common)
-        self.roamers.append(Roamer(spec, zone, self.world, self.rng, avoid, level))
+            species_id = zone["species"]
+        self.roamers.append(Roamer(species_id, zone, self.world, self.rng, avoid, level))
 
     def _update_roamers(self):
         if self.age % 30 == 0:
@@ -280,7 +284,7 @@ class Overworld:
         if touched:
             self.roamers.remove(touched)
             self.respawns.append([self.rng.randint(*self.RESPAWN_FRAMES), touched.zone])
-            self.encounter_spec = touched.spec
+            self.encounter_spec = touched.species_id
             self.encounter_level = touched.level
             return "encounter"
         return None
@@ -343,12 +347,13 @@ class Overworld:
         self._camera_follow()
         if self._update_roamers():
             return "encounter"
-        if moved and self.world.is_encounter(cell):
+        if moved:
             self.grass_distance += moved
-            if self.grass_distance >= TILE:
+            if self.grass_distance >= TILE:   # one movement step = one tile walked
                 self.grass_distance = 0.0
-                if not self.encounter_grace and self.rng.randrange(self.GRASS_ENCOUNTER_ODDS) == 0:
-                    self.encounter_spec = None  # a surprise from the grass: the game picks the species
+                self.steps += 1
+                if self.encounters.step(self.area_id, self.world.is_encounter(cell), bool(self.dialogue)):
+                    self.encounter_spec, self.encounter_level = self.encounters.pick(self.area_id)
                     return "encounter"
         return None
 
@@ -361,7 +366,9 @@ class Overworld:
         if area_id and area_id != self.area_id:
             self.area_id, self.area_name = area_id, name
             self.banner_frames = 150
+            first = f"visited:{area_id}" not in self.flags
             self.set_flag(f"visited:{area_id}")
+            self._emit("visit", area=area_id, first=first, name=name)
 
     def _find_target(self):
         px, py = self.avatar.probe()
@@ -431,21 +438,51 @@ class Overworld:
             return self._talk(target)
         return self._use_object(target)
 
+    def quest_status(self, quest_id):
+        return self.quests.status(quest_id) if self.quests and quest_id else "not_started"
+
+    def _npc_pages(self, npc, key, fallback):
+        dialogue = npc.spec.get("dialogue", {})
+        return list(dialogue.get(key) or dialogue.get("any") or fallback)
+
     def _talk(self, npc):
+        """NPC dialogue comes from structured map data (GDD 10.4); quest NPCs pick their lines by quest state."""
         npc.begin_talk(self.avatar)
         first_meeting = not self.has_flag(f"met:{npc.id}")
         self.set_flag(f"met:{npc.id}")
         title, subtitle = npc.name.upper(), npc.role
-        if npc.kind == "duel":
+        if npc.kind == "quest":
+            quest_id = npc.spec.get("quest")
+            pages = self._npc_pages(npc, self.quest_status(quest_id), ["Hello!"])
+            self._emit("talk", npc=npc.id)
+            choices = None
+            challenge = npc.spec.get("challenge")
+            if challenge and self.quest_status(quest_id) == "active" and not self.has_flag(f"challenge:{challenge}"):
+                choices = [("Help with the sums!", ("challenge", challenge)), ("Later", "close")]
+            self.open_dialogue(title, pages, subtitle, choices, npc, "npc")
+        elif npc.kind == "shop":
+            pages = self._npc_pages(npc, "any", ["Welcome!"])
+            self.open_dialogue(title, pages, subtitle, [("Browse the shop", "shop"), ("Goodbye", "close")], npc, "npc")
+        elif npc.kind == "sanctuary":
+            pages = self._npc_pages(npc, "any", ["Welcome to the Sanctuary."])
+            self.open_dialogue(title, pages, subtitle, [("Heal my party", "heal"), ("Manage monsters", "sanctuary"),
+                                                        ("Goodbye", "close")], npc, "npc")
+        elif npc.kind in ("duel", "tutorial"):
             greetings = npc.spec.get("greeting", ["Ready for a practice battle?"])
-            line = greetings[0] if first_meeting else greetings[-1]
+            if npc.kind == "tutorial":
+                pages = list(greetings) if first_meeting else [npc.next_line() or greetings[-1]]
+            else:
+                pages = [greetings[0] if first_meeting else greetings[-1]]
             self.duel_spec = npc.spec.get("battle_with")
-            self.open_dialogue(title, [line], subtitle, [("Let's battle!", "battle"), ("Maybe later", "close")], npc, "npc")
+            self.duel_name = npc.name
+            self._emit("talk", npc=npc.id)
+            self.open_dialogue(title, pages, subtitle, [("Practice battle!", "battle"), ("Not now", "close")], npc, "npc")
         elif npc.kind == "riddle" and not self.has_flag(f"riddle:{npc.id}"):
             riddle = npc.spec["riddle"]
             choices = [(choice, ("riddle", npc.id, choice)) for choice in riddle["choices"]]
             self.open_dialogue(title, [riddle["question"]], subtitle, choices, npc, "npc")
         else:
+            self._emit("talk", npc=npc.id)
             self.open_dialogue(title, [npc.next_line() or "Hello there!"], subtitle, speaker=npc, kind="npc")
         return None
 
@@ -485,15 +522,32 @@ class Overworld:
                 self._grant(entry["item"], entry.get("count", 1))
                 self.open_dialogue(title, [f"The lid creaks open... You found {entry['item']} x{entry.get('count', 1)}!"],
                                    kind="reward")
+                self._emit("chest", object=object_id)
             return None
         if kind == "spring":
-            if self.team:
-                healed = self.team.heal_all(1.0)
-            else:
-                healed = self.player.max_hp - self.player.hp
-                self.player.hp = self.player.max_hp
-            extra = f"Your team recovers {healed} HP." if healed else "Your team is already full of energy."
+            healed = self.party.heal_all(1.0) if self.party else 0
+            if self.party:
+                self._emit("healed")
+            extra = f"Your party recovers {healed} HP." if healed else "Your party is already full of energy."
             self.open_dialogue(title, list(entry.get("text", [])) + [extra])
+            return None
+        if kind == "challenge":
+            challenge = entry["challenge"]
+            self._emit("interact", object=object_id)
+            if self.has_flag(f"challenge:{challenge}"):
+                done = "The stone is safely in your bag." if object_id.startswith("stone") else "It glows steadily - already solved."
+                self.open_dialogue(title, [done])
+                return None
+            needed = entry.get("requires_quest")
+            if needed and self.quest_status(needed) != "active":
+                self.open_dialogue(title, list(entry.get("text", [])) + ["It doesn't respond to you yet. Maybe someone is looking for it?"])
+                return None
+            spec = challenges()[challenge]
+            self.open_dialogue(title, list(entry.get("text", [])) + [spec.get("intro", "")],
+                               choices=[("Solve it!", ("challenge", challenge)), ("Later", "close")])
+            return None
+        if kind == "evolution":
+            self.open_dialogue(title, entry.get("text", []), choices=[("Approach the shrine", "evolution"), ("Later", "close")])
             return None
         if kind == "boss_gate":
             return "boss"
@@ -502,8 +556,11 @@ class Overworld:
         if kind == "portal":
             needed = entry.get("requires")
             if needed and not self.has_flag(needed):
-                self.open_dialogue(title, [entry.get("locked_text", "The portal is dark and silent.")])
+                locked = entry.get("locked_text", "The portal is dark and silent.")
+                self.open_dialogue(title, locked if isinstance(locked, list) else [locked])
                 return None
+            if entry.get("door"):
+                return ("travel_map", entry["destination"], tuple(entry["arrive"]))
             self.open_dialogue(title, entry.get("text", ["The portal shimmers."]),
                                choices=[("Step through", ("travel_map", entry["destination"], tuple(entry["arrive"]))),
                                         ("Not yet", "close")])
@@ -524,7 +581,11 @@ class Overworld:
         if target is None:
             return ""
         if isinstance(target, NPC):
-            suffix = {"duel": "  - practice battle", "riddle": "  - answer a riddle"}.get(target.kind, "")
+            suffix = {"duel": "  - practice battle", "tutorial": "  - tutorial", "riddle": "  - answer a riddle",
+                      "shop": "  - shop", "sanctuary": "  - heal & storage"}.get(target.kind, "")
+            if target.kind == "quest":
+                status = self.quest_status(target.spec.get("quest"))
+                suffix = {"not_started": "  - needs help!", "active": "  - quest"}.get(status, "")
             if target.kind == "riddle" and self.has_flag(f"riddle:{target.id}"):
                 suffix = ""
             return f"[E] Talk to {target.name}{suffix}"
@@ -534,15 +595,21 @@ class Overworld:
             return base + "  (empty)"
         if kind == "spring":
             return base + "  - restores HP"
+        if kind == "challenge":
+            return base + ("  - solved" if self.has_flag(f"challenge:{target['challenge']}") else "  - maths challenge")
+        if kind == "evolution":
+            return base + "  - evolve monsters"
         if kind == "shrine":
             return base + ("  - solved today" if self.shrine_done(target["id"]) else "  - new puzzle!")
         if kind == "portal":
             needed = target.get("requires")
+            if target.get("door"):
+                return base
             return base + ("  - dormant" if needed and not self.has_flag(needed) else "  - travel")
         if kind == "arena":
             return base + "  - race AI rivals!"
         if kind == "boss_gate":
-            return base + ("  - the boss awaits!" if self.boss_ready else "  - still sealed")
+            return base + ("  - the boss awaits!" if self.boss_ready else "  - sealed")
         return base
 
     # ------------------------------------------------------------------ camera
@@ -608,6 +675,7 @@ class Overworld:
             # Tree tops in front of anyone standing just north of the forest edge.
             canopy = painted_background(self.world, self.world.canopy, alpha=True)
             surface.blit(canopy, (0, VIEW_TOP), (cam_x, cam_y, VIRTUAL_WIDTH, VIEW_HEIGHT))
+        self._draw_barriers(surface, frame)
         self._draw_markers(surface, frame)
         if self.target is not None:
             self._draw_target(surface, frame)
@@ -725,6 +793,26 @@ class Overworld:
             pygame.draw.rect(surface, (39, 90, 62), (x + 1, y + 3, 14, 9))
             pygame.draw.rect(surface, (54, 112, 71), (x + 3, y, 10, 9))
             pygame.draw.rect(surface, (79, 145, 83), (x + 5, y + 2, 4, 3))
+        elif code in ("F", "C", "S", "P"):
+            pygame.draw.rect(surface, (166, 118, 74), (x, y, TILE, TILE))
+            pygame.draw.line(surface, (140, 96, 58), (x, y + 7), (x + TILE, y + 7))
+            pygame.draw.line(surface, (140, 96, 58), (x + (8 if my % 2 else 3), y), (x + (8 if my % 2 else 3), y + 7))
+            if code == "C":
+                pygame.draw.rect(surface, (110, 70, 44), (x, y + 2, TILE, 12))
+                pygame.draw.rect(surface, (196, 150, 96), (x, y + 2, TILE, 4))
+            elif code == "S":
+                pygame.draw.rect(surface, (96, 62, 40), (x + 1, y, 14, 15))
+                for i, color in enumerate(((235, 112, 92), (110, 177, 206), (137, 199, 124))):
+                    pygame.draw.rect(surface, color, (x + 3 + i * 4, y + 3, 3, 4))
+                    pygame.draw.rect(surface, color, (x + 3 + i * 4, y + 9, 3, 4))
+            elif code == "P":
+                pygame.draw.rect(surface, (150, 90, 60), (x + 4, y + 9, 8, 6))
+                pygame.draw.circle(surface, (70, 140, 80), (x + 8, y + 6), 5)
+        elif code == "W":
+            pygame.draw.rect(surface, (92, 70, 90), (x, y, TILE, TILE))
+            pygame.draw.rect(surface, (120, 96, 118), (x, y, TILE, 3))
+            if (mx + my) % 3 == 0:
+                pygame.draw.rect(surface, (110, 84, 106), (x + 4, y + 7, 7, 4))
         elif code in ("B", "D"):
             roof = self.world.tile_at(mx, my - 1) not in ("B", "D")
             if roof:
@@ -825,6 +913,35 @@ class Overworld:
                     pygame.draw.rect(surface, (230, 250, 255), (x + 7, y + 3, 2, 2))
             else:
                 pygame.draw.rect(surface, (40, 44, 60), (x + 3, y - 5, 10, 18))
+        elif kind == "challenge" and object_id.startswith("stone"):
+            if self.has_flag(f"challenge:{entry['challenge']}"):
+                return
+            pygame.draw.ellipse(surface, shadow, (x + 2, y + 11, 12, 4))
+            pygame.draw.ellipse(surface, (150, 156, 150), (x + 3, y + 5, 10, 9))
+            pygame.draw.ellipse(surface, (190, 196, 188), (x + 4, y + 6, 6, 4))
+            numeral = {"stone_1": "I", "stone_2": "II", "stone_3": "III"}.get(object_id, "")
+            from game.ui import text as draw_text
+            draw_text(surface, numeral, (x + 8, y + 9), 7, PALETTE["ink"], center=True)
+        elif kind == "challenge":
+            done = self.has_flag(f"challenge:{entry['challenge']}")
+            crystal = object_id == "crystal_seal"
+            pulse = (math.sin(frame / 12) + 1) / 2
+            glow = (120, 230, 240) if done else tuple(int(60 + 120 * pulse) for _ in range(3))
+            pygame.draw.ellipse(surface, shadow, (x - 1, y + 11, 18, 5))
+            if crystal:
+                color = (240, 150, 230) if done else (150, 110, 160)
+                pygame.draw.polygon(surface, color, [(x + 8, y - 6), (x + 14, y + 6), (x + 8, y + 14), (x + 2, y + 6)])
+                pygame.draw.polygon(surface, PALETTE["white"], [(x + 8, y - 4), (x + 10, y + 4), (x + 8, y + 2)])
+            else:
+                pygame.draw.circle(surface, (96, 98, 104), (x + 8, y + 7), 8)
+                pygame.draw.circle(surface, (140, 144, 150), (x + 8, y + 7), 6)
+                pygame.draw.circle(surface, glow, (x + 8, y + 7), 3)
+        elif kind == "evolution":
+            pulse = (frame // 10) % 6
+            pygame.draw.ellipse(surface, shadow, (x - 1, y + 11, 18, 5))
+            pygame.draw.rect(surface, (110, 120, 150), (x + 3, y + 6, 10, 9))
+            pygame.draw.polygon(surface, (120, 220, 240), [(x + 8, y - 14 + pulse // 3), (x + 13, y + 6), (x + 3, y + 6)])
+            pygame.draw.polygon(surface, PALETTE["white"], [(x + 8, y - 11), (x + 10, y + 2), (x + 8, y)])
         elif kind == "shrine":
             rune = SHRINE_COLORS.get(entry.get("puzzle"), PALETTE["gold"])
             done = self.shrine_done(object_id)
@@ -896,13 +1013,14 @@ class Overworld:
         bob = 1 if frame % 40 < 20 else 0
         name = roamer.spec.name
         head = sy - round(20 * roamer.spec.size) - hop  # top of the sprite
-        if self.has_flag(f"dex_friend:{name}"):
+        record = self.records.get(roamer.species_id, {})
+        if record.get("captured"):
             heart(surface, sx - 4, head - 10 - bob, PALETTE["mint"])
-        elif not self.has_flag(f"dex_seen:{name}"):
+        elif not record.get("seen"):
             # Never seen: a gold sparkle says "new for your MathDex".
             pygame.draw.rect(surface, PALETTE["gold"], (sx - 1, head - 9 - bob, 2, 6))
             pygame.draw.rect(surface, PALETTE["gold"], (sx - 3, head - 7 - bob, 6, 2))
-        if roamer.alert and not self.has_flag(f"dex_friend:{name}"):
+        if roamer.alert and not record.get("captured"):
             pygame.draw.rect(surface, PALETTE["coral"], (sx + 9, head - 2, 2, 5))
             pygame.draw.rect(surface, PALETTE["coral"], (sx + 9, head + 4, 2, 2))
 
@@ -912,7 +1030,9 @@ class Overworld:
             kind, object_id = entry.get("kind"), entry["id"]
             fresh = (kind == "chest" and not self.has_flag(f"opened:{object_id}")) or \
                     (kind == "shrine" and not self.shrine_done(object_id)) or \
-                    (kind in ("sign", "flavour") and not self.has_flag(f"seen:{object_id}"))
+                    (kind in ("sign", "flavour") and not self.has_flag(f"seen:{object_id}")) or \
+                    (kind == "challenge" and not self.has_flag(f"challenge:{entry['challenge']}") and
+                     (not entry.get("requires_quest") or self.quest_status(entry["requires_quest"]) == "active"))
             if fresh:
                 x, y = self.to_screen(entry["pos"][0] * TILE + 8, entry["pos"][1] * TILE)
                 self._diamond(surface, x, y - 5 - bob, PALETTE["gold"])
@@ -925,6 +1045,10 @@ class Overworld:
                 pygame.draw.rect(surface, PALETTE["gold"], (x - 1, y - 20 - bob, 2, 2))
             elif npc.kind == "riddle" and not self.has_flag(f"riddle:{npc.id}"):
                 self._diamond(surface, x, y - 22 - bob, PALETTE["sky"])
+            elif npc.kind == "quest" and self.quest_status(npc.spec.get("quest")) != "completed":
+                color = PALETTE["gold"] if self.quest_status(npc.spec.get("quest")) == "not_started" else PALETTE["sky"]
+                pygame.draw.rect(surface, color, (x - 1, y - 28 - bob, 2, 5))
+                pygame.draw.rect(surface, color, (x - 1, y - 22 - bob, 2, 2))
 
     @staticmethod
     def _diamond(surface, x, y, color):
@@ -973,6 +1097,30 @@ class Overworld:
         from game.ui import measure
         return measure(line, 9)[0]
 
+    def quest_hint(self):
+        """The main quest's current step, shown under the controls."""
+        for quest_id in self.quests.active():
+            if self.quests.definition(quest_id)["category"] == "main":
+                return "QUEST: " + self.quests.step_text(quest_id)
+        active = self.quests.active()
+        return ("QUEST: " + self.quests.step_text(active[0])) if active else ""
+
+    def _draw_barriers(self, surface, frame):
+        """The broken plank bridge: a gap with dangling planks until Bram's quest is done."""
+        for barrier in self.world.barriers:
+            if barrier.get("open"):
+                continue
+            x0, y0, w, h = barrier["rect"]
+            for cx in range(x0 + w // 2 - 2, x0 + w // 2 + 3):
+                for cy in range(y0, y0 + h):
+                    sx, sy = self.to_screen(cx * TILE, cy * TILE)
+                    pygame.draw.rect(surface, (52, 112, 150), (sx, sy, TILE, TILE))
+                    if (cx + cy + frame // 20) % 3 == 0:
+                        pygame.draw.line(surface, (150, 210, 230), (sx + 3, sy + 8), (sx + 9, sy + 8))
+            for cx in (x0 + w // 2 - 3, x0 + w // 2 + 3):
+                sx, sy = self.to_screen(cx * TILE, y0 * TILE)
+                pygame.draw.line(surface, (120, 82, 50), (sx + 8, sy), (sx + 4, sy + 2 * TILE - 2), 3)
+
     # ---- HUD, banner, prompt, dialogue
     def _draw_hud(self, surface, frame):
         if self.banner_frames:
@@ -985,8 +1133,8 @@ class Overworld:
         pygame.draw.rect(surface, PALETTE["ink"], (0, 0, VIRTUAL_WIDTH, VIEW_TOP))
         pygame.draw.line(surface, PALETTE["night"], (0, VIEW_TOP - 1), (VIRTUAL_WIDTH, VIEW_TOP - 1), 2)
         text(surface, self.area_name.upper(), (7, 5), 14, PALETTE["gold"])
-        leader = self.team.leader() if self.team else self.player
-        leader_name = self.team.name_of(leader) if self.team else self.player.name
+        leader = self.party.lead if self.party and self.party.party else self.player
+        leader_name = leader.name if self.party and self.party.party else self.player.name
         text(surface, f"{leader_name[:12]}  Lv {leader.level}", (196, 3), 10, PALETTE["white"])
         meter(surface, 196, 14, 82, 6, leader.hp, leader.max_hp, PALETTE["mint"], warn=True)
         text(surface, f"{leader.hp}/{leader.max_hp}", (313, 13), 9, PALETTE["cream"], align="right")
@@ -1000,11 +1148,12 @@ class Overworld:
             text(surface, footer, (160, bottom + 12), 9, PALETTE["cream"], center=True)
         elif prompt:
             text(surface, prompt, (160, bottom + 7), 11, PALETTE["gold"], center=True)
-            text(surface, "WASD: WALK   M: MATHDEX   N: MAP   T: TRIALS   B: PRACTICE   ESC: SAVE", (160, bottom + 18), 8, PALETTE["muted"], center=True)
+            text(surface, "WASD: WALK   TAB: MENU   N: MAP   T: TRIALS   ESC: PAUSE", (160, bottom + 18), 8, PALETTE["muted"], center=True)
         else:
-            text(surface, "WASD: WALK  E: INTERACT  M: DEX  N: MAP  T: TRIALS  B: PRACTICE  ESC: SAVE", (160, bottom + 7), 9,
+            text(surface, "WASD: WALK  E: TALK/USE  TAB: MENU  N: MAP  T: TRIALS  ESC: PAUSE", (160, bottom + 7), 9,
                  PALETTE["cream"], center=True)
-            text(surface, "Tall grass and crop rows hide wild MATHMON.", (160, bottom + 18), 9, PALETTE["muted"], center=True)
+            hint = self.quest_hint() if self.quests else ""
+            text(surface, hint or "Tall grass hides wild MATHMON.", (160, bottom + 18), 8, PALETTE["muted"], center=True)
 
         if self.message_frames and not self.dialogue:
             panel(surface, (8, bottom - 40, 304, 34), PALETTE["night"], PALETTE["gold"])

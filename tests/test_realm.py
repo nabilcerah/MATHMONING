@@ -10,8 +10,9 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
 import pygame
 
-from game.creatures import BOSS, WILD_BY_NAME, encounter_for
 from game.world_map import load_map
+from monsters import monster_factory
+from world.encounter_manager import EncounterManager
 
 pygame.init()
 E = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e, unicode="", mod=0)
@@ -43,16 +44,17 @@ class RealmMapTests(unittest.TestCase):
 
     def test_portals_arrive_on_reachable_ground(self):
         forest, realm = load_map(), load_map("crystal_realm")
-        to_realm = next(e for e in forest.data["interactables"] if e["kind"] == "portal")
+        to_realm = next(e for e in forest.data["interactables"] if e["kind"] == "portal" and not e.get("door"))
         home = next(e for e in realm.data["interactables"] if e["kind"] == "portal")
         self.assertIn(tuple(to_realm["arrive"]), reachable(realm, realm.spawn))
         self.assertIn(tuple(home["arrive"]), reachable(forest, forest.spawn))
 
     def test_secret_creature_is_never_a_random_encounter(self):
-        rng = random.Random(1)
-        for area in ("glimmer", "shardgrove", "starfall", "meadow", "nowhere"):
+        manager = EncounterManager(random.Random(1))
+        for area in ("glimmer", "shardgrove", "meadow", "nowhere"):
             for _ in range(200):
-                self.assertNotEqual(encounter_for(area, rng).name, "GRAPHION")
+                self.assertNotEqual(manager.pick(area)[0], "GRAPHION")
+        self.assertTrue(EncounterManager.is_safe("starfall"))
 
 
 class RealmGameTests(unittest.TestCase):
@@ -84,17 +86,22 @@ class RealmGameTests(unittest.TestCase):
         if self.game.world.dialogue:
             self.game.world.dialogue.age = 10 ** 6
 
-    def test_portal_wakes_after_numerex_and_travel_is_saved(self):
+    def win_boss(self):
+        game = self.game
+        game._start_battle(monster_factory.create("NUMEREX_BOSS", 10), "boss")
+        game.battle.battle.enemy.hp = 0
+        game.battle.battle.outcome, game.battle.battle.awaiting = "won", "over"
+        game.battle.closed = True
+        game._update()
+
+    def test_portal_wakes_after_the_boss_and_travel_is_saved(self):
         game = self.game
         self.stand_at("portal_realm")
         self.assertIn("dormant", game.world.prompt())
         self.use()
-        self.assertIn("dormant", game.world.dialogue.pages[0])
+        self.assertIn("dark", game.world.dialogue.pages[0])
         game.world.close_dialogue()
-        # Beat NUMEREX: the battle result sets the boss flag.
-        game._start_battle(BOSS)
-        game.battle.outcome, game.battle.closed = "won", True
-        game._update()
+        self.win_boss()
         self.assertTrue(game.world.has_flag(game.BOSS_FLAG))
         self.stand_at("portal_realm")
         self.use()
@@ -102,9 +109,7 @@ class RealmGameTests(unittest.TestCase):
         self.assertEqual(game.world.world.map_id, "crystal_realm")
         self.assertEqual(game.player.world, "crystal_realm")
         self.assertIn(game.world.area_id, ("plaza", "bridges"))
-        # Fog is tracked per map.
         self.assertTrue(any(f.startswith("chunk@crystal_realm:") for f in game.world.flags))
-        # Continuing the save puts you back in the realm.
         from game.game_manager import GameManager
         again = GameManager(database_path=self.path)
         try:
@@ -112,7 +117,6 @@ class RealmGameTests(unittest.TestCase):
             self.assertEqual(again.world.world.map_id, "crystal_realm")
         finally:
             again.llm.close()
-        # And the realm portal leads home.
         self.stand_at("portal_home")
         self.use()
         self.use()
@@ -132,20 +136,21 @@ class RealmGameTests(unittest.TestCase):
         self.assertEqual(len(graphions), 1)
         self.assertEqual(world.world.area_at(world.world.to_cell(graphions[0].x, graphions[0].y - 2))[0], "starfall")
 
-    def test_crystal_monsters_never_ask_easy_questions(self):
+    def test_crystal_realm_never_asks_foundation_questions(self):
         game = self.game
-        game._start_battle(WILD_BY_NAME["PRISMVOLT"])
-        for _ in range(25):
-            game.battle._start_question()
-            self.assertNotEqual(game.battle.question.difficulty, "easy")
-        game._start_battle(WILD_BY_NAME["GRAPHION"])
-        for _ in range(10):
-            game.battle._start_question()
-            self.assertEqual(game.battle.question.difficulty, "advanced")
+        game.player.world = "crystal_realm"
+        game._enter_world()
+        game._start_battle(monster_factory.create("PRISMVOLT", 11))
+        battle = game.battle
+        move = battle.moves()[0].move_id
+        for _ in range(12):
+            battle.choose_move(move)
+            self.assertNotEqual(battle.panel.question.difficulty, "foundation")
+            battle.handle_key(pygame.K_ESCAPE)
 
     def test_realm_screens_draw(self):
-        from game.mathdex import MathDex
         from game.worldmap_screen import WorldMapScreen
+        from states.dex_state import DexScreen
         game = self.game
         game.player.world = "crystal_realm"
         game._enter_world()
@@ -154,8 +159,8 @@ class RealmGameTests(unittest.TestCase):
             game.world.update(1, 0)
             game.world.draw(surface, frame)
         WorldMapScreen(game.world).draw(surface, 0)
-        dex = MathDex(game.repository, game.player)
-        for index in range(len(dex.entries())):
+        dex = DexScreen(game)
+        for index in range(len(dex.items())):
             dex.selected = index
             dex.draw(surface, index)
 

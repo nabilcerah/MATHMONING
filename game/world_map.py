@@ -6,7 +6,7 @@ from pathlib import Path
 from config import ROOT
 
 TILE = 16
-SOLID_TILES = frozenset("TwBDR")
+SOLID_TILES = frozenset("TwBDRWCSP")   # W wall, C counter, S shelf, P plant (interiors)
 ENCOUNTER_TILES = frozenset("G")
 MAP_DIR = ROOT / "data" / "maps"
 
@@ -89,6 +89,15 @@ class WorldMap:
         self.areas = [(a["id"], a["name"], tuple(a["rect"])) for a in data.get("areas", [])]
         self.waypoints = {name: tuple(cell) for name, cell in data.get("waypoints", {}).items()}
         self.spawn = tuple(data.get("player_spawn", (1, 1)))
+        # Barriers (e.g. the broken bridge) block their cells until their open_flag is earned.
+        self.barriers = []
+        for barrier in data.get("barriers", []):
+            x0, y0, w, h = barrier["rect"]
+            cells = {(x, y) for x in range(x0, x0 + w) for y in range(y0, y0 + h)}
+            self.barriers.append({**barrier, "cells": cells})
+        self.closed_cells = set().union(*(b["cells"] for b in self.barriers)) if self.barriers else set()
+        self.safe_spot = tuple(data.get("safe_spot", data.get("player_spawn", (1, 1))))
+        self.interior = bool(data.get("interior"))
         # Interactable objects occupy their tile (plus any extra "solid" cells).
         self.blocked = set()
         for entry in data.get("interactables", []):
@@ -106,9 +115,24 @@ class WorldMap:
             return "T"
         return self.tiles[y][x]
 
+    def apply_flags(self, flags):
+        """Open every barrier whose flag has been earned (GDD 11: quests unlock new areas)."""
+        self.closed_cells = set()
+        for barrier in self.barriers:
+            barrier["open"] = barrier.get("open_flag") in flags
+            if not barrier["open"]:
+                self.closed_cells |= barrier["cells"]
+
     def is_walkable(self, cell):
         x, y = cell
-        return self.tile_at(x, y) not in SOLID_TILES and (x, y) not in self.blocked
+        return self.tile_at(x, y) not in SOLID_TILES and (x, y) not in self.blocked and (x, y) not in self.closed_cells
+
+    def reachable_from_spawn(self, cell):
+        """Is ``cell`` connected to the spawn point (used to rescue saves stuck behind a barrier)?"""
+        start = self.nearest_walkable(self.spawn)
+        if start == cell:
+            return True
+        return bool(self.find_path(start, cell))
 
     def is_encounter(self, cell):
         return self.tile_at(*cell) in ENCOUNTER_TILES

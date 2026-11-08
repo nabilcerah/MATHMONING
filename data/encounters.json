@@ -1,0 +1,23 @@
+{
+  "_comment": "GDD 10.3. step_chance = chance per tile walked in encounter grass; cooldown_steps after any battle. Areas listed in safe_areas never roll random encounters (starfall: GRAPHION only appears as a roamer after the Star Chart). Each table entry: [species, weight]; levels = [min, max].",
+  "step_chance": 0.08,
+  "cooldown_steps": 7,
+  "safe_areas": ["village", "starfall"],
+  "areas": {
+    "meadow":     {"levels": [1, 4],  "table": [["VOLTIX", 35], ["DIVOWL", 30], ["PYRON", 25], ["GEOMAX", 6], ["CHRONOX", 2]]},
+    "grove":      {"levels": [3, 6],  "table": [["DIVOWL", 30], ["FRACTELLA", 20], ["GEMELLA", 20], ["PYRON", 15], ["CHRONOX", 2]]},
+    "beach":      {"levels": [3, 6],  "table": [["AQUABIT", 45], ["VOLTIX", 30], ["NUMEREX", 5]]},
+    "falls":      {"levels": [4, 7],  "table": [["AQUABIT", 35], ["FRACTELLA", 25], ["DIVOWL", 25], ["CHRONOX", 3]]},
+    "desert":     {"levels": [5, 8],  "table": [["PYRON", 40], ["GEOMAX", 25], ["VOLTIX", 25], ["CHRONOX", 4]]},
+    "bridge":     {"levels": [3, 6],  "table": [["AQUABIT", 40], ["VOLTIX", 30], ["DIVOWL", 30]]},
+    "farms":      {"levels": [2, 5],  "table": [["PYRON", 40], ["DIVOWL", 35], ["GEOMAX", 10]]},
+    "pasture":    {"levels": [2, 5],  "table": [["VOLTIX", 40], ["PYRON", 35], ["GEMELLA", 15]]},
+    "ridge":      {"levels": [6, 9],  "table": [["NUMEREX", 20], ["AQUABIT", 25], ["GEMELLA", 25], ["GEOMAX", 20], ["CHRONOX", 5]]},
+    "glimmer":    {"levels": [10, 13], "table": [["PRISMVOLT", 50], ["OPALOWL", 50]]},
+    "shardgrove": {"levels": [11, 14], "table": [["OPALOWL", 40], ["GEMELLA", 60]]},
+    "starfall":   {"levels": [14, 16], "table": [["GRAPHION", 100]]}
+  },
+  "default_area": "meadow",
+  "boss": {"species": "NUMEREX_BOSS", "level": 10},
+  "trainers": {"pip": {"species": "VOLTIX", "level": 3}, "rowan": {"species": "DIVOWL", "level": 2}}
+}

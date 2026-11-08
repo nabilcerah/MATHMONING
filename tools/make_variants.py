@@ -1,4 +1,4 @@
-"""Create recoloured monster variants (Crystal Realm forms and the secret GRAPHION).
+"""Create recoloured monster variants (Crystal Realm forms, GRAPHION, the GDD evolutions and the boss).
 
     python tools/make_variants.py
 
@@ -22,6 +22,13 @@ VARIANTS = {
     "OPALOWL": ("DIVOWL", 0.48, 1.05, 1.08),       # crystal owl: violet/pink
     "GEMELLA": ("FRACTELLA", -0.30, 1.10, 1.00),   # gem slime: emerald/teal
     "GRAPHION": ("CHRONOX", 0.58, 1.25, 1.28),     # secret: cosmic blue-violet clockwork dragon
+    # GDD evolutions (stage 2): a new colourway on top of the larger drawn size.
+    "PRISMELLA": ("FRACTELLA", 0.10, 1.20, 1.08),  # rose-gold crystal slime
+    "GEOMAXIMUS": ("GEOMAX", -0.12, 1.15, 1.05),   # weathered bronze golem
+    "NULLAREX": ("NUMEREX", 0.42, 1.10, 1.12),     # teal void phantom
+    "CHRONODRAKE": ("CHRONOX", -0.07, 1.30, 1.10), # molten-gold clockwork dragon
+    # The boss form of NUMEREX: darker and redder than the starter.
+    "NUMEREX_BOSS": ("NUMEREX", 0.12, 1.25, 0.80),
 }
 
 

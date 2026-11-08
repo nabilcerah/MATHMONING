@@ -14,8 +14,22 @@ from database.player_repository import PlayerRepository
 from game.overworld import Overworld
 from game.player import Player
 from game.world_map import load_map
+from world.encounter_manager import EncounterManager
+from world.quest_manager import QuestManager
 
 pygame.init()
+
+
+def make_world(repository, player, seed=4):
+    party = repository.load_party(player.player_id)
+    quests = QuestManager(repository, player.player_id)
+    return Overworld(player, random.Random(seed), repository, "number_forest", party, quests)
+
+
+def open_world_map():
+    world = load_map()
+    world.apply_flags({"bridge:repaired"})
+    return world
 
 
 class OverworldTests(unittest.TestCase):
@@ -25,7 +39,7 @@ class OverworldTests(unittest.TestCase):
         player_id = self.repository.create_player("Walker", "PYROX", 34)
         record = self.repository.load_player()
         self.player = Player(record.name, record.creature, 1, 20, 34, 0, record.x, record.y, player_id)
-        self.world = Overworld(self.player, random.Random(4), self.repository)
+        self.world = make_world(self.repository, self.player, 4)
 
     def tearDown(self):
         self.folder.cleanup()
@@ -58,7 +72,7 @@ class OverworldTests(unittest.TestCase):
             self.press()
 
     def test_every_waypoint_object_and_spawn_is_reachable(self):
-        world = load_map()
+        world = open_world_map()
         spawn = world.spawn
         for name, cell in world.waypoints.items():
             self.assertTrue(world.is_walkable(cell), name)
@@ -81,33 +95,39 @@ class OverworldTests(unittest.TestCase):
         self.assertTrue(self.world.world.is_walkable(self.world.avatar.cell()))
 
     def test_chest_gives_item_only_once_and_persists(self):
-        before = self.repository.inventory(self.player.player_id)["EXP Booster"]
+        before = self.repository.inventory(self.player.player_id)["Math Capsule"]
         self.face(self.object_pos("chest_ridge"))
         self.assertEqual(self.world.target_id(), "chest_ridge")
         self.press()
         self.finish_dialogue()
         self.press()
         self.finish_dialogue()
-        self.assertEqual(self.repository.inventory(self.player.player_id)["EXP Booster"], before + 1)
-        reopened = Overworld(self.player, random.Random(1), self.repository)
+        self.assertEqual(self.repository.inventory(self.player.player_id)["Math Capsule"], before + 1)
+        reopened = make_world(self.repository, self.player, 1)
         self.assertTrue(reopened.has_flag("opened:chest_ridge"))
 
-    def test_talking_to_rowan_offers_a_battle(self):
+    def test_talking_to_rowan_teaches_then_offers_a_battle(self):
         rowan = next(n for n in self.world.npcs if n.id == "rowan")
         rowan.state, rowan.wait = "working", 10 ** 6
         self.face(rowan.cell())
         self.assertEqual(self.world.target_id(), "rowan")
         self.press()
         self.assertEqual(rowan.state, "talking")
-        self.press()  # reveal the typed text
-        self.assertEqual(self.press(), "battle")
+        self.assertGreaterEqual(len(self.world.dialogue.pages), 3)  # the tutorial pages come first
+        result = None
+        for _ in range(12):
+            result = self.press()
+            if result:
+                break
+        self.assertEqual(result, "battle")
+        self.assertEqual(self.world.duel_spec, {"species": "DIVOWL", "level": 2})
         self.assertIsNone(self.world.dialogue)
         self.assertNotEqual(rowan.state, "talking")
 
     def test_riddle_rewards_the_correct_answer_once(self):
         tamsin = next(n for n in self.world.npcs if n.id == "tamsin")
         tamsin.state, tamsin.wait = "working", 10 ** 6
-        crystals = self.repository.inventory(self.player.player_id)["Learning Crystal"]
+        crystals = self.repository.inventory(self.player.player_id)["Focus Crystal"]
         self.face(tamsin.cell())
         self.assertEqual(self.world.target_id(), "tamsin")
         self.press()
@@ -116,13 +136,15 @@ class OverworldTests(unittest.TestCase):
         self.press()
         self.finish_dialogue()
         self.assertTrue(self.world.has_flag("riddle:tamsin"))
-        self.assertEqual(self.repository.inventory(self.player.player_id)["Learning Crystal"], crystals + 1)
+        self.assertEqual(self.repository.inventory(self.player.player_id)["Focus Crystal"], crystals + 1)
 
-    def test_spring_restores_hp(self):
+    def test_spring_restores_the_party(self):
+        lead = self.world.party.lead
+        lead.hp = 3
         self.face(self.object_pos("spring"))
         self.assertEqual(self.world.target_id(), "spring")
         self.press()
-        self.assertEqual(self.player.hp, self.player.max_hp)
+        self.assertEqual(lead.hp, lead.max_hp)
 
     def test_tall_grass_can_trigger_encounters(self):
         self.world.encounter_grace = 0
@@ -133,6 +155,21 @@ class OverworldTests(unittest.TestCase):
             direction = -1 if (i // 60) % 2 == 0 else 1
             events.append(self.world.update(direction, 0))
         self.assertIn("encounter", events)
+        self.assertIn(self.world.encounter_spec, [s for s, _ in EncounterManager.table("meadow")["table"]])
+
+    def test_the_village_is_a_safe_zone(self):
+        self.world.encounter_grace = 0
+        self.world.encounters.chance = 1.0     # even a certain encounter never fires here
+        self.place(self.world.world.spawn, (1, 0))
+        events = [self.world.update(1 if (i // 40) % 2 else -1, 0) for i in range(400)]
+        self.assertEqual(self.world.area_id, "village")
+        self.assertNotIn("encounter", events)
+
+    def test_the_broken_bridge_opens_after_the_quest(self):
+        desert = (104, 23)
+        self.assertFalse(self.world.world.find_path(self.world.world.spawn, desert))
+        self.world.set_flag("bridge:repaired")
+        self.assertTrue(self.world.world.find_path(self.world.world.spawn, desert))
 
     def test_npcs_follow_their_routines(self):
         pip = next(n for n in self.world.npcs if n.id == "pip")
@@ -159,29 +196,25 @@ class RoamerAndMapTests(unittest.TestCase):
         self.repository = PlayerRepository(Database(self.folder.name + "/roam.sqlite3"))
         player_id = self.repository.create_player("Catcher", "PYRON", 34)
         self.player = Player("Catcher", "PYRON", 3, 34, 34, 0, 16, 60, player_id)
-        self.world = Overworld(self.player, random.Random(5), self.repository)
+        self.world = make_world(self.repository, self.player, 5)
 
     def tearDown(self):
         self.folder.cleanup()
 
-    def test_roamers_live_in_their_grass_and_match_its_habitat(self):
+    def test_roamers_live_in_their_grass_and_come_from_the_area_table(self):
         self.assertGreaterEqual(len(self.world.roamers), len(self.world.zones))
         for _ in range(600):
             self.world.update()
         for roamer in self.world.roamers:
             cell = self.world.world.to_cell(roamer.x, roamer.y - 2)
             self.assertTrue(self.world.world.is_encounter(cell), roamer.spec.name)
-            from game.creatures import WILD
-            habitats = {area for spec in WILD for area in spec.habitat}
-            # Zones in a habitat area spawn its residents; anywhere else falls back to meadow creatures.
-            expected = roamer.zone["area"] if roamer.zone["area"] in habitats else "meadow"
-            self.assertIn(expected, roamer.spec.habitat, roamer.spec.name)
+            table = [sp for sp, _ in EncounterManager.table(roamer.zone["area"])["table"]]
+            self.assertIn(roamer.species_id, table)
 
-    def test_rare_creatures_appear_once_at_a_time(self):
+    def test_rare_creatures_never_roam_visibly(self):
         for seed in range(12):
-            world = Overworld(self.player, random.Random(seed), self.repository)
-            names = [r.spec.name for r in world.roamers]
-            self.assertLessEqual(names.count("CHRONOX"), 1, seed)
+            world = make_world(self.repository, self.player, seed)
+            self.assertNotIn("CHRONOX", [r.species_id for r in world.roamers], seed)
 
     def test_touching_a_roamer_battles_that_species_and_it_respawns(self):
         self.world.encounter_grace = 0
@@ -189,7 +222,7 @@ class RoamerAndMapTests(unittest.TestCase):
         roamer.target, roamer.wait = None, 10 ** 6
         self.world.avatar.x, self.world.avatar.y = roamer.x + 4, roamer.y
         self.assertEqual(self.world.update(), "encounter")
-        self.assertIs(self.world.encounter_spec, roamer.spec)
+        self.assertEqual(self.world.encounter_spec, roamer.species_id)
         self.assertNotIn(roamer, self.world.roamers)
         count = len(self.world.roamers)
         self.world.respawns[0][0] = 1
@@ -223,11 +256,12 @@ class RoamerAndMapTests(unittest.TestCase):
         self.assertFalse(self.world.explored(far))
         self.world.teleport(far)
         self.assertTrue(self.world.explored(far))
-        reopened = Overworld(self.player, random.Random(1), self.repository)
+        reopened = make_world(self.repository, self.player, 1)
         self.assertTrue(reopened.explored(far))  # saved with the game
 
     def test_every_travel_point_is_reachable(self):
         world = self.world.world
+        world.apply_flags({"bridge:repaired"})
         for area in world.data["areas"]:
             cell = tuple(area["travel"])
             self.assertTrue(world.is_walkable(cell), area["id"])
@@ -237,7 +271,7 @@ class RoamerAndMapTests(unittest.TestCase):
 
 class PaintedWorldTests(unittest.TestCase):
     def test_every_region_is_reachable_from_the_village(self):
-        world = load_map()
+        world = open_world_map()
         reachable = {world.spawn}
         frontier = [world.spawn]
         while frontier:
@@ -255,11 +289,27 @@ class PaintedWorldTests(unittest.TestCase):
             repository = PlayerRepository(Database(folder + "/old.sqlite3"))
             player_id = repository.create_player("Old", "AQUABIT", 38)
             player = Player("Old", "AQUABIT", 6, 38, 38, 0, 34, 23, player_id)  # old tile-map coordinates
-            world = Overworld(player, random.Random(2), repository)
+            world = make_world(repository, player, 2)
             self.assertEqual((player.x, player.y), world.world.spawn)
             player.x, player.y = 37, 70
-            again = Overworld(player, random.Random(2), repository)
+            make_world(repository, player, 2)
             self.assertEqual((player.x, player.y), (37, 70))  # migrated saves keep their place
+
+
+class GDDWorldContentTests(unittest.TestCase):
+    def test_gdd_areas_have_their_names(self):
+        names = {area_id: name for area_id, name, _ in load_map().areas}
+        self.assertEqual(names["village"], "Starter Village")
+        self.assertEqual(names["meadow"], "Green Meadow")
+        self.assertEqual(names["ridge"], "Ancient Number Ruins")
+
+    def test_interiors_connect_back_to_the_village(self):
+        for map_id in ("village_shop", "village_sanctuary"):
+            world = load_map(map_id)
+            exit_door = next(e for e in world.data["interactables"] if e.get("door"))
+            self.assertEqual(exit_door["destination"], "number_forest")
+            self.assertTrue(load_map().is_walkable(tuple(exit_door["arrive"])))
+            self.assertTrue(world.is_walkable(tuple(world.data["player_spawn"])))
 
 
 if __name__ == "__main__":

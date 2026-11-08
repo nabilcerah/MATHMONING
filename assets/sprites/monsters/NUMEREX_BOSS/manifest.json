@@ -1,0 +1,63 @@
+{
+  "name": "NUMEREX_BOSS",
+  "source": "NUMEREX.png",
+  "poses": [
+    {
+      "pose": "idle",
+      "file": "0.png",
+      "dx": -37,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -39,
+      "dy": -96
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -42,
+      "dy": -97
+    },
+    {
+      "pose": "windup",
+      "file": "3.png",
+      "dx": -48,
+      "dy": -97
+    },
+    {
+      "pose": "attack",
+      "file": "4.png",
+      "dx": -50,
+      "dy": -95
+    },
+    {
+      "pose": "special",
+      "file": "5.png",
+      "dx": -44,
+      "dy": -96
+    },
+    {
+      "pose": "burst",
+      "file": "6.png",
+      "dx": -52,
+      "dy": -98
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -37,
+      "dy": -92
+    },
+    {
+      "pose": "happy",
+      "file": "8.png",
+      "dx": -42,
+      "dy": -101
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 74,
+  "variant_of": "NUMEREX"
+}

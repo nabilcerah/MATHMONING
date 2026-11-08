@@ -171,3 +171,37 @@ def menu(surface, rect, choices, selected, size=11, frame=0, disabled=(), spacin
         else:
             color = PALETTE["muted"] if index in disabled else (PALETTE["mint"] if index in highlight else PALETTE["white"])
         text(surface, choice, (x + 16, row_y), size, color)
+
+
+# ----------------------------------------------------------------------------- mouse support
+_view = {"scale": 1.0, "offset": (0, 0)}
+
+
+def set_view(scale, offset):
+    """Called by the game each frame with how the canvas is scaled into the window."""
+    _view["scale"], _view["offset"] = scale, offset
+
+
+def to_virtual(pos):
+    """Window pixel -> canvas pixel (320 x 240)."""
+    scale = _view["scale"] or 1
+    return (int((pos[0] - _view["offset"][0]) / scale), int((pos[1] - _view["offset"][1]) / scale))
+
+
+def menu_index(rect, count, pos, spacing=15):
+    """Which row of a ``menu(...)`` drawn in ``rect`` is under ``pos`` (canvas pixels), or None."""
+    if pos is None:
+        return None
+    x, y, width, height = rect
+    if not (x <= pos[0] < x + width and y <= pos[1] < y + height):
+        return None
+    index = (pos[1] - (y + 5)) // spacing
+    return int(index) if 0 <= index < count else None
+
+
+def row_index(top, row_height, count, pos, left=0, right=320):
+    """Hit-test a simple vertical list of rows."""
+    if pos is None or not (left <= pos[0] < right):
+        return None
+    index = (pos[1] - top) // row_height
+    return int(index) if 0 <= index < count and pos[1] >= top else None

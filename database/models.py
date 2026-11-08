@@ -6,14 +6,16 @@ from dataclasses import dataclass
 class PlayerRecord:
     player_id: int
     name: str
-    creature: str
-    level: int
+    creature: str       # the lead monster's species (mirrored for the title screen)
+    level: int          # the lead monster's level
     hp: int
     max_hp: int
     exp: int
-    world: str
+    world: str          # current map id
     x: int
     y: int
+    currency: int = 0
+    region: str = "number_forest"
 
 
 @dataclass
@@ -26,4 +28,3 @@ class TopicPerformance:
     streak: int
     recent_accuracy: float
     common_mistake: str
-

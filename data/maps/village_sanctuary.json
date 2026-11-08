@@ -1,0 +1,169 @@
+{
+ "_comment": "Monster Sanctuary: a small building interior (tile map drawn in code). Safe area: no encounters.",
+ "id": "village_sanctuary",
+ "name": "Monster Sanctuary",
+ "size": [
+  12,
+  9
+ ],
+ "base": "F",
+ "border": "W",
+ "interior": true,
+ "player_spawn": [
+  6,
+  7
+ ],
+ "safe_spot": [
+  6,
+  6
+ ],
+ "exit_map": "number_forest",
+ "fills": [],
+ "props": [
+  {
+   "tile": "C",
+   "cells": [
+    [
+     3,
+     3
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     8,
+     3
+    ],
+    [
+     9,
+     3
+    ]
+   ]
+  },
+  {
+   "tile": "P",
+   "cells": [
+    [
+     1,
+     1
+    ],
+    [
+     1,
+     2
+    ],
+    [
+     10,
+     1
+    ],
+    [
+     10,
+     2
+    ],
+    [
+     1,
+     5
+    ],
+    [
+     10,
+     5
+    ]
+   ]
+  }
+ ],
+ "areas": [
+  {
+   "id": "village",
+   "name": "Monster Sanctuary",
+   "rect": [
+    0,
+    0,
+    12,
+    9
+   ],
+   "travel": [
+    6,
+    6
+   ]
+  }
+ ],
+ "waypoints": {
+  "counter": [
+   6,
+   2
+  ],
+  "counter2": [
+   5,
+   2
+  ]
+ },
+ "interactables": [
+  {
+   "id": "exit_sanctuary",
+   "kind": "portal",
+   "pos": [
+    6,
+    8
+   ],
+   "name": "door",
+   "verb": "Leave",
+   "title": "STARTER VILLAGE",
+   "destination": "number_forest",
+   "arrive": [
+    19,
+    59
+   ],
+   "text": [
+    "Back outside."
+   ],
+   "door": true
+  },
+  {
+   "id": "healing_pool",
+   "kind": "spring",
+   "pos": [
+    2,
+    6
+   ],
+   "name": "healing pool",
+   "verb": "Use",
+   "title": "HEALING POOL",
+   "text": [
+    "The Numera-rich water glows softly."
+   ]
+  }
+ ],
+ "npcs": [
+  {
+   "id": "keeper",
+   "name": "Sage Ilo",
+   "role": "Sanctuary Keeper",
+   "kind": "sanctuary",
+   "look": {
+    "hair": "#e8e8e8",
+    "skin": "#d9a57a",
+    "clothes": "#3b6fb0",
+    "accent": "#89c77c",
+    "pants": "#2e3240",
+    "shoes": "#2a1d14"
+   },
+   "routine": [
+    {
+     "waypoint": "counter",
+     "wait": 8,
+     "face": "down"
+    }
+   ],
+   "dialogue": {
+    "any": [
+     "Welcome to the Monster Sanctuary. I can heal your party, and up to twenty monsters can rest here while you travel with three."
+    ]
+   },
+   "remarks": [
+    "Rest well, little ones.",
+    "Twenty beds, all clean!"
+   ]
+  }
+ ],
+ "encounters": []
+}

@@ -427,7 +427,7 @@ class ProgressionTests(unittest.TestCase):
             self.assertTrue(reward.won and reward.first_clear and reward.trainer_xp > 0)
             self.assertEqual(record["rank"], rank)
             if engine.defn.boss:
-                self.assertIn("Learning Crystal", reward.items)
+                self.assertIn("Focus Crystal", reward.items)
 
     def test_mastery_ranks_unlock_one_at_a_time(self):
         defn = load_all()["crystalgon"]

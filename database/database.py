@@ -1,9 +1,18 @@
-"""SQLite storage with automatic schema creation and transactional updates."""
+"""SQLite storage with automatic schema creation, migrations and transactional updates."""
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
-from config import DATABASE_PATH
+from config import DATABASE_PATH, ROOT
+
+SCHEMA_PATH = ROOT / "database" / "schema.sql"
+
+# Columns added after the first release: (table, column, definition).
+MIGRATIONS = (
+    ("players", "currency", "INTEGER NOT NULL DEFAULT 0"),
+    ("players", "current_region", "TEXT NOT NULL DEFAULT 'number_forest'"),
+    ("players", "gdd_version", "INTEGER NOT NULL DEFAULT 0"),
+)
 
 
 class Database:
@@ -14,6 +23,7 @@ class Database:
 
     @contextmanager
     def connect(self):
+        """One transaction: committed on success, rolled back if anything inside fails."""
         connection = sqlite3.connect(self.path, timeout=10)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
@@ -28,71 +38,8 @@ class Database:
 
     def initialize(self):
         with self.connect() as db:
-            db.executescript("""
-                CREATE TABLE IF NOT EXISTS players (
-                    player_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL, creature TEXT NOT NULL,
-                    level INTEGER NOT NULL DEFAULT 1, hp INTEGER NOT NULL,
-                    max_hp INTEGER NOT NULL, exp INTEGER NOT NULL DEFAULT 0,
-                    world TEXT NOT NULL DEFAULT 'NUMBER FOREST',
-                    x INTEGER NOT NULL DEFAULT 4, y INTEGER NOT NULL DEFAULT 6,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                );
-                CREATE TABLE IF NOT EXISTS attempts (
-                    attempt_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
-                    question_id TEXT NOT NULL, topic TEXT NOT NULL, difficulty TEXT NOT NULL,
-                    prompt TEXT NOT NULL, submitted TEXT NOT NULL, expected TEXT NOT NULL,
-                    correct INTEGER NOT NULL, concept TEXT NOT NULL,
-                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                );
-                CREATE INDEX IF NOT EXISTS idx_attempts_player_topic ON attempts(player_id, topic, attempt_id);
-                CREATE TABLE IF NOT EXISTS topic_stats (
-                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
-                    topic TEXT NOT NULL, attempted INTEGER NOT NULL DEFAULT 0,
-                    correct INTEGER NOT NULL DEFAULT 0, streak INTEGER NOT NULL DEFAULT 0,
-                    mastery INTEGER NOT NULL DEFAULT 0, common_mistake TEXT NOT NULL DEFAULT '',
-                    last_difficulty TEXT NOT NULL DEFAULT 'easy',
-                    PRIMARY KEY(player_id, topic)
-                );
-                CREATE TABLE IF NOT EXISTS inventory (
-                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
-                    item TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 0,
-                    PRIMARY KEY(player_id, item)
-                );
-                CREATE TABLE IF NOT EXISTS world_flags (
-                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
-                    flag TEXT NOT NULL,
-                    PRIMARY KEY(player_id, flag)
-                );
-                CREATE TABLE IF NOT EXISTS team_members (
-                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
-                    species TEXT NOT NULL, level INTEGER NOT NULL DEFAULT 1, exp INTEGER NOT NULL DEFAULT 0,
-                    hp INTEGER NOT NULL, max_hp INTEGER NOT NULL,
-                    PRIMARY KEY(player_id, species)
-                );
-                CREATE TABLE IF NOT EXISTS arena_stats (
-                    player_id INTEGER PRIMARY KEY REFERENCES players(player_id) ON DELETE CASCADE,
-                    rating INTEGER NOT NULL DEFAULT 1000, wins INTEGER NOT NULL DEFAULT 0,
-                    losses INTEGER NOT NULL DEFAULT 0, streak INTEGER NOT NULL DEFAULT 0,
-                    best_streak INTEGER NOT NULL DEFAULT 0
-                );
-                CREATE TABLE IF NOT EXISTS trainer_progress (
-                    player_id INTEGER PRIMARY KEY REFERENCES players(player_id) ON DELETE CASCADE,
-                    xp INTEGER NOT NULL DEFAULT 0, level INTEGER NOT NULL DEFAULT 1
-                );
-                CREATE TABLE IF NOT EXISTS monster_records (
-                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
-                    monster_id TEXT NOT NULL, rank INTEGER NOT NULL DEFAULT 0,
-                    wins INTEGER NOT NULL DEFAULT 0, losses INTEGER NOT NULL DEFAULT 0,
-                    best_turns INTEGER NOT NULL DEFAULT 0,
-                    PRIMARY KEY(player_id, monster_id)
-                );
-                CREATE TABLE IF NOT EXISTS recommendations (
-                    recommendation_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
-                    message TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
-
+            db.executescript(Path(SCHEMA_PATH).read_text(encoding="utf-8"))
+            for table, column, definition in MIGRATIONS:
+                existing = {row["name"] for row in db.execute(f"PRAGMA table_info({table})")}
+                if column not in existing:
+                    db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")

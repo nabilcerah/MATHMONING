@@ -1,0 +1,89 @@
+{
+  "_comment": "GDD 11. Quest rules are deterministic: steps complete from game events and flags, rewards are fixed and saved. The AI Game Master may only RECOMMEND quests (by their topics); it can never change steps or rewards. Step types: talk(npc), win_battles(count), capture(count), visit(area), challenge(id), flags_all([...]), flag(name), open_chests(count).",
+  "quests": {
+    "fading_numera": {
+      "title": "THE FADING NUMERA", "category": "main", "giver": "rowan", "auto_start": true,
+      "topics": ["addition", "subtraction", "multiplication", "division", "fractions"],
+      "summary": "The Numera is fading from Number Forest. Restore the three Numera Seals in the Ancient Number Ruins, then face the Arithmetic Beast at the old stone arch.",
+      "steps": [
+        {"type": "talk", "npc": "rowan", "met_ok": true, "text": "Meet Professor Numeris in Starter Village."},
+        {"type": "win_battles", "count": 1, "text": "Win a battle in the Green Meadow grass."},
+        {"type": "visit", "area": "ridge", "text": "Reach the Ancient Number Ruins (south-east)."},
+        {"type": "flags_all", "flags": ["challenge:seal_add", "challenge:seal_mul", "challenge:seal_frac"], "text": "Restore the three Numera Seals in the ruins."},
+        {"type": "flag", "flag": "boss:numerex", "text": "Defeat THE ARITHMETIC BEAST at the stone arch."}
+      ],
+      "rewards": {"exp": 300, "coins": 300, "items": {"Revival Crystal": 2}, "flags": ["region:number_forest_complete"]}
+    },
+    "lost_numbers": {
+      "title": "THE LOST NUMBERS", "category": "side", "giver": "mira",
+      "topics": ["addition", "multiplication", "division"],
+      "summary": "Mira dropped three numbered stones while fleeing a wild VOLTIX. Each stone only answers to the right arithmetic.",
+      "steps": [
+        {"type": "talk", "npc": "mira", "text": "Talk to Mira in Starter Village."},
+        {"type": "challenge", "id": "stone_1", "text": "Stone I: in the Green Meadow grass, east of the crossroads."},
+        {"type": "challenge", "id": "stone_2", "text": "Stone II: among the crops of Sunny Farms."},
+        {"type": "challenge", "id": "stone_3", "text": "Stone III: in Woolly Pasture, near the arena."},
+        {"type": "talk", "npc": "mira", "text": "Bring the stones back to Mira."}
+      ],
+      "rewards": {"exp": 80, "coins": 60, "items": {"Health Potion": 3}}
+    },
+    "broken_bridge": {
+      "title": "THE BROKEN BRIDGE", "category": "side", "giver": "bram",
+      "topics": ["geometry", "multiplication"],
+      "summary": "Bram the builder needs the plank and rail sums for the plateau bridge to the Sunsand Desert.",
+      "steps": [
+        {"type": "talk", "npc": "bram", "text": "Talk to Bram at the plateau bridge (east of the falls)."},
+        {"type": "challenge", "id": "bridge_plan", "text": "Work out the materials for the bridge."}
+      ],
+      "rewards": {"exp": 100, "coins": 40, "items": {"Greater Potion": 2, "Stone Charm": 1}, "flags": ["bridge:repaired"]}
+    },
+    "crystal_seal": {
+      "title": "THE CRYSTAL SEAL", "category": "side", "giver": "crystal_seal",
+      "topics": ["fractions"],
+      "summary": "An ancient crystal on Waterfall Plateau hums with broken fractions. Solve them to wake it.",
+      "steps": [
+        {"type": "challenge", "id": "crystal_seal", "text": "Solve the fraction puzzles at the Crystal Seal."}
+      ],
+      "rewards": {"exp": 100, "coins": 0, "items": {"Crystal Shard": 3, "Evolution Crystal": 1}}
+    },
+    "unknown_runes": {
+      "title": "THE UNKNOWN RUNES", "category": "side", "giver": "tablet",
+      "topics": ["algebra"],
+      "summary": "A stone tablet in Pine Ridge is covered in equations. Each solved rune reveals the value hidden behind an x.",
+      "steps": [
+        {"type": "challenge", "id": "rune_tablet", "text": "Solve the runes on the stone tablet in Pine Ridge."}
+      ],
+      "rewards": {"exp": 90, "coins": 50, "items": {"Focus Crystal": 2}}
+    },
+    "hidden_treasures": {
+      "title": "HIDDEN TREASURES", "category": "exploration", "giver": "", "auto_start": true,
+      "topics": [],
+      "summary": "Old chests are hidden all over Number Forest. Explore every corner.",
+      "steps": [
+        {"type": "open_chests", "count": 4, "text": "Open 4 treasure chests anywhere in Number Forest."}
+      ],
+      "rewards": {"exp": 60, "coins": 120, "items": {"Math Capsule": 3}}
+    }
+  },
+  "challenges": {
+    "stone_1": {"title": "NUMBERED STONE I", "need": 1, "questions": [{"topic": "addition"}],
+                "intro": "The stone is warm. A sum is carved into it."},
+    "stone_2": {"title": "NUMBERED STONE II", "need": 1, "questions": [{"topic": "multiplication"}],
+                "intro": "Rows of seeds are carved into this stone."},
+    "stone_3": {"title": "NUMBERED STONE III", "need": 1, "questions": [{"topic": "division"}],
+                "intro": "This stone is split into equal grooves."},
+    "bridge_plan": {"title": "BRIDGE PLANS", "need": 2,
+                    "questions": [{"topic": "geometry", "subtopic": "bridge_area"}, {"topic": "multiplication", "subtopic": "bridge_bundles"}, {"topic": "geometry", "subtopic": "bridge_rail"}],
+                    "intro": "Bram unrolls a plan. 'Help me get the numbers right and the bridge goes back up today!'"},
+    "crystal_seal": {"title": "THE CRYSTAL SEAL", "need": 2, "questions": [{"topic": "fractions"}, {"topic": "fractions"}, {"topic": "fractions"}],
+                     "intro": "Three facets flicker. Each one shows a broken fraction."},
+    "rune_tablet": {"title": "THE UNKNOWN RUNES", "need": 2, "questions": [{"topic": "algebra"}, {"topic": "algebra"}, {"topic": "algebra"}],
+                    "intro": "Each rune hides a number behind an x."},
+    "seal_add": {"title": "SEAL OF SUMS", "need": 2, "questions": [{"topic": "addition"}, {"topic": "subtraction"}],
+                 "intro": "The seal's light flickers between plus and minus."},
+    "seal_mul": {"title": "SEAL OF PRODUCTS", "need": 2, "questions": [{"topic": "multiplication"}, {"topic": "division"}],
+                 "intro": "Grids of light fold into equal groups."},
+    "seal_frac": {"title": "SEAL OF PARTS", "need": 2, "questions": [{"topic": "fractions"}, {"topic": "fractions"}],
+                  "intro": "A crystal disc waits to be cut into fair parts."}
+  }
+}

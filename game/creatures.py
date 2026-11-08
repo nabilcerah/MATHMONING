@@ -1,210 +1,43 @@
-"""MATHMON creature definitions.
+"""Drawing MATHMON creatures, plus lookups that older screens (Arena, Trials) still use.
 
-Creatures with a ``sprite`` use the processed art in assets/sprites/monsters (drawn by
-``draw_creature``). ``pixel_monster`` remains as a code-drawn fallback for any creature
-without art.
+Species data lives in data/monsters.json (see monsters.monster_data). ``draw_creature`` uses a
+species' processed sprite frames when they exist and a code-drawn placeholder otherwise, so the
+game stays playable with missing art (GDD 24.1).
 """
-from dataclasses import dataclass
+from monsters.monster_data import has_species, species, species_ids, starter_ids
 
-
-@dataclass(frozen=True)
-class CreatureSpec:
-    name: str
-    element: str
-    hp: int
-    attack: int
-    accent: tuple[int, int, int]
-    base: tuple[int, int, int]
-    skills: tuple[str, ...]
-    evolution_level: int = 8
-    topic: str = ""            # the maths skill this creature is linked to (bond challenges, friend bonus)
-    habitat: tuple[str, ...] = ()  # overworld area ids whose tall grass it lives in
-    shape: str = "blob"
-    blurb: str = ""
-    rarity: int = 10           # relative encounter weight inside its habitat
-    sprite: str = ""           # folder name under assets/sprites/monsters
-    size: float = 1.0          # drawing scale (evolved forms stand taller)
-    min_difficulty: str = ""   # realm monsters never ask easy questions
-
-
-STARTERS = {
-    "PYRON": CreatureSpec("PYRON", "FIRE", 34, 8, (250, 151, 67), (205, 77, 58), ("Addition Spark", "Multiplication Flare"),
-                          8, "addition", (), "blob", "A bold little dragon. Its belly glows with a plus sign.",
-                          sprite="PYRON"),
-    "AQUABIT": CreatureSpec("AQUABIT", "WATER", 38, 7, (126, 212, 221), (62, 137, 180), ("Subtraction Splash", "Division Current"),
-                            8, "subtraction", (), "blob", "A calm turtle. The minus mark on its shell shines when it thinks.",
-                            sprite="AQUABIT"),
-    "GEOMAX": CreatureSpec("GEOMAX", "EARTH", 42, 6, (203, 190, 119), (115, 147, 85), ("Subtraction Shield", "Multiplication Boulder"),
-                           8, "multiplication", (), "blob", "A sturdy stone golem with a glowing triangle heart.",
-                           sprite="GEOMAX"),
-}
-
-EVOLUTIONS = {
-    "PYRON": CreatureSpec("PYRONYX", "FIRE", 48, 11, (255, 218, 105), (173, 63, 78), ("Solar Addition", "Multiplication Nova"),
-                          99, "addition", sprite="PYRON", size=1.18,
-                          blurb="PYRON's evolved form. Its flame burns brighter with every correct answer."),
-    "AQUABIT": CreatureSpec("AQUACREST", "WATER", 52, 10, (171, 241, 232), (45, 118, 167), ("Tidal Subtraction", "Division Surge"),
-                            99, "subtraction", sprite="AQUABIT", size=1.18,
-                            blurb="AQUABIT's evolved form. Its shell shines with every problem it has solved."),
-    "GEOMAX": CreatureSpec("GEOMAXIMUS", "EARTH", 57, 9, (229, 209, 139), (93, 123, 74), ("Subtraction Shield", "Multiplication Boulder"),
-                           99, "multiplication", sprite="GEOMAX", size=1.18,
-                           blurb="GEOMAX's evolved form. A towering golem built from layers of practice."),
-}
-
-# Saves made before the new art used these starter ids.
-LEGACY_NAMES = {"PYROX": "PYRON", "TERRABIT": "GEOMAX", "TERRAVOLT": "GEOMAXIMUS"}
-
-
-def canonical_name(name):
-    return LEGACY_NAMES.get(name, name)
-
-
-def creature_spec(name: str, level: int = 1) -> CreatureSpec:
-    """Return the earned form for a starter while retaining its save identity."""
-    name = canonical_name(name)
-    base = STARTERS.get(name)
-    if base and level >= base.evolution_level:
-        return EVOLUTIONS[name]
-    for starter, evolved in EVOLUTIONS.items():
-        if name == evolved.name:
-            return evolved
-    if not base and name in WILD_BY_NAME:
-        return WILD_BY_NAME[name]
-    return base or STARTERS["PYRON"]
-
-
-VOLTIX = CreatureSpec("VOLTIX", "SPARK", 26, 6, (255, 214, 80), (128, 72, 170), ("Times Bolt", "Multiply Storm"), 99,
-                      "multiplication", ("meadow", "ridge"), sprite="VOLTIX",
-                      blurb="A crackling fox. Its tails spark in groups: 3, 6, 9, 12...")
-DIVOWL = CreatureSpec("DIVOWL", "LEAF", 28, 5, (178, 232, 140), (70, 150, 70), ("Share Gust", "Division Dive"), 99,
-                      "division", ("meadow", "grove", "falls"), sprite="DIVOWL",
-                      blurb="A wise leaf owl that splits every snack into equal shares.")
-FRACTELLA = CreatureSpec("FRACTELLA", "CRYSTAL", 30, 6, (250, 150, 230), (150, 90, 200), ("Shard Split", "Fraction Burst"), 99,
-                         "division", ("grove", "ridge", "falls"), sprite="FRACTELLA",
-                         blurb="A cheerful crystal slime. It breaks into perfect, equal pieces.")
-CHRONOX = CreatureSpec("CHRONOX", "TIME", 36, 8, (230, 190, 90), (140, 90, 40), ("Clockwork Plus", "Time Split"), 99,
-                       "", ("meadow", "grove", "ridge", "falls"), sprite="CHRONOX", rarity=2,
-                       blurb="A legendary clockwork dragon. It appears to learners who keep practising.")
-# Crystal Realm: stronger recoloured forms (tools/make_variants.py) that ask harder questions.
-PRISMVOLT = CreatureSpec("PRISMVOLT", "CRYSTAL", 44, 10, (120, 230, 240), (236, 90, 190), ("Prism Bolt", "Times Storm"), 99,
-                         "multiplication", ("glimmer",), sprite="PRISMVOLT", min_difficulty="intermediate",
-                         blurb="VOLTIX's crystal form. Light splits through its tails into neat rows of sparks.")
-OPALOWL = CreatureSpec("OPALOWL", "CRYSTAL", 46, 9, (230, 150, 240), (150, 80, 190), ("Opal Gust", "Share Storm"), 99,
-                       "division", ("glimmer", "shardgrove"), sprite="OPALOWL", min_difficulty="intermediate",
-                       blurb="A shimmering owl that shares starlight into perfectly equal beams.")
-GEMELLA = CreatureSpec("GEMELLA", "CRYSTAL", 48, 9, (120, 240, 200), (40, 160, 150), ("Gem Split", "Facet Burst"), 99,
-                       "subtraction", ("shardgrove",), sprite="GEMELLA", min_difficulty="intermediate",
-                       blurb="A gem slime that chips away a little of itself with every bounce.")
-GRAPHION = CreatureSpec("GRAPHION", "COSMIC", 56, 11, (120, 140, 255), (40, 50, 160), ("Vector Beam", "Axis Nova"), 99,
-                        "", ("starfall",), sprite="GRAPHION", rarity=0, min_difficulty="advanced",
-                        blurb="SECRET. A clockwork comet that travels on straight lines. It appears only to "
-                              "rangers who complete the Star Chart.")
-
-BOSS = CreatureSpec("NUMEREX", "BOSS", 58, 7, (190, 120, 255), (60, 30, 110), ("Number Roar",), 99,
-                    "", (), sprite="NUMEREX", size=1.2,
-                    blurb="The Arithmetic Beast, a shadow spirit guarding the old stone arch. It tests every skill.")
-
-# ENEMIES keeps its historic shape: three wild creatures followed by the boss at index 3.
-ENEMIES = (VOLTIX, DIVOWL, FRACTELLA, BOSS)
-WILD = (VOLTIX, DIVOWL, FRACTELLA, CHRONOX, PRISMVOLT, OPALOWL, GEMELLA, GRAPHION)
+STARTERS = {sid: species(sid) for sid in starter_ids()}
+BOSS = species("NUMEREX_BOSS")
+WILD = tuple(species(sid) for sid in species_ids() if not species(sid).boss and species(sid).stage == 1)
 WILD_BY_NAME = {spec.name: spec for spec in WILD}
-TOPIC_COLORS = {"addition": (137, 199, 124), "subtraction": (110, 177, 206),
-                "multiplication": (242, 187, 82), "division": (235, 112, 92), "": (220, 200, 240),
-                "fractions": (240, 150, 200), "place_value": (180, 160, 240), "shapes": (120, 210, 190),
-                "time_money": (230, 200, 120)}
+ENEMIES = (species("VOLTIX"), species("DIVOWL"), species("FRACTELLA"), BOSS)
+TOPIC_COLORS = {"addition": (137, 199, 124), "subtraction": (110, 177, 206), "multiplication": (242, 187, 82),
+                "division": (235, 112, 92), "fractions": (240, 150, 200), "ratios": (250, 180, 220),
+                "integers": (180, 140, 240), "algebra": (240, 200, 100), "geometry": (203, 170, 105),
+                "sequences": (120, 210, 190), "reasoning": (220, 200, 240), "": (220, 200, 240)}
 
 
-def leader_spec(player, flags):
-    """The team member that fights and follows you: a captured monster chosen in the MathDex,
-    otherwise your partner (the starter, in its earned form). The partner is never removed."""
-    chosen = [f.split(":", 1)[1] for f in flags if f.startswith("companion:")]
-    name = chosen[0] if chosen else None
-    if name in WILD_BY_NAME and f"dex_friend:{name}" in flags:
-        return WILD_BY_NAME[name]
-    return creature_spec(player.creature, player.level)
+def creature_spec(name, level=1):
+    """Species by id or display name (older code passes names like "VOLTIX")."""
+    from monsters.monster_data import canonical_species
+    if has_species(str(name)):
+        return species(name)
+    for sid in species_ids():
+        if species(sid).name == name and not species(sid).boss:
+            return species(sid)
+    return species(canonical_species(name))
 
 
-# --------------------------------------------------------------------------- levels and nemeses
-# Wild level ranges per area: deeper and stranger places hold stronger MATHMON.
-WILD_LEVELS = {"meadow": (1, 4), "grove": (3, 6), "falls": (4, 7), "ridge": (5, 8),
-               "glimmer": (10, 13), "shardgrove": (11, 14), "starfall": (14, 16)}
-
-# Each lineage's nemesis: the species it is weak against. Evolved forms keep their base's nemesis.
-NEMESIS = {
-    "PYRON": "AQUABIT",      # water douses fire
-    "AQUABIT": "VOLTIX",     # sparks crackle through water
-    "VOLTIX": "GEOMAX",      # stone grounds electricity
-    "GEOMAX": "DIVOWL",      # roots split stone
-    "DIVOWL": "PYRON",       # fire scorches leaves
-    "FRACTELLA": "GEOMAX",   # stone shatters crystal
-    "CHRONOX": "FRACTELLA",  # crystal refracts time
-    "PRISMVOLT": "GEMELLA",  # the crystal triangle
-    "GEMELLA": "OPALOWL",
-    "OPALOWL": "PRISMVOLT",
-    "GRAPHION": "CHRONOX",   # space versus time
-    "NUMEREX": "GRAPHION",   # the secret comet is the Arithmetic Beast's undoing
-}
-STRONG_HIT, WEAK_HIT = 1.5, 0.6          # damage you deal when strong / weak
-STRONG_GUARD, WEAK_GUARD = 0.7, 1.4      # damage you take when strong / weak
-
-
-def lineage(spec_or_name):
-    """Evolved forms share their starter's identity: PYRONYX -> PYRON."""
-    name = getattr(spec_or_name, "name", spec_or_name)
-    for base, evolved in EVOLUTIONS.items():
-        if evolved.name == name:
-            return base
-    return canonical_name(name)
-
-
-def matchup(you, foe):
-    """'strong' if you are the foe's nemesis, 'weak' if the foe is yours, else 'neutral'."""
-    you, foe = lineage(you), lineage(foe)
-    if NEMESIS.get(foe) == you:
-        return "strong"
-    if NEMESIS.get(you) == foe:
-        return "weak"
-    return "neutral"
-
-
-def strong_against(name):
-    """Species whose nemesis is ``name`` (the ones it beats)."""
-    base = lineage(name)
-    return [species for species, nemesis in NEMESIS.items() if nemesis == base]
-
-
-def wild_level(area_id, rng):
-    low, high = WILD_LEVELS.get(area_id, (1, 3))
-    return rng.randint(low, high)
-
-
-def leveled_stats(spec, level):
-    """(max HP, attack) for a wild or team MATHMON at ``level``."""
-    level = max(1, int(level or 1))
-    return spec.hp + (level - 1) * 4, spec.attack + (level - 1) // 2
-
-
-def encounter_for(area_id, rng):
-    """Pick a wild creature for the area's tall grass, weighted by rarity."""
-    # rarity 0 means "never random": such creatures appear only through special zones.
-    pool = [spec for spec in WILD if area_id in spec.habitat and spec.rarity > 0] or         [spec for spec in WILD if "meadow" in spec.habitat and spec.rarity > 0]
-    return rng.choices(pool, weights=[spec.rarity for spec in pool])[0]
-
-
-def bond_topic(spec, rng):
-    """Bond challenges use the creature's topic; topic-less rare creatures mix all four."""
-    from mathematics.question_generator import QuestionGenerator
-    return spec.topic or rng.choice(QuestionGenerator.TOPICS)
+def leader_spec(player, flags=()):
+    """The lead monster's species (Arena portrait)."""
+    return creature_spec(getattr(player, "creature", "FRACTELLA"))
 
 
 def draw_creature(surface, spec, anchor, height, pose="idle", flip=False, tint=None):
-    """Draw ``spec`` standing with its feet at ``anchor`` (centre-x, bottom-y), about ``height`` px tall.
-
-    Uses the creature's sprite art when it exists, otherwise the code-drawn fallback.
-    """
+    """Draw ``spec`` standing with its feet at ``anchor`` (centre-x, bottom-y), about ``height`` px tall."""
     from game import monster_sprites
-    height = max(4, round(height * spec.size))
-    if monster_sprites.available(spec.sprite):
+    height = max(4, round(height * getattr(spec, "size", 1.0)))
+    if monster_sprites.available(getattr(spec, "sprite", "")):
         return monster_sprites.draw(surface, spec.sprite, anchor, height, pose, flip, tint)
     scale = max(1, round(height / 16))
     pixel_monster(surface, anchor[0] - 8 * scale, anchor[1] - 16 * scale, spec, scale, flip, tint)
@@ -218,73 +51,22 @@ SHAPES = {
         "1222222222222110", "0122222222222100", "0012222222221000", "0001222222210000",
         "0001122222110000", "0000110001100000", "0001100000110000", "0011000000011000",
     ), {(6, 4), (6, 11)}),
-    "eared": ((
-        "0100000000000010", "1210000000000121", "1221000000001221", "1222111111112221",
-        "0122222222222210", "0122222222222210", "0122222222222210", "0122222222222210",
-        "0012222222222100", "0012222222222100", "0001222222221000", "0001222222221000",
-        "0000122222210000", "0000110000110000", "0001100000011000", "0001100000011000",
-    ), {(6, 4), (6, 11)}),
-    "squat": ((
-        "0000000000000000", "0000000000000000", "0000000000000000", "0000011111100000",
-        "0001122222211000", "0012222222222100", "0122222222222210", "1222222222222221",
-        "1222222222222221", "1222222222222221", "1222222222222221", "0122222222222210",
-        "0012222222222100", "0110000000000110", "1100000000000011", "0000000000000000",
-    ), {(6, 5), (6, 10)}),
-    "wing": ((
-        "0000000110000000", "0000001221000000", "1100012222100011", "1211122222211121",
-        "1222222222222221", "1222222222222221", "0122222222222210", "0012222222222100",
-        "0001222222221000", "0011222222221100", "0122222222222210", "0122100000012210",
-        "0011000000001100", "0000011001100000", "0000110000110000", "0000000000000000",
-    ), {(6, 5), (6, 10)}),
-    "tall": ((
-        "0000001111000000", "0000012222100000", "0000122222210000", "0000122222210000",
-        "0001122222211000", "0012222222222100", "0122222222222210", "0122222222222210",
-        "0012222222222100", "0001222222221000", "0001222222221000", "0000122222210000",
-        "0000122222210000", "0000011001100000", "0000110000110000", "0001100000011000",
-    ), {(3, 6), (3, 9)}),
 }
 
 
-def pixel_monster(surface, x: int, y: int, spec: CreatureSpec, scale: int = 2, flip: bool = False, tint=None) -> None:
-    """Draw a chunky, original creature from rectangles (no external assets).
-
-    ``tint`` paints the whole silhouette one colour, used for hit flashes.
-    """
+def pixel_monster(surface, x, y, spec, scale=2, flip=False, tint=None):
+    """Placeholder sprite drawn from rectangles, used when a species has no art."""
     import pygame
-
-    # 16x16 bit silhouette; 1 = body, 2 = accent, 3 = eye, 4 = shadow.
-    shape, eyes = SHAPES.get(spec.shape, SHAPES["blob"])
-    colors = {"1": spec.base, "2": spec.accent, "3": (255, 249, 220), "4": tuple(max(0, c - 42) for c in spec.base)}
+    shape, eyes = SHAPES["blob"]
+    base = tuple(getattr(spec, "base", (120, 120, 160)))
+    colors = {"1": base, "2": tuple(getattr(spec, "accent", (220, 220, 240))), "3": (255, 249, 220),
+              "4": tuple(max(0, c - 42) for c in base)}
     if tint:
         colors = {key: tint for key in colors}
-    px = int(x)
-    y = int(y)
     for row_index, row in enumerate(shape):
         for col_index, cell in enumerate(row):
             if cell == "0":
                 continue
             col = 15 - col_index if flip else col_index
-            # Eyes and feet use a contrasting outline for crisp low-res silhouettes.
             actual = "3" if (row_index, col_index) in eyes else ("4" if row_index >= 13 else cell)
-            pygame.draw.rect(surface, colors[actual], (px + col * scale, y + row_index * scale, scale, scale))
-    # Distinctive silhouettes and elemental marks keep the trio recognizable.
-    if tint or spec.shape != "blob":
-        return
-
-    def mark(color, col, row, w, h):
-        # Elemental marks mirror with the body so flipped enemies stay consistent.
-        col = 16 - col - w if flip else col
-        pygame.draw.rect(surface, color, (px + col * scale, y + row * scale, w * scale, h * scale))
-
-    if spec.element == "FIRE" or spec.element == "EMBER":
-        mark((255, 215, 102), 13, 9, 3, 1)
-        mark((245, 126, 73), 15, 7, 2, 3)
-    elif spec.element == "WATER":
-        mark((174, 235, 227), 2, 4, 2, 5)
-        mark((174, 235, 227), 12, 4, 2, 5)
-    elif spec.element == "EARTH":
-        mark((226, 213, 159), 2, 2, 2, 4)
-        mark((226, 213, 159), 12, 2, 2, 4)
-    elif spec.element == "BOSS":
-        mark((255, 222, 125), 5, 0, 2, 4)
-        mark((255, 222, 125), 10, 0, 2, 4)
+            pygame.draw.rect(surface, colors[actual], (int(x) + col * scale, int(y) + row_index * scale, scale, scale))

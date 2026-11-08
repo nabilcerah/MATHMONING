@@ -1,0 +1,186 @@
+{
+  "_comment": "GDD 4.3-4.4 and 9. Stats at level 1; growth is added per level after 1 (fractions round down). mastery_topic is the monster's mastery category (evolution checks it). evolution.into names the next stage; requirements come from rules.json unless overridden here.",
+  "starters": ["FRACTELLA", "GEOMAX", "NUMEREX", "CHRONOX"],
+  "species": {
+    "FRACTELLA": {
+      "name": "FRACTELLA", "element": "Crystal", "role": "Balanced attacker / support", "stage": 1,
+      "stats": {"hp": 85, "attack": 15, "defence": 14, "speed": 12},
+      "growth": {"hp": 6, "attack": 2, "defence": 2, "speed": 1},
+      "topics": ["fractions", "ratios"], "mastery_topic": "fractions",
+      "moves": ["crystal_shard", "fraction_blast", "prism_shield"],
+      "passive": {"type": "topic_streak", "topic": "fractions", "step": 0.05, "max": 0.15,
+                  "name": "Fraction Focus", "text": "Each correct fractions answer this battle powers up its moves by 5% (up to 15%)."},
+      "evolution": {"into": "PRISMELLA"},
+      "description": "A cheerful crystal slime. Its head-crystal holds a glowing fraction bar.",
+      "appearance": ["Pink and purple jelly-like slime", "Translucent geometric body sections", "Tiny arms", "Sparkling eyes", "Crystal with a fraction symbol on its head"],
+      "sprite": "FRACTELLA", "colors": {"base": [150, 90, 200], "accent": [250, 150, 230]}
+    },
+    "GEOMAX": {
+      "name": "GEOMAX", "element": "Earth", "role": "Tank / heavy attacker", "stage": 1,
+      "stats": {"hp": 110, "attack": 14, "defence": 20, "speed": 7},
+      "growth": {"hp": 8, "attack": 2, "defence": 3, "speed": 0.5},
+      "topics": ["geometry"], "mastery_topic": "geometry",
+      "moves": ["stone_punch", "earthquake", "geometric_barrier"],
+      "passive": {"type": "mastery_guard", "topic": "geometry", "max": 0.15,
+                  "name": "Stone Theorem", "text": "Geometry mastery reduces the damage it takes by up to 15%."},
+      "evolution": {"into": "GEOMAXIMUS"},
+      "description": "A sturdy stone golem with a glowing triangle heart.",
+      "appearance": ["Small bulky stone golem", "Square torso", "Golden-brown armour", "Chunky arms", "Glowing blue eyes", "Triangular chest crystal"],
+      "sprite": "GEOMAX", "colors": {"base": [115, 147, 85], "accent": [203, 190, 119]}
+    },
+    "NUMEREX": {
+      "name": "NUMEREX", "element": "Dark", "role": "Fast attacker / debuffer", "stage": 1,
+      "stats": {"hp": 75, "attack": 19, "defence": 10, "speed": 17},
+      "growth": {"hp": 5, "attack": 3, "defence": 1, "speed": 1.5},
+      "topics": ["integers", "subtraction"], "mastery_topic": "integers",
+      "moves": ["negative_pulse", "shadow_orb", "void_collapse"],
+      "passive": {"type": "mastery_power", "topic": "integers", "max": 0.15,
+                  "name": "Below Zero", "text": "Integer mastery adds up to 15% to its damage."},
+      "evolution": {"into": "NULLAREX"},
+      "description": "A floating shadow phantom. A minus sign glows through its markings.",
+      "appearance": ["Floating shadow phantom", "Dark purple body", "Glowing red eyes", "Wispy lower body", "Tiny shadow arms", "Negative symbol in its markings"],
+      "sprite": "NUMEREX", "colors": {"base": [60, 30, 110], "accent": [190, 120, 255]}
+    },
+    "CHRONOX": {
+      "name": "CHRONOX", "element": "Time", "role": "Tactical attacker / control", "stage": 1,
+      "stats": {"hp": 85, "attack": 16, "defence": 13, "speed": 15},
+      "growth": {"hp": 6, "attack": 2, "defence": 2, "speed": 1},
+      "topics": ["sequences", "algebra"], "mastery_topic": "algebra",
+      "moves": ["pattern_swipe", "time_rift", "temporal_shift"],
+      "passive": {"type": "rhythm", "streak": 2, "multiplier": 0.7,
+                  "name": "Perfect Rhythm", "text": "Two first-try answers in a row slow the foe: its next hit deals 30% less."},
+      "evolution": {"into": "CHRONODRAKE"},
+      "description": "A small clockwork dragon. An algebraic X ticks on its forehead.",
+      "appearance": ["Bronze and golden clockwork dragon", "Mechanical wings", "Golden horns", "Cyan glowing eyes", "Clock marking on its chest", "Algebraic X on its forehead"],
+      "sprite": "CHRONOX", "colors": {"base": [140, 90, 40], "accent": [230, 190, 90]}
+    },
+
+    "PRISMELLA": {
+      "name": "PRISMELLA", "element": "Crystal", "role": "Balanced attacker / support", "stage": 2, "evolves_from": "FRACTELLA",
+      "stats": {"hp": 105, "attack": 20, "defence": 18, "speed": 15},
+      "growth": {"hp": 7, "attack": 2.5, "defence": 2.5, "speed": 1},
+      "topics": ["fractions", "ratios"], "mastery_topic": "fractions",
+      "moves": ["crystal_shard", "prism_nova", "prism_shield"], "power_bonus": 4,
+      "passive": {"type": "topic_streak", "topic": "fractions", "step": 0.05, "max": 0.2,
+                  "name": "Fraction Focus+", "text": "Each correct fractions answer this battle powers up its moves by 5% (up to 20%)."},
+      "description": "FRACTELLA's evolved form. Every facet holds a perfect ratio.",
+      "sprite": "PRISMELLA", "base_sprite": "FRACTELLA", "size": 1.22, "colors": {"base": [190, 90, 150], "accent": [255, 200, 220]}
+    },
+    "GEOMAXIMUS": {
+      "name": "GEOMAXIMUS", "element": "Earth", "role": "Tank / heavy attacker", "stage": 2, "evolves_from": "GEOMAX",
+      "stats": {"hp": 140, "attack": 19, "defence": 26, "speed": 9},
+      "growth": {"hp": 9, "attack": 2.5, "defence": 3, "speed": 0.5},
+      "topics": ["geometry"], "mastery_topic": "geometry",
+      "moves": ["stone_punch", "tectonic_slam", "geometric_barrier"], "power_bonus": 4,
+      "passive": {"type": "mastery_guard", "topic": "geometry", "max": 0.2,
+                  "name": "Stone Theorem+", "text": "Geometry mastery reduces the damage it takes by up to 20%."},
+      "description": "GEOMAX's evolved form. A towering golem built from layers of proofs.",
+      "sprite": "GEOMAXIMUS", "base_sprite": "GEOMAX", "size": 1.22, "colors": {"base": [93, 123, 74], "accent": [229, 209, 139]}
+    },
+    "NULLAREX": {
+      "name": "NULLAREX", "element": "Dark", "role": "Fast attacker / debuffer", "stage": 2, "evolves_from": "NUMEREX",
+      "stats": {"hp": 95, "attack": 25, "defence": 13, "speed": 21},
+      "growth": {"hp": 6, "attack": 3, "defence": 1.5, "speed": 1.5},
+      "topics": ["integers", "subtraction"], "mastery_topic": "integers",
+      "moves": ["negative_pulse", "shadow_orb", "abyss_collapse"], "power_bonus": 4,
+      "passive": {"type": "mastery_power", "topic": "integers", "max": 0.2,
+                  "name": "Below Zero+", "text": "Integer mastery adds up to 20% to its damage."},
+      "description": "NUMEREX's evolved form. It drifts through the space below zero.",
+      "sprite": "NULLAREX", "base_sprite": "NUMEREX", "size": 1.22, "colors": {"base": [30, 90, 110], "accent": [120, 230, 220]}
+    },
+    "CHRONODRAKE": {
+      "name": "CHRONODRAKE", "element": "Time", "role": "Tactical attacker / control", "stage": 2, "evolves_from": "CHRONOX",
+      "stats": {"hp": 105, "attack": 21, "defence": 17, "speed": 19},
+      "growth": {"hp": 7, "attack": 2.5, "defence": 2, "speed": 1},
+      "topics": ["sequences", "algebra"], "mastery_topic": "algebra",
+      "moves": ["pattern_swipe", "paradox_rift", "temporal_shift"], "power_bonus": 4,
+      "passive": {"type": "rhythm", "streak": 2, "multiplier": 0.6,
+                  "name": "Perfect Rhythm+", "text": "Two first-try answers in a row slow the foe: its next hit deals 40% less."},
+      "description": "CHRONOX's evolved form. Its gears keep time for the whole forest.",
+      "sprite": "CHRONODRAKE", "base_sprite": "CHRONOX", "size": 1.22, "colors": {"base": [170, 100, 30], "accent": [255, 210, 90]}
+    },
+
+    "PYRON": {
+      "name": "PYRON", "element": "Time", "role": "Steady attacker", "stage": 1,
+      "stats": {"hp": 80, "attack": 16, "defence": 12, "speed": 12},
+      "growth": {"hp": 6, "attack": 2, "defence": 2, "speed": 1},
+      "topics": ["addition"], "mastery_topic": "addition",
+      "moves": ["addition_spark", "solar_sum"],
+      "description": "A bold little sun-dragon. Its belly glows with a plus sign.",
+      "sprite": "PYRON", "colors": {"base": [205, 77, 58], "accent": [250, 151, 67]}
+    },
+    "AQUABIT": {
+      "name": "AQUABIT", "element": "Dark", "role": "Defender", "stage": 1,
+      "stats": {"hp": 88, "attack": 13, "defence": 16, "speed": 9},
+      "growth": {"hp": 7, "attack": 2, "defence": 2, "speed": 1},
+      "topics": ["subtraction", "integers"], "mastery_topic": "subtraction",
+      "moves": ["subtraction_splash", "minus_tide"],
+      "description": "A calm turtle. The minus mark on its shell shines when it thinks.",
+      "sprite": "AQUABIT", "colors": {"base": [62, 137, 180], "accent": [126, 212, 221]}
+    },
+    "VOLTIX": {
+      "name": "VOLTIX", "element": "Time", "role": "Fast striker", "stage": 1,
+      "stats": {"hp": 72, "attack": 16, "defence": 10, "speed": 18},
+      "growth": {"hp": 5, "attack": 2, "defence": 1.5, "speed": 1.5},
+      "topics": ["multiplication"], "mastery_topic": "multiplication",
+      "moves": ["times_bolt", "multiply_storm"],
+      "description": "A crackling fox. Its tails spark in groups: 3, 6, 9, 12...",
+      "sprite": "VOLTIX", "colors": {"base": [128, 72, 170], "accent": [255, 214, 80]}
+    },
+    "DIVOWL": {
+      "name": "DIVOWL", "element": "Earth", "role": "Balanced", "stage": 1,
+      "stats": {"hp": 78, "attack": 14, "defence": 13, "speed": 14},
+      "growth": {"hp": 6, "attack": 2, "defence": 2, "speed": 1},
+      "topics": ["division"], "mastery_topic": "division",
+      "moves": ["share_gust", "division_dive"],
+      "description": "A wise leaf owl that splits every snack into equal shares.",
+      "sprite": "DIVOWL", "colors": {"base": [70, 150, 70], "accent": [178, 232, 140]}
+    },
+    "GEMELLA": {
+      "name": "GEMELLA", "element": "Crystal", "role": "Support", "stage": 1,
+      "stats": {"hp": 82, "attack": 14, "defence": 15, "speed": 11},
+      "growth": {"hp": 6, "attack": 2, "defence": 2, "speed": 1},
+      "topics": ["fractions"], "mastery_topic": "fractions",
+      "moves": ["gem_split", "facet_burst", "prism_shield"],
+      "description": "A gem slime that chips away an exact fraction of itself with every bounce.",
+      "sprite": "GEMELLA", "colors": {"base": [40, 160, 150], "accent": [120, 240, 200]}
+    },
+    "PRISMVOLT": {
+      "name": "PRISMVOLT", "element": "Crystal", "role": "Fast striker", "stage": 1,
+      "stats": {"hp": 90, "attack": 18, "defence": 14, "speed": 16},
+      "growth": {"hp": 6, "attack": 2, "defence": 2, "speed": 1.5},
+      "topics": ["multiplication"], "mastery_topic": "multiplication",
+      "moves": ["prism_bolt", "multiply_storm"],
+      "description": "VOLTIX's crystal cousin. Light splits through its tails into rows of sparks.",
+      "sprite": "PRISMVOLT", "colors": {"base": [236, 90, 190], "accent": [120, 230, 240]}
+    },
+    "OPALOWL": {
+      "name": "OPALOWL", "element": "Crystal", "role": "Balanced", "stage": 1,
+      "stats": {"hp": 92, "attack": 17, "defence": 15, "speed": 14},
+      "growth": {"hp": 6, "attack": 2, "defence": 2, "speed": 1},
+      "topics": ["division"], "mastery_topic": "division",
+      "moves": ["opal_gust", "division_dive"],
+      "description": "A shimmering owl that shares starlight into perfectly equal beams.",
+      "sprite": "OPALOWL", "colors": {"base": [150, 80, 190], "accent": [230, 150, 240]}
+    },
+    "GRAPHION": {
+      "name": "GRAPHION", "element": "Time", "role": "Secret", "stage": 1,
+      "stats": {"hp": 100, "attack": 19, "defence": 16, "speed": 17},
+      "growth": {"hp": 7, "attack": 2.5, "defence": 2, "speed": 1.5},
+      "topics": ["sequences", "algebra"], "mastery_topic": "sequences",
+      "moves": ["vector_beam", "axis_nova", "temporal_shift"],
+      "description": "SECRET. A clockwork comet that travels on straight lines.",
+      "sprite": "GRAPHION", "colors": {"base": [40, 50, 160], "accent": [120, 140, 255]}
+    },
+
+    "NUMEREX_BOSS": {
+      "name": "NUMEREX", "title": "THE ARITHMETIC BEAST", "element": "Dark", "role": "Boss", "stage": 3, "boss": true,
+      "stats": {"hp": 120, "attack": 18, "defence": 14, "speed": 12},
+      "growth": {"hp": 8, "attack": 2, "defence": 1.5, "speed": 0.5},
+      "topics": ["addition", "subtraction", "multiplication", "division"], "mastery_topic": "addition",
+      "moves": ["number_roar", "arithmetic_crush", "shadow_guard"],
+      "description": "The Arithmetic Beast: a NUMEREX swollen with stolen Numera, guarding the old stone arch.",
+      "sprite": "NUMEREX_BOSS", "base_sprite": "NUMEREX", "size": 1.4, "colors": {"base": [40, 20, 70], "accent": [255, 90, 120]}
+    }
+  }
+}

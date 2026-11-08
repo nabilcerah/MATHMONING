@@ -103,11 +103,11 @@ def battle_reward(engine, rank, record, trainer, balance=None):
             reward.lines.append(f"MASTERY UP! {engine.name} is now {RANK_NAMES[rank]} rank - "
                                 f"{RANK_NAMES[rank + 1] + ' rank unlocked!' if rank < 5 else 'fully mastered!'}")
         if engine.defn.boss:
-            reward.items["Learning Crystal"] = reward.items.get("Learning Crystal", 0) + 1
+            reward.items["Focus Crystal"] = reward.items.get("Focus Crystal", 0) + 1
             reward.items["Health Potion"] = reward.items.get("Health Potion", 0) + 2
-            reward.lines.append("BOSS REWARD: a Learning Crystal and two Health Potions!")
+            reward.lines.append("BOSS REWARD: a Focus Crystal and two Health Potions!")
         if reward.first_clear and engine.tier.rank >= 4:
-            reward.items["EXP Booster"] = reward.items.get("EXP Booster", 0) + 1
+            reward.items["Math Capsule"] = reward.items.get("Math Capsule", 0) + 1
     else:
         record["losses"] += 1
         reward.trainer_xp = 4 * correct  # trying still teaches something

@@ -11,7 +11,9 @@ import math
 import pygame
 
 from config import PALETTE
-from game.creatures import TOPIC_COLORS, WILD
+from game.creatures import TOPIC_COLORS
+from monsters.monster_data import species as species_data
+from world.encounter_manager import EncounterManager
 from game.ui import heart, panel, text, wrapped
 
 MAP_RECT = pygame.Rect(6, 24, 188, 188)
@@ -87,7 +89,8 @@ class WorldMapScreen:
     def area_info(self, area):
         area_id = area["id"]
         flags = self.overworld.flags
-        species = [s for s in WILD if area_id in s.habitat]
+        table = EncounterManager.table(area_id) if not EncounterManager.is_safe(area_id) else {"table": []}
+        species = [species_data(sid) for sid, weight in table["table"] if weight > 5]
         x0, y0, w, h = area["rect"]
         chests = [e for e in self.world.data.get("interactables", [])
                   if e.get("kind") == "chest" and self.world.area_at(tuple(e["pos"]))[0] == area_id]

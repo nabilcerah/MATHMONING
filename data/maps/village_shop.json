@@ -1,0 +1,156 @@
+{
+ "_comment": "Village Shop: a small building interior (tile map drawn in code). Safe area: no encounters.",
+ "id": "village_shop",
+ "name": "Village Shop",
+ "size": [
+  12,
+  9
+ ],
+ "base": "F",
+ "border": "W",
+ "interior": true,
+ "player_spawn": [
+  6,
+  7
+ ],
+ "safe_spot": [
+  6,
+  6
+ ],
+ "exit_map": "number_forest",
+ "fills": [],
+ "props": [
+  {
+   "tile": "C",
+   "cells": [
+    [
+     2,
+     3
+    ],
+    [
+     3,
+     3
+    ],
+    [
+     4,
+     3
+    ],
+    [
+     8,
+     3
+    ],
+    [
+     9,
+     3
+    ]
+   ]
+  },
+  {
+   "tile": "S",
+   "cells": [
+    [
+     1,
+     1
+    ],
+    [
+     2,
+     1
+    ],
+    [
+     9,
+     1
+    ],
+    [
+     10,
+     1
+    ]
+   ]
+  }
+ ],
+ "areas": [
+  {
+   "id": "village",
+   "name": "Village Shop",
+   "rect": [
+    0,
+    0,
+    12,
+    9
+   ],
+   "travel": [
+    6,
+    6
+   ]
+  }
+ ],
+ "waypoints": {
+  "counter": [
+   6,
+   2
+  ],
+  "counter2": [
+   5,
+   2
+  ]
+ },
+ "interactables": [
+  {
+   "id": "exit_shop",
+   "kind": "portal",
+   "pos": [
+    6,
+    8
+   ],
+   "name": "door",
+   "verb": "Leave",
+   "title": "STARTER VILLAGE",
+   "destination": "number_forest",
+   "arrive": [
+    14,
+    59
+   ],
+   "text": [
+    "Back outside."
+   ],
+   "door": true
+  }
+ ],
+ "npcs": [
+  {
+   "id": "shopkeeper",
+   "name": "Penny",
+   "role": "Shopkeeper",
+   "kind": "shop",
+   "look": {
+    "hair": "#b8522e",
+    "skin": "#f0c49b",
+    "clothes": "#c0392b",
+    "accent": "#f2bb52",
+    "pants": "#2e3240",
+    "shoes": "#2a1d14"
+   },
+   "routine": [
+    {
+     "waypoint": "counter",
+     "wait": 6,
+     "face": "down"
+    },
+    {
+     "waypoint": "counter2",
+     "wait": 4,
+     "face": "down"
+    }
+   ],
+   "dialogue": {
+    "any": [
+     "Welcome to the shop! Potions, Focus Crystals and Math Capsules - all for Numera Coins you earn on your adventure."
+    ]
+   },
+   "remarks": [
+    "Math Capsules on special!",
+    "Coins come from battles and quests."
+   ]
+  }
+ ],
+ "encounters": []
+}

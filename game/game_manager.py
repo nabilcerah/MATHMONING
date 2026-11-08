@@ -1,43 +1,67 @@
-"""Pygame loop and top-level state transitions for MATHMON."""
+"""The one main loop (GDD 22) and the top-level flow between states.
+
+Events, updates, rendering and frame timing all happen in ``run_async``. Which screen receives
+them is decided by the StateManager: a named full-screen state (menu, overworld, battle, ...)
+plus a stack of overlay screens (trainer menu, party, sanctuary, bag, shop, quests, profile,
+evolution, puzzle challenges, pause).
+"""
 import asyncio
 import random
 import sys
 
 import pygame
 
-from ai.game_master import GameMasterAgent
 from ai.llm_provider import LLMProvider
 from ai.orchestrator import AgentOrchestrator
+from combat import reward_manager
 from config import DATABASE_PATH, FPS, PALETTE, TITLE, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, WEB, WINDOW_SCALE
 from database.database import Database
 from database.player_repository import PlayerRepository
-from game.battle import Battle
-from game.creatures import ENEMIES, STARTERS, WILD_BY_NAME, canonical_name, creature_spec, draw_creature, encounter_for
-from game.mathdex import MathDex
-from game.worldmap_screen import WorldMapScreen
-from game.puzzle_screen import PuzzleScreen
+from game import audio, ui, web_storage
 from game.arena import ArenaScreen
+from game.battle import BattleScreen, RepositoryBag
+from game.creatures import STARTERS, draw_creature
 from game.monster_battle import MonsterBattleScreen
-from game.trials_screen import TrialsScreen
 from game.overworld import Overworld
 from game.player import Player
-from game import ui, web_storage
+from game.puzzle_screen import PuzzleScreen
+from game.state_manager import StateManager
+from game.team import Team
 from game.touch_controls import TouchControls
+from game.trials_screen import TrialsScreen
 from game.ui import menu, meter, panel, text, wrapped
+from game.worldmap_screen import WorldMapScreen
+from mathematics import curriculum
+from monsters import elemental_system, monster_factory
+from monsters.monster_data import canonical_species, encounters, rules
+from states.challenge_state import ChallengeScreen
+from states.dex_state import DexScreen
+from states.evolution_state import EvolutionScreen
+from states.inventory_state import InventoryScreen
+from states.party_state import PartyScreen
+from states.pause_state import PauseScreen
+from states.player_profile_state import ProfileScreen
+from states.quest_state import QuestScreen
+from states.sanctuary_state import SanctuaryScreen
+from states.shop_state import ShopScreen
+from states.trainer_menu import TrainerMenu
+from world.quest_manager import QuestManager
+
+SEALS = ("challenge:seal_add", "challenge:seal_mul", "challenge:seal_frac")
 
 
 class GameManager:
-    MAPS = ("number_forest", "crystal_realm")
+    MAPS = ("number_forest", "crystal_realm", "village_shop", "village_sanctuary")
     BOSS_FLAG = "boss:numerex"
-    MENU_CHOICES = ("NEW GAME", "CONTINUE", "PLAYER PROFILE", "SETTINGS", "EXIT")
+    MENU_CHOICES = ("NEW GAME", "CONTINUE", "SETTINGS", "EXIT")
     FADE_FRAMES = 14
+    REGION_MIN_DIFFICULTY = {"crystal_realm": "intermediate"}
 
     def __init__(self, database_path=None):
         pygame.init()
         pygame.display.set_caption(TITLE)
         self.fullscreen = False
         if WEB:
-            # In the browser the canvas fills the page; the game letterboxes itself inside it.
             self.window = pygame.display.set_mode(self._browser_size() or (1280, 720))
         else:
             self.window = pygame.display.set_mode((VIRTUAL_WIDTH * WINDOW_SCALE, VIRTUAL_HEIGHT * WINDOW_SCALE),
@@ -46,40 +70,51 @@ class GameManager:
         self.canvas = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
         ui.set_text_layer(self.canvas)
         self.menu_hint = "A little practice can unlock a mighty adventure."
-        self.profile_summary = None
         self.fade = 0
         self._last_state = None
         self.clock = pygame.time.Clock()
         if WEB and database_path is None:
-            web_storage.restore(DATABASE_PATH)  # bring back the save kept in browser storage
+            web_storage.restore(DATABASE_PATH)
         self.database = Database(database_path)
         self.persister = web_storage.Persister(self.database.path)
         self.repository = PlayerRepository(self.database)
-        self.orchestrator = AgentOrchestrator(self.repository)
+        self.rng = random.Random()
         self.llm = LLMProvider()
+        self.orchestrator = AgentOrchestrator(self.repository, rng=self.rng, llm=self.llm)
         self.saved_record = self.repository.load_player()
+        self.states = StateManager("menu")
         self.player = None
+        self.party = None
+        self.quests = None
         self.world = None
         self.battle = None
-        self.dex = None
         self.map_screen = None
         self.puzzle = None
         self.puzzle_id = None
         self.arena = None
         self.trials = None
         self.monster_battle = None
-        self.state = "menu"
+        self.recovery_text = ""
         self.menu_selected = 0
         self.starter_selected = 0
         self.avatar_selected = 0
         self.settings_selected = 0
         self.scanlines = False
+        self.sound = True
         self.player_name = ""
         self.frame = 0
         self.running = True
-        self.menu_time = 0
-        self.rng = random.Random()
+        self.save_timer = 0
         pygame.key.set_repeat(220, 105)
+
+    # ================================================================== state
+    @property
+    def state(self):
+        return self.states.state
+
+    @state.setter
+    def state(self, value):
+        self.states.change(value)
 
     def run(self):
         asyncio.run(self.run_async())
@@ -90,7 +125,7 @@ class GameManager:
             self.frame += 1
             for event in pygame.event.get():
                 if self.touch.handle(event, self.window.get_size()):
-                    continue  # a touch on the on-screen controls; it posts the matching key event
+                    continue
                 self._handle_event(event)
             self.touch.update()
             if WEB and self.frame % 15 == 0:
@@ -104,6 +139,7 @@ class GameManager:
             await asyncio.sleep(0)
         self._shutdown()
 
+    # ================================================================== input
     def _handle_event(self, event):
         if event.type == pygame.QUIT:
             self.running = False
@@ -112,86 +148,43 @@ class GameManager:
                                              (event.key == pygame.K_RETURN and event.mod & pygame.KMOD_ALT)):
             self._toggle_fullscreen()
             return
+        if self.states.handle_event(event):
+            return
         if self.state == "battle" and self.battle:
             self.battle.handle_event(event)
             return
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state in ("menu", "starter", "avatar"):
+            self._menu_click(ui.to_virtual(event.pos))
+            return
         if event.type != pygame.KEYDOWN:
             return
-        if self.state == "menu":
-            self._menu_key(event)
-        elif self.state == "name":
-            if event.key == pygame.K_RETURN:
-                self.state = "avatar"
-            elif event.key == pygame.K_ESCAPE:
-                self.state = "menu"
-            elif event.key == pygame.K_BACKSPACE:
-                self.player_name = self.player_name[:-1]
-            elif event.unicode and event.unicode.isprintable() and event.unicode not in "\r\n" and len(self.player_name) < 18:
-                self.player_name += event.unicode
-        elif self.state == "confirm_new":
-            if event.key in (pygame.K_y, pygame.K_RETURN):
-                self.player_name, self.state = "", "name"
-            elif event.key in (pygame.K_n, pygame.K_ESCAPE):
-                self.state = "menu"
-        elif self.state == "avatar":
-            if event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d):
-                self.avatar_selected = 1 - self.avatar_selected
-            elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                self.state = "starter"
-            elif event.key == pygame.K_ESCAPE:
-                self.state = "name"
-        elif self.state == "starter":
-            if event.key in (pygame.K_LEFT, pygame.K_a):
-                self.starter_selected = (self.starter_selected - 1) % len(STARTERS)
-            elif event.key in (pygame.K_RIGHT, pygame.K_d):
-                self.starter_selected = (self.starter_selected + 1) % len(STARTERS)
-            elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                self._create_new_player()
-            elif event.key == pygame.K_ESCAPE:
-                self.state = "menu"
-        elif self.state in ("profile", "settings"):
-            if event.key == pygame.K_ESCAPE:
-                self.state = "menu"
-            elif self.state == "profile" and event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                self.state = "menu"
-            elif self.state == "settings":
-                if event.key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
-                    self.settings_selected = (self.settings_selected + 1) % 2
-                elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                    if self.settings_selected == 0:
-                        self.scanlines = not self.scanlines
-                    else:
-                        self.state = "menu"
-        elif self.state == "overworld":
-            self._overworld_key(event)
+        handler = {"menu": self._menu_key, "name": self._name_key, "confirm_new": self._confirm_key,
+                   "avatar": self._avatar_key, "starter": self._starter_key, "settings": self._settings_key,
+                   "overworld": self._overworld_key, "recovery": self._recovery_key}.get(self.state)
+        if handler:
+            handler(event)
         elif self.state == "arena" and self.arena:
             self.arena.handle_key(event.key, event.unicode)
             if self.arena.closed:
-                summary = self.arena.summary
-                self.arena = None
-                self.state = "overworld"
-                self.world.refresh_flags()
-                self._refresh_boss_gate()
-                self.world.set_message(summary or "Come back to the Arena any time!", 220)
+                summary, self.arena = self.arena.summary, None
+                self._back_to_world(summary or "Come back to the Arena any time!")
         elif self.state == "trials" and self.trials:
             self.trials.handle_key(event.key)
             if self.trials.closed:
                 challenge, self.trials = self.trials.challenge, None
                 if challenge:
-                    self.repository.save_player(self.player)
+                    self.save_all()
                     self.monster_battle = MonsterBattleScreen(self.repository, self.player, challenge[0], challenge[1],
-                                                              self.rng, self.world.team)
+                                                              self.rng, self._team())
                     self.state = "mbattle"
                 else:
-                    self.state = "overworld"
-                    self.world.set_message("The Trials hall is open whenever you press T.", 150)
+                    self._back_to_world("The Trials hall is open whenever you press T.")
         elif self.state == "mbattle" and self.monster_battle:
             self.monster_battle.handle_key(event.key, event.unicode)
             if self.monster_battle.closed:
                 self.monster_battle = None
-                self.saved_record = self.repository.load_player()
-                self.world.refresh_flags()  # team HP/EXP changed
-                self.trials = TrialsScreen(self.repository, self.player, self.world.team)
+                self._reload_party()
+                self.trials = TrialsScreen(self.repository, self.player, self._team())
                 self.state = "trials"
         elif self.state == "puzzle" and self.puzzle:
             self.puzzle.handle_key(event.key, event.unicode)
@@ -203,16 +196,25 @@ class GameManager:
                 if self.map_screen.travel_to:
                     cell, name = self.map_screen.travel_to
                     self.world.teleport(cell)
-                    self.repository.save_player(self.player)
+                    self.save_all()
                     self.world.set_message(f"You travel to {name}.", 150)
                 self.map_screen = None
                 self.state = "overworld"
-        elif self.state == "dex" and self.dex:
-            self.dex.handle_key(event.key)
-            if self.dex.closed:
-                self.dex = None
-                self.world.refresh_flags()
-                self.state = "overworld"
+
+    def _menu_click(self, pos):
+        if self.state == "menu":
+            index = ui.menu_index((29, 113, 136, 70), len(self.MENU_CHOICES), pos, 15)
+            if index is not None:
+                self.menu_selected = index
+                self._menu_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, mod=0, unicode="\r"))
+        elif self.state == "starter":
+            for i in range(len(STARTERS)):
+                if 6 + i * 78 <= pos[0] < 6 + i * 78 + 74 and 30 <= pos[1] < 140:
+                    if i == self.starter_selected:
+                        self._create_new_player()
+                    self.starter_selected = i
+        elif self.state == "avatar":
+            self.avatar_selected = 0 if pos[0] < 160 else 1
 
     def _menu_key(self, event):
         if event.key in (pygame.K_UP, pygame.K_w):
@@ -222,145 +224,337 @@ class GameManager:
         elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
             choice = self.MENU_CHOICES[self.menu_selected]
             if choice == "NEW GAME":
-                if self.saved_record:
-                    self.state = "confirm_new"
-                else:
-                    self.player_name, self.state = "", "name"
+                self.state = "confirm_new" if self.saved_record else "name"
+                self.player_name = ""
             elif choice == "CONTINUE":
                 if self.saved_record:
                     self._continue_game()
                 else:
                     self.menu_hint = "No saved journey yet. Choose NEW GAME to begin."
-            elif choice == "PLAYER PROFILE":
-                if self.saved_record:
-                    self.profile_summary = None
-                    self.state = "profile"
-                else:
-                    self.menu_hint = "Begin a new journey to create your profile."
             elif choice == "SETTINGS":
                 self.state = "settings"
             elif choice == "EXIT":
                 self.running = False
 
+    def _name_key(self, event):
+        if event.key == pygame.K_RETURN:
+            self.state = "avatar"
+        elif event.key == pygame.K_ESCAPE:
+            self.state = "menu"
+        elif event.key == pygame.K_BACKSPACE:
+            self.player_name = self.player_name[:-1]
+        elif event.unicode and event.unicode.isprintable() and event.unicode not in "\r\n" and len(self.player_name) < 18:
+            self.player_name += event.unicode
+
+    def _confirm_key(self, event):
+        if event.key in (pygame.K_y, pygame.K_RETURN):
+            self.player_name, self.state = "", "name"
+        elif event.key in (pygame.K_n, pygame.K_ESCAPE):
+            self.state = "menu"
+
+    def _avatar_key(self, event):
+        if event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d):
+            self.avatar_selected = 1 - self.avatar_selected
+        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+            self.state = "starter"
+        elif event.key == pygame.K_ESCAPE:
+            self.state = "name"
+
+    def _starter_key(self, event):
+        if event.key in (pygame.K_LEFT, pygame.K_a):
+            self.starter_selected = (self.starter_selected - 1) % len(STARTERS)
+        elif event.key in (pygame.K_RIGHT, pygame.K_d):
+            self.starter_selected = (self.starter_selected + 1) % len(STARTERS)
+        elif pygame.K_1 <= event.key <= pygame.K_4:
+            self.starter_selected = event.key - pygame.K_1
+        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+            self._create_new_player()
+        elif event.key == pygame.K_ESCAPE:
+            self.state = "avatar"
+
+    def _settings_key(self, event):
+        if event.key == pygame.K_ESCAPE:
+            self.state = "menu"
+        elif event.key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
+            step = -1 if event.key in (pygame.K_UP, pygame.K_w) else 1
+            self.settings_selected = (self.settings_selected + step) % 3
+        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+            if self.settings_selected == 0:
+                self.scanlines = not self.scanlines
+            elif self.settings_selected == 1:
+                self.sound = not self.sound
+                audio.set_enabled(self.sound)
+            else:
+                self.state = "menu"
+
+    def _recovery_key(self, event):
+        if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE, pygame.K_e):
+            self.state = "overworld"
+            self.world.set_message("Your party is fully healed. Keep exploring at your own pace.", 200)
+
+    # ================================================================== new game / continue
     def _create_new_player(self):
-        creature = tuple(STARTERS)[self.starter_selected]
-        spec = STARTERS[creature]
-        player_id = self.repository.create_player(self.player_name or "Rookie", creature, spec.hp)
+        species_id = tuple(STARTERS)[self.starter_selected]
+        player_id = self.repository.create_player(self.player_name or "Rookie", species_id)
         self.repository.set_world_flag(player_id, f"avatar:{Overworld.AVATARS[self.avatar_selected]}")
         record = self.repository.load_player()
-        self.player = self._to_player(record)
-        self.saved_record = record
+        self._load(record)
+        messages = self.quests.start_auto_quests()
         self._enter_world()
-        self.world.set_message(f"{creature} joins your journey! Find Rowan in Lakeside Village for a friendly first battle.")
+        self.world.set_message(f"{STARTERS[species_id].name} joins your journey! Talk to Professor Numeris in the "
+                               "village square.", 300)
+        del messages
 
     def _continue_game(self):
         record = self.repository.load_player()
-        if record:
-            self.player = self._to_player(record)
-            self._enter_world()
-            self.world.set_message(f"Welcome back, {self.player.name}. Your trail is waiting.")
-        else:
+        if not record:
             self.player_name, self.state = "", "name"
+            return
+        self._load(record)
+        self.quests.start_auto_quests()
+        self._enter_world()
+        self.world.set_message(f"Welcome back, {self.player.name}. Your trail is waiting.")
 
-    @staticmethod
-    def _to_player(record):
-        # canonical_name upgrades saves made with the old starter ids (PYROX, TERRABIT).
-        # Old saves store "NUMBER FOREST" (the column default); map ids are lower-case file names.
-        world = record.world if record.world in GameManager.MAPS else "number_forest"
-        return Player(record.name, canonical_name(record.creature), record.level, record.hp, record.max_hp,
-                      record.exp, record.x, record.y, record.player_id, world)
+    def _load(self, record):
+        world = record.world if record.world in self.MAPS else "number_forest"
+        self.player = Player(record.name, canonical_species(record.creature), record.level, record.hp, record.max_hp,
+                             record.exp, record.x, record.y, record.player_id, world)
+        self.party = self.repository.load_party(record.player_id)
+        self.saved_record = record
+        self.quests = QuestManager(self.repository, record.player_id,
+                                   flags=lambda: self.world.flags if self.world else
+                                   self.repository.world_flags(record.player_id))
+        self.orchestrator.quest_manager = self.quests
+        self.orchestrator.region = world if world in curriculum.REGION_TOPICS else "number_forest"
 
     def _enter_world(self):
-        self.world = Overworld(self.player, self.rng, self.repository, self.player.world)
+        self.world = Overworld(self.player, self.rng, self.repository, self.player.world, self.party, self.quests,
+                               self.on_world_event)
         self._refresh_boss_gate()
         self.save_timer = 0
+        self.states.clear()
         self.state = "overworld"
 
-    def _refresh_boss_gate(self):
-        if self.world and self.player:
-            profile = self.repository.get_learning_profile(self.player.player_id)
-            level = self.world.team.max_level if self.world.team else self.player.level
-            self.world.boss_ready = GameMasterAgent().boss_ready(profile, level)
+    # ================================================================== saving
+    def _sync_player(self):
+        lead = self.party.lead if self.party and self.party.party else None
+        if lead:
+            self.player.creature, self.player.level = lead.species_id, lead.level
+            self.player.hp, self.player.max_hp, self.player.exp = lead.hp, lead.max_hp, lead.exp
 
-    def _overworld_key(self, event):
-        if event.key == pygame.K_ESCAPE and not self.world.dialogue:
-            self.repository.save_player(self.player)
-            self.saved_record = self.repository.load_player()
+    def save_party(self):
+        if self.party and self.player:
+            self.repository.save_party(self.player.player_id, self.party)
+
+    def save_all(self):
+        if not self.player:
+            return
+        self.save_party()
+        self._sync_player()
+        self.repository.save_player(self.player)
+        self.saved_record = self.repository.load_player()
+        if WEB:
+            self.persister.sync()
+
+    def _reload_party(self):
+        self.party = self.repository.load_party(self.player.player_id)
+        if self.world:
+            self.world.party = self.party
+            self.world.refresh_flags()
+
+    def _team(self):
+        return Team(self.repository, self.player, party=self.party)
+
+    # ================================================================== helpers used by screens
+    def party_level(self):
+        return max((m.level for m in self.party.party), default=1) if self.party else 1
+
+    def seals_done(self):
+        flags = self.world.flags if self.world else set()
+        return all(flag in flags for flag in SEALS)
+
+    def on_shop_change(self):
+        pass
+
+    def after_evolution(self, monster):
+        self.save_all()
+        self.repository.add_recommendation(self.player.player_id,
+                                           f"{monster.name} evolved! Keep practising {curriculum.label(monster.mastery_topic).lower()}.")
+
+    def open_screen(self, name):
+        screens = {"party": PartyScreen, "bag": InventoryScreen, "quests": QuestScreen, "mathdex": DexScreen,
+                   "profile": ProfileScreen, "shop": ShopScreen, "sanctuary": SanctuaryScreen,
+                   "evolution": EvolutionScreen}
+        screen = screens[name](self)
+        self.states.push(screen, self._screen_closed)
+        return screen
+
+    def _screen_closed(self, screen):
+        if self.world:
+            self.world.refresh_flags()
+        self._refresh_boss_gate()
+
+    def _pause_closed(self, screen):
+        if screen.result == "main_menu":
+            self.states.clear()
             self.state, self.battle = "menu", None
+            self.saved_record = self.repository.load_player()
+
+    def open_challenge(self, challenge_id):
+        screen = ChallengeScreen(self, challenge_id)
+        self.states.push(screen, self._challenge_closed)
+        return screen
+
+    def _challenge_closed(self, screen):
+        if screen.result:
+            self.world.set_flag(f"challenge:{screen.challenge_id}")
+            messages, done = self.quests.notify("challenge", id=screen.challenge_id)
+            self._quest_feedback(messages, done, f"{screen.spec['title']}: solved!")
+            if screen.challenge_id.startswith("seal_"):
+                count = sum(1 for flag in SEALS if self.world.has_flag(flag))
+                self.world.set_message(f"A Numera Seal glows again! ({count}/3 restored)" +
+                                       ("  The stone arch is open!" if count == 3 else ""), 260)
+        self.save_all()
+        self._refresh_boss_gate()
+
+    # ================================================================== quests & world events
+    def on_world_event(self, kind, **data):
+        if not self.quests:
             return
-        if event.key == pygame.K_b and not self.world.dialogue:
-            self._start_battle(self._wild(), self._wild_level())
+        if kind == "visit" and data.get("first") and data.get("area") in encounters()["areas"]:
+            exp = rules()["exp"]["discovery"]
+            lead = self.party.lead
+            lead.add_exp(exp)
+            self.save_party()
+            self.world.set_message(f"Discovered {data.get('name', 'a new place')}! {lead.name} +{exp} EXP.", 200)
+        if kind == "healed":
+            self.save_party()
             return
-        if event.key == pygame.K_t and not self.world.dialogue:
-            self.repository.save_player(self.player)
-            self.trials = TrialsScreen(self.repository, self.player, self.world.team)
+        messages, done = self.quests.notify(kind, **data)
+        self._quest_feedback(messages, done)
+
+    def _quest_feedback(self, messages, completed, prefix=""):
+        for quest_id in completed:
+            exp = self.quests.definition(quest_id).get("rewards", {}).get("exp", 0)
+            if exp:
+                reward_manager.distribute_exp(self.party.party, self.party.lead, exp)
+        if completed:
+            self.save_all()
+            if self.world:
+                self.world.refresh_flags()
+        text_ = " ".join(([prefix] if prefix else []) + messages)
+        if text_ and self.world:
+            self.world.set_message(text_, 300)
+
+    def _refresh_boss_gate(self):
+        if self.world:
+            self.world.boss_ready = self.seals_done()
+
+    # ================================================================== overworld
+    def _overworld_key(self, event):
+        world = self.world
+        if world.dialogue:
+            action = world.handle_key(event.key)
+            self._world_action(action)
+            return
+        if event.key == pygame.K_ESCAPE:
+            self.save_all()
+            self.states.push(PauseScreen(self), self._pause_closed)
+            return
+        if event.key == pygame.K_TAB:
+            self.states.push(TrainerMenu(self), self._screen_closed)
+            return
+        if event.key == pygame.K_m:
+            self.open_screen("mathdex")
+            return
+        if event.key == pygame.K_t:
+            self.save_all()
+            self.trials = TrialsScreen(self.repository, self.player, self._team())
             self.state = "trials"
             return
-        if event.key == pygame.K_n and not self.world.dialogue:
-            self.map_screen = WorldMapScreen(self.world)
+        if event.key == pygame.K_n and not world.world.interior:
+            self.map_screen = WorldMapScreen(world)
             self.state = "worldmap"
             return
-        if event.key in (pygame.K_m, pygame.K_TAB) and not self.world.dialogue:
-            names = {area_id: name for area_id, name, _ in self.world.world.areas}
-            self.dex = MathDex(self.repository, self.player, names)
-            self.state = "dex"
+        self._world_action(world.handle_key(event.key))
+
+    def _world_action(self, action):
+        if not action:
             return
-        action = self.world.handle_key(event.key)
         if action == "arena":
-            from game.creatures import leader_spec
-            self.arena = ArenaScreen(self.repository, self.orchestrator, self.player,
-                                     leader_spec(self.player, self.world.flags), self.world.avatar.sheet, self.rng)
+            self.arena = ArenaScreen(self.repository, self.orchestrator, self.player, self.party.lead.spec,
+                                     self.world.avatar.sheet, self.rng)
             self.state = "arena"
-            return
-        if isinstance(action, tuple) and action[0] == "travel_map":
+        elif isinstance(action, tuple) and action[0] == "travel_map":
             self._travel_to_map(action[1], action[2])
-            return
-        if isinstance(action, tuple) and action[0] == "puzzle":
+        elif isinstance(action, tuple) and action[0] == "puzzle":
             self._open_puzzle(action[1])
-            return
-        if action == "battle":
-            # Trainers like Rex send out their own MATHMON; practice battles pick a local wild one.
-            rival = WILD_BY_NAME.get(self.world.duel_spec or "")
+        elif isinstance(action, tuple) and action[0] == "challenge":
+            self.open_challenge(action[1])
+        elif action in ("shop", "sanctuary", "evolution"):
+            if action == "evolution" and not self.repository.item_count(self.player.player_id, "Evolution Crystal"):
+                self.world.open_dialogue("EVOLUTION SHRINE", [
+                    "The shrine's crystal is dark. It needs an EVOLUTION CRYSTAL to awaken.",
+                    "Legend says the Crystal Seal on Waterfall Plateau holds one."])
+                return
+            if action == "sanctuary":
+                self.party.heal_all(1.0)
+                self.save_party()
+            self.open_screen(action)
+        elif action == "heal":
+            healed = self.party.heal_all(1.0)
+            self.save_party()
+            self.world.open_dialogue("SAGE ILO", [f"There we go - your party is fully healed (+{healed} HP)."
+                                                  if healed else "Your party is already in perfect health!"])
+        elif action == "battle":
+            duel = self.world.duel_spec or {"species": "DIVOWL", "level": 2}
             self.world.duel_spec = None
-            self._start_battle(rival or self._wild(), None if rival else self._wild_level())
-            if rival:
-                self.battle.is_trainer = True
-                self.battle.feedback = f"Your rival sends out {rival.name}! Show what you've learned."
+            enemy = monster_factory.create(duel["species"], duel["level"])
+            self._start_battle(enemy, "trainer", self.world.duel_name)
         elif action == "boss":
-            self._refresh_boss_gate()
-            if self.world.boss_ready:
-                self._start_battle(ENEMIES[3])
-            else:
-                master = GameMasterAgent()
-                profile = self.repository.get_learning_profile(self.player.player_id)
-                progress = master.boss_progress(profile, self.player.level)
-                ready = sum(1 for line in progress if line.endswith("READY"))
-                pages = ["The gate hums, but its stones stay dark. Three READY number skills will open the seal "
-                         f"(you have {ready}/{master.SKILLS_NEEDED})."]
-                pages += ["   ".join(progress[i:i + 2]) for i in range(0, len(progress), 2)]
-                if self.player.level < master.BOSS_LEVEL:
-                    pages.append(f"Your companion must also reach Lv {master.BOSS_LEVEL}.")
-                pages.append("Tip: ATTACK questions now favour the skills you still need. Practise in tall grass or press B.")
-                self.world.open_dialogue("THE SHADOW GATE", pages)
+            self._boss_gate()
+        elif action == "boss_fight":
+            self._start_boss()
+
+    def _boss_gate(self):
+        if self.world.has_flag(self.BOSS_FLAG):
+            self.world.open_dialogue("THE STONE ARCH", ["The arch is quiet now. The Numera flows freely through Number Forest."])
+            return
+        if not self.seals_done():
+            count = sum(1 for flag in SEALS if self.world.has_flag(flag))
+            self.world.open_dialogue("THE STONE ARCH", [
+                f"Three Numera Seals bind the arch. {count}/3 have been restored.",
+                "Find the Seal of Sums, the Seal of Products and the Seal of Parts in the Ancient Number Ruins."])
+            return
+        advice = self.orchestrator.recommendations(self.player.player_id, self.party_level(), True)
+        self.world.open_dialogue("THE STONE ARCH", [
+            "The seals blaze with light and the arch groans open. Something huge stirs inside...",
+            "AI Game Master: " + advice.extra.get("boss_advice", "")],
+            choices=[("Face the beast!", "boss_fight"), ("Prepare first", "close")])
+
+    def _start_boss(self):
+        cfg = encounters()["boss"]
+        enemy = monster_factory.create(cfg["species"], cfg["level"])
+        self._start_battle(enemy, "boss")
 
     def _travel_to_map(self, map_id, cell):
-        """Step through a portal: load the other map and arrive next to its portal."""
         self.player.world = map_id
         self.player.x, self.player.y = cell
-        self.repository.save_player(self.player)
+        self.orchestrator.region = map_id if map_id in curriculum.REGION_TOPICS else self.orchestrator.region
+        self.save_all()
         self._enter_world()
-        self.world.set_message(f"You step through the portal into {self.world.world.name}!", 200)
+        if not self.world.world.interior:
+            self.world.set_message(f"You arrive in {self.world.world.name}.", 160)
 
-    # ------------------------------------------------------------- puzzle shrines
-    PUZZLE_REWARDS = {"sequence": (12, "Health Potion"), "balance": (15, "Learning Crystal"),
-                      "target": (20, "EXP Booster"), "magic": (25, "Learning Crystal"), "starchart": (30, None)}
+    # ------------------------------------------------------------------ puzzle shrines (bonus)
+    PUZZLE_REWARDS = {"sequence": (12, "Health Potion"), "balance": (15, "Focus Crystal"),
+                      "target": (20, "Math Capsule"), "magic": (25, "Greater Potion"), "starchart": (30, None)}
 
     def _open_puzzle(self, shrine_id):
-        import random
         entry = self.world.objects[shrine_id]
-        tier = 0 if self.player.level < 4 else 1 if self.player.level < 8 else 2
+        level = self.party_level()
+        tier = 0 if level < 4 else 1 if level < 8 else 2
         tier = max(tier, int(entry.get("min_tier", 0)))
-        # Same puzzle all day for this shrine and player; a new one tomorrow.
         rng = random.Random(f"{shrine_id}:{self.world.today}:{self.player.player_id}")
         self.puzzle = PuzzleScreen(entry["puzzle"], tier, rng, entry.get("title"))
         self.puzzle_id = shrine_id
@@ -376,15 +570,10 @@ class GameManager:
         exp, item = self.PUZZLE_REWARDS.get(puzzle.kind, (10, None))
         exp += puzzle.tier * 5
         if puzzle.revealed:
-            exp, item = exp // 2, None  # the shrine helped: still progress, smaller reward
-        team = self.world.team
-        member = team.leader() if team else self.player
-        leveled = member.add_exp(exp)
-        if team:
-            team.save(member)
-        else:
-            self.repository.save_player(self.player)
-        self.world.refresh_flags()
+            exp, item = exp // 2, None
+        lead = self.party.lead
+        leveled = lead.add_exp(exp)
+        self.save_party()
         if item:
             self.repository.add_item(self.player.player_id, item, 1)
         self.world.set_flag(f"shrine:{shrine_id}:{self.world.today}")
@@ -392,19 +581,270 @@ class GameManager:
             self.world.set_flag("secret:starchart")
         reward = f"+{exp} EXP" + (f" and a {item}" if item else "") + ("  LEVEL UP!" if leveled else "")
         self.world.set_message(f"Puzzle solved! {reward}", 240)
-        self._refresh_boss_gate()
 
-    def _wild(self):
-        """A wild creature from the current area's habitat (meadow creatures outside tall-grass zones)."""
-        return encounter_for(self.world.area_id if self.world else "meadow", self.rng)
+    # ================================================================== battles
+    def _start_battle(self, enemy, kind="wild", trainer_name=""):
+        if self.party.all_fainted:
+            self.party.heal_all(0.5)
+        self.save_all()
+        if kind == "wild":
+            self.repository.record_seen(self.player.player_id, enemy.species_id)
+        bag = RepositoryBag(self.repository.inventory(self.player.player_id))
+        self.battle = BattleScreen(self.orchestrator, self.player.player_id, self.party, enemy, kind, bag, self.rng,
+                                   self.llm, trainer_name, self.REGION_MIN_DIFFICULTY.get(self.player.world))
+        self.state = "battle"
 
-    def _wild_level(self):
-        from game.creatures import wild_level
-        return wild_level(self.world.area_id if self.world else "meadow", self.rng)
+    def _wild_encounter(self):
+        species_id, level = self.world.encounter_spec, self.world.encounter_level
+        self.world.encounter_spec = self.world.encounter_level = None
+        if not species_id:
+            species_id, level = self.world.encounters.pick(self.world.area_id)
+        self._start_battle(monster_factory.create(species_id, level), "wild")
 
+    def _end_battle(self):
+        battle = self.battle
+        self.battle = None
+        outcome = battle.outcome
+        pid = self.player.player_id
+        if battle.bag.used:
+            self.repository.set_inventory(pid, battle.bag.counts)
+        coins = battle.battle.rewards["coins"]
+        if coins:
+            self.repository.add_coins(pid, coins)
+        if outcome == "captured":
+            self.repository.record_capture(pid, self.party, battle.enemy.species_id)
+        if outcome == "defeated":
+            self._recover()
+            return
+        self.save_all()
+        self.state = "overworld"
+        self.world.resume()
+        self.world.refresh_flags()
+        messages, done = [], []
+        if outcome == "won":
+            more, done = self.quests.notify("battle_won")
+            messages += more
+            if battle.battle.kind == "boss":
+                self.world.set_flag(self.BOSS_FLAG)
+                more, finished = self.quests.notify("flag", flag=self.BOSS_FLAG)
+                messages += more
+                done += finished
+        elif outcome == "captured":
+            more, done = self.quests.notify("capture")
+            messages += more
+        lead = {"won": "Victory! Your team grows stronger.", "captured": "Captured! Press TAB > PARTY to see your team.",
+                "fled": "You got away safely."}.get(outcome, "")
+        if battle.battle.kind == "boss" and outcome == "won":
+            lead = "THE ARITHMETIC BEAST is defeated! The Numera flows back into Number Forest. The crystal portal awakens!"
+        self._quest_feedback(messages, done, lead)
+
+    def _recover(self):
+        """GDD 4.1 / 22: Game Over -> Recovery. Nothing is ever deleted; you wake at the nearest safe spot."""
+        self.party.heal_all(rules()["defeat"]["recover_fraction"])
+        if self.player.world in ("number_forest", "village_shop", "village_sanctuary"):
+            self.player.world, (self.player.x, self.player.y) = "village_sanctuary", (6, 6)
+        else:
+            self.player.x, self.player.y = self.world.world.safe_spot
+        self.save_all()
+        self._enter_world()
+        self.recovery_text = ("Your team fainted, but Sage Ilo carried everyone back to the Monster Sanctuary. "
+                              "Every monster is healed and nothing you caught or learned was lost.")
+        self.state = "recovery"
+
+    # ================================================================== update
+    def _update(self):
+        if self.states.update():
+            pass
+        elif self.state == "battle" and self.battle:
+            self.battle.update()
+            if self.battle.closed:
+                self._end_battle()
+        elif self.state == "puzzle" and self.puzzle:
+            self.puzzle.update()
+        elif self.state == "arena" and self.arena:
+            self.arena.update()
+        elif self.state == "trials" and self.trials:
+            self.trials.update()
+        elif self.state == "mbattle" and self.monster_battle:
+            self.monster_battle.update()
+        elif self.state == "overworld" and self.world:
+            event = self.world.update(*self._held_direction())
+            self.save_timer += 1
+            if self.world.dirty and self.save_timer >= 180:
+                self.save_all()
+                self.world.dirty, self.save_timer = False, 0
+            if event == "encounter":
+                self._wild_encounter()
+        if self.state != self._last_state and WEB:
+            self.persister.sync()
+        if self.state != self._last_state:
+            boss = self.state == "battle" and self.battle is not None and self.battle.battle.kind == "boss"
+            audio.music("boss" if boss else {"battle": "battle", "overworld": "overworld",
+                                             "menu": "menu"}.get(self.state, "overworld"))
+            self.fade = self.FADE_FRAMES if self._last_state is not None else 0
+            self._last_state = self.state
+        elif self.fade:
+            self.fade -= 1
+
+    def _back_to_world(self, message):
+        self._reload_party()
+        self.state = "overworld"
+        self.world.set_message(message, 220)
+
+    # ================================================================== drawing
+    def _draw(self):
+        ui.begin_frame()
+        if not self.states.covers_base():
+            draw = {"menu": self._draw_menu, "confirm_new": self._draw_confirm_new, "name": self._draw_name,
+                    "avatar": self._draw_avatar, "starter": self._draw_starter, "settings": self._draw_settings,
+                    "recovery": self._draw_recovery}.get(self.state)
+            if draw:
+                draw()
+            elif self.state == "overworld" and self.world:
+                self.world.draw(self.canvas, self.frame)
+            elif self.state == "worldmap" and self.map_screen:
+                self.map_screen.draw(self.canvas, self.frame)
+            elif self.state == "puzzle" and self.puzzle:
+                self.puzzle.draw(self.canvas, self.frame)
+            elif self.state == "arena" and self.arena:
+                self.arena.draw(self.canvas, self.frame)
+            elif self.state == "trials" and self.trials:
+                self.trials.draw(self.canvas, self.frame)
+            elif self.state == "mbattle" and self.monster_battle:
+                self.monster_battle.draw(self.canvas, self.frame)
+            elif self.state == "battle" and self.battle:
+                self.battle.draw(self.canvas, self.frame)
+        self.states.draw(self.canvas, self.frame)
+
+    def _draw_menu(self):
+        self.canvas.fill(PALETTE["ink"])
+        for i in range(28):
+            x = (i * 47 + 13) % VIRTUAL_WIDTH
+            y = (i * 29 + 17) % 105
+            pygame.draw.rect(self.canvas, PALETTE["muted"] if i % 3 else PALETTE["gold"], (x, y, 1 + (i % 2), 1 + (i % 2)))
+        pygame.draw.circle(self.canvas, (229, 198, 132), (271, 34), 16)
+        pygame.draw.circle(self.canvas, PALETTE["ink"], (278, 29), 15)
+        for i in range(8):
+            x = i * 44 - 12
+            pygame.draw.polygon(self.canvas, (30 + i % 2 * 7, 61 + i % 3 * 6, 68),
+                                [(x, 139), (x + 24, 78 + (i % 3) * 9), (x + 49, 139)])
+            pygame.draw.rect(self.canvas, (35, 80, 60), (x + 18, 118, 10, 35))
+        float_y = 1 if self.frame % 90 < 45 else 0
+        text(self.canvas, "MATHMON", (160, 56 + float_y), 48, PALETTE["coral"], center=True)
+        text(self.canvas, "MATHMON", (158, 54 + float_y), 48, PALETTE["gold"], center=True)
+        text(self.canvas, "TRAIN YOUR MIND. EVOLVE YOUR POWER.", (160, 81), 11, PALETTE["cream"], center=True)
+        choices = list(self.MENU_CHOICES)
+        disabled = ()
+        if self.saved_record:
+            choices[1] = f"CONTINUE  ({self.saved_record.name[:8]}, Lv {self.saved_record.level})"
+        else:
+            disabled = (1,)
+        menu(self.canvas, (29, 113, 136, 70), choices, self.menu_selected, 10, self.frame, disabled)
+        for i, spec in enumerate(STARTERS.values()):
+            pose = ("idle", "idle2", "idle3", "idle2")[(self.frame // 18 + i) % 4]
+            draw_creature(self.canvas, spec, (196 + i * 34, 170 + (i % 2) * 6), 34, pose)
+        panel(self.canvas, (170, 181, 143, 31), PALETTE["night"], PALETTE["leaf"])
+        wrapped(self.canvas, self.menu_hint, (177, 187, 129, 20), 10, PALETTE["white"], 11, 2)
+        text(self.canvas, f"{self.llm.label}  •  A SMALL WORLD OF BIG IDEAS", (160, 226), 9, PALETTE["muted"], center=True)
+
+    def _draw_name(self):
+        self.canvas.fill(PALETTE["ink"])
+        text(self.canvas, "A NEW TRAINER", (160, 52), 25, PALETTE["gold"], center=True)
+        panel(self.canvas, (44, 99, 232, 62), PALETTE["night"])
+        text(self.canvas, "What is your name, Numera Trainer?", (58, 111), 13, PALETTE["white"])
+        caret = "_" if self.frame % 50 < 28 else " "
+        text(self.canvas, (self.player_name or "Rookie") + caret, (58, 135), 18,
+             PALETTE["cream"] if self.player_name else PALETTE["muted"])
+        text(self.canvas, "TYPE A NAME     ENTER: CONTINUE", (160, 184), 11, PALETTE["muted"], center=True)
+        text(self.canvas, "ESC: BACK", (160, 215), 10, PALETTE["muted"], center=True)
+
+    def _draw_avatar(self):
+        from game import monster_sprites
+        self.canvas.fill((37, 71, 77))
+        text(self.canvas, "CHOOSE YOUR LOOK", (160, 24), 20, PALETTE["cream"], center=True)
+        for i, name in enumerate(Overworld.AVATARS):
+            chosen = i == self.avatar_selected
+            x = 52 + i * 124
+            lift = -4 if chosen else 0
+            panel(self.canvas, (x, 52 + lift, 92, 136), PALETTE["night"] if chosen else PALETTE["ink"],
+                  PALETTE["gold"] if chosen else PALETTE["leaf"])
+            sheet = f"characters/{name}"
+            if monster_sprites.available(sheet):
+                pose = (1, 0, 2, 0)[self.frame // 10 % 4] if chosen else 0
+                monster_sprites.draw(self.canvas, sheet, (x + 46, 160 + lift), 92, pose)
+            text(self.canvas, name.title(), (x + 46, 172 + lift), 14, PALETTE["gold"], center=True)
+        text(self.canvas, "LEFT/RIGHT: CHOOSE     ENTER: CONTINUE     ESC: BACK", (160, 214), 9, PALETTE["cream"], center=True)
+
+    def _draw_starter(self):
+        """GDD 4.2: sprite, element, description, role, maths affinity and basic stats."""
+        self.canvas.fill((37, 71, 77))
+        text(self.canvas, "CHOOSE YOUR FIRST MONSTER", (160, 14), 16, PALETTE["cream"], center=True)
+        keys = tuple(STARTERS)
+        for i, sid in enumerate(keys):
+            spec = STARTERS[sid]
+            chosen = i == self.starter_selected
+            x = 6 + i * 78
+            lift = -3 if chosen else 0
+            panel(self.canvas, (x, 30 + lift, 74, 108), PALETTE["night"] if chosen else PALETTE["ink"],
+                  PALETTE["gold"] if chosen else elemental_system.color(spec.element))
+            hop = (self.frame % 24 // 12) * 2 if chosen else 0
+            pose = ("idle", "idle2", "idle3", "idle2")[self.frame // 16 % 4] if chosen else "idle"
+            draw_creature(self.canvas, spec, (x + 37, 96 + lift - hop), 50, pose)
+            text(self.canvas, spec.name, (x + 37, 102 + lift), 11, PALETTE["gold"] if chosen else PALETTE["white"], center=True)
+            badge = pygame.Rect(x + 17, 112 + lift, 40, 9)
+            pygame.draw.rect(self.canvas, elemental_system.color(spec.element), badge)
+            text(self.canvas, spec.element.upper(), badge.center, 8, PALETTE["ink"], center=True)
+            text(self.canvas, curriculum.label(spec.mastery_topic), (x + 37, 128 + lift), 8, PALETTE["sky"], center=True)
+        spec = STARTERS[keys[self.starter_selected]]
+        panel(self.canvas, (6, 144, 308, 72), PALETTE["night"])
+        stats = spec.stats
+        text(self.canvas, f"{spec.name}  -  {spec.role}", (12, 148), 10, PALETTE["gold"])
+        text(self.canvas, f"HP {stats['hp']}  ATK {stats['attack']}  DEF {stats['defence']}  SPD {stats['speed']}",
+             (308, 148), 9, PALETTE["white"], align="right")
+        wrapped(self.canvas, spec.description, (12, 160, 296, 12), 9, PALETTE["white"], 10, 1)
+        affinity = ", ".join(curriculum.label(t) for t in spec.topics)
+        beats = elemental_system.strong_against(spec.element)
+        text(self.canvas, f"Maths affinity: {affinity}    {spec.element} beats {beats}", (12, 172), 9, PALETTE["sky"])
+        moves = ", ".join(m.name for m in spec.move_list())
+        text(self.canvas, f"Moves: {moves}", (12, 183), 9, PALETTE["cream"])
+        wrapped(self.canvas, f"{spec.passive.get('name', '')}: {spec.passive.get('text', '')}", (12, 194, 296, 20), 8,
+                PALETTE["muted"], 9, 2)
+        text(self.canvas, "LEFT/RIGHT or 1-4: CHOOSE    ENTER: BEGIN    ESC: BACK", (160, 228), 9, PALETTE["cream"], center=True)
+
+    def _draw_confirm_new(self):
+        self._draw_menu()
+        overlay = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((*PALETTE["ink"], 190))
+        self.canvas.blit(overlay, (0, 0))
+        ui.begin_frame()
+        panel(self.canvas, (40, 78, 240, 86), PALETTE["night"], PALETTE["coral"])
+        text(self.canvas, "START OVER?", (160, 92), 18, PALETTE["coral"], center=True)
+        record = self.saved_record
+        wrapped(self.canvas, f"This replaces {record.name}'s Lv {record.level} journey and learning journal.",
+                (54, 106, 212, 30), 11, PALETTE["white"], 12, 2)
+        text(self.canvas, "Y / ENTER: NEW GAME        N / ESC: KEEP SAVE", (160, 148), 10, PALETTE["gold"], center=True)
+
+    def _draw_settings(self):
+        self.canvas.fill(PALETTE["ink"])
+        text(self.canvas, "SETTINGS", (160, 53), 24, PALETTE["gold"], center=True)
+        options = ["SCANLINE EFFECT: " + ("ON" if self.scanlines else "OFF"),
+                   "SOUND: " + ("ON" if self.sound else "OFF"), "BACK TO TITLE"]
+        menu(self.canvas, (77, 100, 166, 60), options, self.settings_selected, 12, self.frame)
+        text(self.canvas, f"AI MODE: {self.llm.label}  (set MATHMON_AI_MODE / ANTHROPIC_API_KEY in .env)",
+             (160, 166), 8, PALETTE["sky"], center=True)
+        text(self.canvas, "F11 or ALT+ENTER toggles fullscreen", (160, 182), 10, PALETTE["muted"], center=True)
+        text(self.canvas, "UP/DOWN: CHOOSE     ENTER: CHANGE     ESC: BACK", (160, 200), 10, PALETTE["muted"], center=True)
+
+    def _draw_recovery(self):
+        self.canvas.fill(PALETTE["ink"])
+        text(self.canvas, "RECOVERY", (160, 60), 22, PALETTE["mint"], center=True)
+        panel(self.canvas, (30, 90, 260, 80), PALETTE["night"], PALETTE["mint"])
+        wrapped(self.canvas, self.recovery_text, (40, 100, 240, 60), 11, PALETTE["white"], 12, 5)
+        text(self.canvas, "ENTER: CONTINUE", (160, 190), 10, PALETTE["cream"], center=True)
+
+    # ================================================================== window
     @staticmethod
     def _browser_size():
-        """The browser window in device pixels (capped so big screens stay fast)."""
         try:
             import platform
             win = platform.window
@@ -418,73 +858,18 @@ class GameManager:
         return max(1, int(css_w * ratio)), max(1, int(css_h * ratio))
 
     def _fit_browser_window(self):
-        """Follow the browser window: rotate the phone or resize the tab and the game re-fits."""
         size = self._browser_size()
         if size and size != self.window.get_size():
             self.window = pygame.display.set_mode(size)
 
     def _held_direction(self):
+        if self.states.overlay is not None:
+            return 0, 0
         keys = pygame.key.get_pressed()
         dx = (keys[pygame.K_RIGHT] or keys[pygame.K_d]) - (keys[pygame.K_LEFT] or keys[pygame.K_a])
         dy = (keys[pygame.K_DOWN] or keys[pygame.K_s]) - (keys[pygame.K_UP] or keys[pygame.K_w])
         touch = self.touch.held_direction() if hasattr(self, "touch") else (0, 0)
         return max(-1, min(1, int(dx) + touch[0])), max(-1, min(1, int(dy) + touch[1]))
-
-    def _start_battle(self, enemy=None, level=None):
-        self._last_battle_boss = bool(enemy is not None and enemy.element == "BOSS")
-        self.repository.save_player(self.player)
-        self.battle = Battle(self.player, self.repository, self.orchestrator, self.llm, enemy, self.rng, level,
-                             self.world.team if self.world else None)
-        self.state = "battle"
-
-    def _update(self):
-        if self.state == "battle" and self.battle:
-            self.battle.update()
-            if self.battle.closed:
-                outcome = self.battle.outcome
-                self.battle = None
-                self.state = "overworld"
-                self.saved_record = self.repository.load_player()
-                if outcome == "won" and getattr(self, "_last_battle_boss", False):
-                    self.world.set_flag(self.BOSS_FLAG)
-                self.world.resume()
-                self.world.refresh_flags()
-                self._refresh_boss_gate()
-                if outcome == "befriended":
-                    self.world.set_message("Captured! It joined your team. Press M to see your MathDex.", 300)
-                elif outcome == "won":
-                    self.world.set_message("Victory! Your creature grows stronger. The forest path is still open.")
-                elif outcome == "defeated":
-                    self.world.set_message("The ranger helps your creature recover. Keep exploring at your own pace.")
-                else:
-                    self.world.set_message("Back on the Number Forest trail.")
-        if self.state == "puzzle" and self.puzzle:
-            self.puzzle.update()
-        if self.state == "arena" and self.arena:
-            self.arena.update()
-        if self.state == "trials" and self.trials:
-            self.trials.update()
-        if self.state == "mbattle" and self.monster_battle:
-            self.monster_battle.update()
-        if self.state == "overworld" and self.world:
-            event = self.world.update(*self._held_direction())
-            self.save_timer = getattr(self, "save_timer", 0) + 1
-            if self.world.dirty and self.save_timer >= 180:
-                self.repository.save_player(self.player)
-                self.world.dirty, self.save_timer = False, 0
-            if event == "encounter":
-                # A roamer you touched brings its own species; a surprise from the grass picks one.
-                spec, self.world.encounter_spec = self.world.encounter_spec, None
-                level, self.world.encounter_level = self.world.encounter_level, None
-                self._start_battle(spec or self._wild(), level or self._wild_level())
-        if self.state != self._last_state and WEB:
-            self.persister.sync()  # changing screens is a good moment to keep the browser save fresh
-        if self.state != self._last_state:
-            # Starting a battle and leaving the title get a short fade-in from black.
-            self.fade = self.FADE_FRAMES if self._last_state is not None else 0
-            self._last_state = self.state
-        elif self.fade:
-            self.fade -= 1
 
     def _toggle_fullscreen(self):
         self.fullscreen = not self.fullscreen
@@ -494,212 +879,17 @@ class GameManager:
             self.window = pygame.display.set_mode((VIRTUAL_WIDTH * WINDOW_SCALE, VIRTUAL_HEIGHT * WINDOW_SCALE),
                                                   pygame.RESIZABLE)
 
-    def _draw(self):
-        ui.begin_frame()
-        if self.state == "menu":
-            self._draw_menu()
-        elif self.state == "confirm_new":
-            self._draw_confirm_new()
-        elif self.state == "name":
-            self._draw_name()
-        elif self.state == "avatar":
-            self._draw_avatar()
-        elif self.state == "starter":
-            self._draw_starter()
-        elif self.state == "overworld" and self.world:
-            self.world.draw(self.canvas, self.frame)
-        elif self.state == "dex" and self.dex:
-            self.dex.draw(self.canvas, self.frame)
-        elif self.state == "worldmap" and self.map_screen:
-            self.map_screen.draw(self.canvas, self.frame)
-        elif self.state == "puzzle" and self.puzzle:
-            self.puzzle.draw(self.canvas, self.frame)
-        elif self.state == "arena" and self.arena:
-            self.arena.draw(self.canvas, self.frame)
-        elif self.state == "trials" and self.trials:
-            self.trials.draw(self.canvas, self.frame)
-        elif self.state == "mbattle" and self.monster_battle:
-            self.monster_battle.draw(self.canvas, self.frame)
-        elif self.state == "battle" and self.battle:
-            self.battle.draw(self.canvas, self.frame)
-        elif self.state == "profile":
-            self._draw_profile()
-        elif self.state == "settings":
-            self._draw_settings()
-
-    def _draw_menu(self):
-        self.canvas.fill(PALETTE["ink"])
-        # A quiet star field, tiny pixel motes, and a layered moonlit forest.
-        for i in range(28):
-            x = (i * 47 + 13) % VIRTUAL_WIDTH
-            y = (i * 29 + 17) % 105
-            pygame.draw.rect(self.canvas, PALETTE["muted"] if i % 3 else PALETTE["gold"], (x, y, 1 + (i % 2), 1 + (i % 2)))
-        pygame.draw.circle(self.canvas, (229, 198, 132), (271, 34), 16)
-        pygame.draw.circle(self.canvas, PALETTE["ink"], (278, 29), 15)
-        for i in range(8):
-            x = i * 44 - 12
-            pygame.draw.polygon(self.canvas, (30 + i % 2 * 7, 61 + i % 3 * 6, 68),
-                                [(x, 139), (x + 24, 78 + (i % 3) * 9), (x + 49, 139)])
-            pygame.draw.rect(self.canvas, (35, 80, 60), (x + 18, 118, 10, 35))
-        # Logo uses a shadow offset to suggest the old arcade title cards.
-        float_y = 1 if self.frame % 90 < 45 else 0
-        text(self.canvas, "MATHMON", (160, 56 + float_y), 48, PALETTE["coral"], center=True)
-        text(self.canvas, "MATHMON", (158, 54 + float_y), 48, PALETTE["gold"], center=True)
-        text(self.canvas, "TRAIN YOUR MIND. EVOLVE YOUR POWER.", (160, 81), 11, PALETTE["cream"], center=True)
-        choices = list(self.MENU_CHOICES)
-        disabled = ()
-        if self.saved_record:
-            choices[1] = f"CONTINUE  ({self.saved_record.name[:8]}, Lv {self.saved_record.level})"
-        else:
-            disabled = (1, 2)
-        menu(self.canvas, (29, 113, 136, 96), choices, self.menu_selected, 10, self.frame, disabled)
-        sprite_names = tuple(STARTERS)
-        for i, name in enumerate(sprite_names):
-            spec = STARTERS[name]
-            pose = ("idle", "idle2", "idle3", "idle2")[(self.frame // 18 + i) % 4]
-            draw_creature(self.canvas, spec, (204 + i * 44, 170 + (i % 2) * 6), 40, pose)
-        panel(self.canvas, (170, 181, 143, 31), PALETTE["night"], PALETTE["leaf"])
-        wrapped(self.canvas, self.menu_hint, (177, 187, 129, 20), 10, PALETTE["white"], 11, 2)
-        text(self.canvas, "A SMALL WORLD OF BIG IDEAS", (160, 226), 10, PALETTE["muted"], center=True)
-
-    def _draw_name(self):
-        self.canvas.fill(PALETTE["ink"])
-        text(self.canvas, "A NEW TRAIL BEGINS", (160, 52), 25, PALETTE["gold"], center=True)
-        panel(self.canvas, (44, 99, 232, 62), PALETTE["night"])
-        text(self.canvas, "What should the ranger call you?", (58, 111), 13, PALETTE["white"])
-        caret = "_" if self.frame % 50 < 28 else " "
-        if self.player_name:
-            text(self.canvas, self.player_name + caret, (58, 135), 18, PALETTE["cream"])
-        else:
-            text(self.canvas, "Rookie" + caret, (58, 135), 18, PALETTE["muted"])
-        text(self.canvas, "TYPE A NAME     ENTER: CONTINUE", (160, 184), 11, PALETTE["muted"], center=True)
-        text(self.canvas, "ESC: BACK", (160, 215), 10, PALETTE["muted"], center=True)
-
-    def _draw_avatar(self):
-        from game import monster_sprites
-        self.canvas.fill((37, 71, 77))
-        text(self.canvas, "WHO ARE YOU?", (160, 24), 20, PALETTE["cream"], center=True)
-        for i, name in enumerate(Overworld.AVATARS):
-            chosen = i == self.avatar_selected
-            x = 52 + i * 124
-            lift = -4 if chosen else 0
-            panel(self.canvas, (x, 52 + lift, 92, 136), PALETTE["night"] if chosen else PALETTE["ink"],
-                  PALETTE["gold"] if chosen else PALETTE["leaf"])
-            sheet = f"characters/{name}"
-            if monster_sprites.available(sheet):
-                pose = (1, 0, 2, 0)[self.frame // 10 % 4] if chosen else 0
-                if chosen and self.frame // 60 % 4 == 3:
-                    pose = 5  # cheer
-                monster_sprites.draw(self.canvas, sheet, (x + 46, 160 + lift), 92, pose)
-            text(self.canvas, name.title(), (x + 46, 172 + lift), 14, PALETTE["gold"], center=True)
-        text(self.canvas, "LEFT/RIGHT: CHOOSE     ENTER: CONTINUE     ESC: BACK", (160, 214), 9, PALETTE["cream"], center=True)
-
-    def _draw_starter(self):
-        self.canvas.fill((37, 71, 77))
-        text(self.canvas, "CHOOSE YOUR FIRST COMPANION", (160, 26), 20, PALETTE["cream"], center=True)
-        keys = tuple(STARTERS)
-        for i, name in enumerate(keys):
-            x = 9 + i * 104
-            spec = STARTERS[name]
-            chosen = i == self.starter_selected
-            border = PALETTE["gold"] if chosen else PALETTE["leaf"]
-            lift = -4 if chosen else 0
-            panel(self.canvas, (x, 68 + lift, 94, 124), PALETTE["night"] if chosen else PALETTE["ink"], border)
-            hop = (self.frame % 24 // 12) * 2 if chosen else self.frame % 36 // 18
-            pose = ("happy" if (self.frame // 50) % 4 == 3 else ("idle", "idle2", "idle3", "idle2")[self.frame // 16 % 4]) \
-                if chosen else "idle"
-            draw_creature(self.canvas, spec, (x + 47, 128 + lift - hop), 50, pose)
-            text(self.canvas, name, (x + 47, 132), 14, PALETTE["gold"], center=True)
-            text(self.canvas, spec.element + " TYPE", (x + 47, 148), 10, PALETTE["muted"], center=True)
-            text(self.canvas, f"HP {spec.hp}   ATK {spec.attack}", (x + 47, 166), 10, PALETTE["white"], center=True)
-        moods = ("Bold and bright, hits hardest.", "Calm and quick, well balanced.", "Steady and strong, most HP.")
-        text(self.canvas, moods[self.starter_selected], (160, 206), 11, PALETTE["white"], center=True)
-        text(self.canvas, "LEFT/RIGHT: CHOOSE     ENTER: BEGIN JOURNEY     ESC: BACK", (160, 226), 9, PALETTE["cream"], center=True)
-
-    def _draw_confirm_new(self):
-        self._draw_menu()
-        overlay = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((*PALETTE["ink"], 190))
-        self.canvas.blit(overlay, (0, 0))
-        ui.begin_frame()  # hide the menu's text beneath the dialog
-        panel(self.canvas, (40, 78, 240, 86), PALETTE["night"], PALETTE["coral"])
-        text(self.canvas, "START OVER?", (160, 92), 18, PALETTE["coral"], center=True)
-        record = self.saved_record
-        wrapped(self.canvas, f"This replaces {record.name}'s Lv {record.level} journey and learning journal.",
-                (54, 106, 212, 30), 11, PALETTE["white"], 12, 2)
-        text(self.canvas, "Y / ENTER: NEW GAME        N / ESC: KEEP SAVE", (160, 148), 10, PALETTE["gold"], center=True)
-
-    def _draw_profile(self):
-        self.canvas.fill(PALETTE["deep"])
-        text(self.canvas, "RANGER'S LEARNING JOURNAL", (160, 13), 19, PALETTE["gold"], center=True)
-        record = self.repository.load_player()
-        if not record:
-            wrapped(self.canvas, "Start a journey to build your learning journal.", (30, 54, 260, 50), 14, PALETTE["white"])
-            text(self.canvas, "ENTER / ESC: BACK", (160, 213), 10, PALETTE["muted"], center=True)
-            return
-        if self.profile_summary is None:
-            # The journal only changes between visits, so query it once rather than every frame.
-            self.profile_summary = self.orchestrator.profile(record.player_id, record.level)
-        summary = self.profile_summary
-        topics = summary["topics"]
-        panel(self.canvas, (10, 29, 300, 32), PALETTE["night"])
-        accuracy = round(summary["summary"]["accuracy"] * 100)
-        evolved_name = creature_spec(record.creature, record.level).name
-        text(self.canvas, f"{record.name}   {evolved_name}   LV {record.level}", (18, 34), 12, PALETTE["white"])
-        meter(self.canvas, 195, 48, 104, 7, summary["summary"]["correct"], max(1, summary["summary"]["attempted"]), PALETTE["mint"], f"ACCURACY {accuracy}%")
-        from mathematics.question_generator import QuestionGenerator, topic_label
-        labels = QuestionGenerator.TOPICS
-        for i, topic in enumerate(labels):
-            x = 10 + (i % 4) * 75
-            y = 66 + (i // 4) * 42
-            panel(self.canvas, (x, y, 70, 37), PALETTE["night"], PALETTE["leaf"])
-            stats = topics.get(topic, {})
-            pct = round(stats.get("accuracy", 0) * 100)
-            text(self.canvas, topic_label(topic), (x + 5, y + 4), 8, PALETTE["cream"])
-            text(self.canvas, f"{pct}%  M{stats.get('mastery', 0)}", (x + 5, y + 16), 9, PALETTE["white"])
-            meter(self.canvas, x + 5, y + 28, 60, 5, stats.get("mastery", 0), 100, PALETTE["sky"])
-        if topics:
-            strongest = max(topics, key=lambda key: topics[key].get("accuracy", 0))
-            untried = [name for name in labels if name not in topics]
-            weakest = untried[0] if untried else min(topics, key=lambda key: topics[key].get("mastery", 0))
-            focus_line = f"STRONGEST: {topic_label(strongest)}   NEXT FOCUS: {topic_label(weakest)}"
-        else:
-            focus_line = "STRONGEST: —   NEXT FOCUS: YOUR FIRST PRACTICE"
-        text(self.canvas, focus_line, (13, 153), 9, PALETTE["cream"])
-        mistakes = summary["mistakes"]
-        panel(self.canvas, (10, 166, 145, 45), PALETTE["night"])
-        text(self.canvas, "RECENT MISTAKES", (17, 171), 10, PALETTE["gold"])
-        if mistakes:
-            recent = mistakes[0]
-            wrapped(self.canvas, f"{recent['prompt'].replace('?', recent['expected'])}  (you said {recent['submitted']})",
-                    (17, 184, 130, 23), 10, PALETTE["white"], 10, 2)
-        else:
-            text(self.canvas, "No mistakes on record yet.", (17, 184), 9, PALETTE["muted"])
-        panel(self.canvas, (164, 166, 146, 45), PALETTE["night"])
-        text(self.canvas, "AI LEARNING TIP", (171, 171), 10, PALETTE["gold"])
-        recommendation = summary["recommendations"][0] if summary["recommendations"] else summary["next_step"]
-        wrapped(self.canvas, recommendation, (171, 184, 131, 23), 9, PALETTE["white"], 10, 2)
-        text(self.canvas, "ESC / ENTER: BACK", (160, 226), 10, PALETTE["muted"], center=True)
-
-    def _draw_settings(self):
-        self.canvas.fill(PALETTE["ink"])
-        text(self.canvas, "FIELD SETTINGS", (160, 53), 24, PALETTE["gold"], center=True)
-        options = ["SCANLINE EFFECT: " + ("ON" if self.scanlines else "OFF"), "BACK TO TITLE"]
-        menu(self.canvas, (77, 103, 166, 46), options, self.settings_selected, 12, self.frame)
-        text(self.canvas, "UP/DOWN: CHOOSE     ENTER: CHANGE     ESC: BACK", (160, 180), 10, PALETTE["muted"], center=True)
-        text(self.canvas, "F11 or ALT+ENTER toggles fullscreen", (160, 196), 10, PALETTE["muted"], center=True)
-
     def _present(self):
         win_w, win_h = self.window.get_size()
         scale = min(win_w / VIRTUAL_WIDTH, win_h / VIRTUAL_HEIGHT)
         if scale >= 1:
-            scale = int(scale)  # whole-number scaling keeps every pixel the same size
+            scale = int(scale)
         scale = max(scale, 0.25)
         size = (int(VIRTUAL_WIDTH * scale), int(VIRTUAL_HEIGHT * scale))
         offset = ((win_w - size[0]) // 2, (win_h - size[1]) // 2)
         if self.touch.enabled and win_h > win_w:
-            # Portrait phone: game at the top (under the shortcut row), controls underneath.
             offset = (offset[0], min(offset[1], self.touch.top_reserved(win_w, win_h)))
+        ui.set_view(scale, offset)
         if offset != (0, 0):
             self.window.fill((0, 0, 0))
         self.window.blit(pygame.transform.scale(self.canvas, size), offset)
@@ -723,11 +913,13 @@ class GameManager:
         self.window.blit(cached, offset)
 
     def _shutdown(self):
-        if self.player:
-            self.repository.save_player(self.player)
+        try:
+            self.save_all()
+        except Exception:
+            pass   # never lose the window close over a save hiccup
         self.llm.close()
         if WEB:
-            self.persister.sync()  # a browser tab has nothing to exit to; just keep the save
+            self.persister.sync()
             return
         pygame.quit()
         sys.exit(0)

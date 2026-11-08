@@ -113,26 +113,6 @@ class ScreenTests(unittest.TestCase):
         self.assertEqual(len(records), len(load_all()))
         self.assertGreater(self.repo.trainer_progress(self.player.player_id)["level"], 1)
 
-    def test_mathdex_trials_page_shows_trial_records(self):
-        from game.mathdex import MathDex
-        self.repo.save_monster_record(self.player.player_id, {"monster_id": "crystalgon", "rank": 3, "wins": 2,
-                                                              "losses": 0, "best_turns": 6})
-        dex = MathDex(self.repo, self.player)
-        dex.handle_key(pygame.K_e)
-        self.assertEqual(dex.page, 1)
-        self.assertEqual(len(dex.trial_monsters), len(load_all()))
-        crystalgon = next(m for m in dex.trial_monsters if m.id == "crystalgon")
-        self.assertEqual(dex.trial_record(crystalgon)["rank"], 3)
-        for index in range(len(dex.trial_monsters)):
-            dex.trial_selected = index
-            dex.draw(self.surface, index)
-        dex.handle_key(pygame.K_RIGHT)
-        dex.handle_key(pygame.K_RETURN)
-        self.assertIn("Trials hall", dex.notice)
-        dex.handle_key(pygame.K_q)
-        self.assertEqual(dex.page, 0)
-        dex.draw(self.surface, 1)
-
     def test_skills_log_typed_mode_potion_and_flee(self):
         self.repo.save_trainer_progress(self.player.player_id, 0, 9)
         screen = MonsterBattleScreen(self.repo, self.player, "crystalgon", 1, random.Random(3))

@@ -17,7 +17,7 @@ REPEAT_DELAY, REPEAT_EVERY = 22, 6   # frames: holding a D-pad arrow repeats it 
 # Shortcut keys: MathDex, map, Trials / hint, type-answer toggle, battle log / tier & page, Focus.
 SHORTCUTS = (("M", pygame.K_m, "m"), ("N", pygame.K_n, "n"), ("T", pygame.K_t, "t"),
              ("H", pygame.K_h, "h"), ("TAB", pygame.K_TAB, ""), ("L", pygame.K_l, "l"),
-             ("Q", pygame.K_q, "q"), ("E", pygame.K_e, "e"), ("F", pygame.K_f, "f"))
+             ("Q", pygame.K_q, "q"), ("E", pygame.K_e, "e"), ("F", pygame.K_f, "f"), ("W", pygame.K_w, "w"))
 DIRECTIONS = {pygame.K_UP: (0, -1), pygame.K_DOWN: (0, 1), pygame.K_LEFT: (-1, 0), pygame.K_RIGHT: (1, 0)}
 
 

@@ -1,0 +1,307 @@
+{
+  "_comment": "GDD 7.3. kind: normal (no Focus, a correct answer earns +1 Focus), special (spends Focus), support (no damage, applies an effect). effect: shield (halves the next hit you take), debuff (foe's attack x0.8 for the battle), delay (foe loses its next turn). topic = the maths asked when the move is chosen. priority guides the enemy AI.",
+  "moves": {
+    "crystal_shard": {
+      "name": "Crystal Shard",
+      "element": "Crystal",
+      "topic": "fractions",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "A quick shard of fractured light."
+    },
+    "fraction_blast": {
+      "name": "Fraction Blast",
+      "element": "Crystal",
+      "topic": "ratios",
+      "power": 26,
+      "focus": 2,
+      "kind": "special",
+      "description": "Splits a beam into perfect parts."
+    },
+    "prism_shield": {
+      "name": "Prism Shield",
+      "element": "Crystal",
+      "topic": "geometry",
+      "power": 0,
+      "focus": 1,
+      "kind": "support",
+      "effect": "shield",
+      "description": "Halves the next hit you take."
+    },
+    "stone_punch": {
+      "name": "Stone Punch",
+      "element": "Earth",
+      "topic": "geometry",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "A square-fisted jab."
+    },
+    "earthquake": {
+      "name": "Earthquake",
+      "element": "Earth",
+      "topic": "geometry",
+      "power": 27,
+      "focus": 2,
+      "kind": "special",
+      "description": "Shakes the ground along every edge."
+    },
+    "geometric_barrier": {
+      "name": "Geometric Barrier",
+      "element": "Earth",
+      "topic": "multiplication",
+      "power": 0,
+      "focus": 1,
+      "kind": "support",
+      "effect": "shield",
+      "description": "A wall of stone tiles halves the next hit."
+    },
+    "negative_pulse": {
+      "name": "Negative Pulse",
+      "element": "Dark",
+      "topic": "integers",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "A pulse that pulls below zero."
+    },
+    "shadow_orb": {
+      "name": "Shadow Orb",
+      "element": "Dark",
+      "topic": "subtraction",
+      "power": 0,
+      "focus": 1,
+      "kind": "support",
+      "effect": "debuff",
+      "description": "Saps the foe's strength (attack x0.8)."
+    },
+    "void_collapse": {
+      "name": "Void Collapse",
+      "element": "Dark",
+      "topic": "integers",
+      "power": 28,
+      "focus": 2,
+      "kind": "special",
+      "description": "Everything falls into the minus."
+    },
+    "pattern_swipe": {
+      "name": "Pattern Swipe",
+      "element": "Time",
+      "topic": "sequences",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Claws that strike in a rhythm."
+    },
+    "time_rift": {
+      "name": "Time Rift",
+      "element": "Time",
+      "topic": "algebra",
+      "power": 26,
+      "focus": 2,
+      "kind": "special",
+      "description": "Solves for the unknown moment and strikes."
+    },
+    "temporal_shift": {
+      "name": "Temporal Shift",
+      "element": "Time",
+      "topic": "sequences",
+      "power": 0,
+      "focus": 1,
+      "kind": "support",
+      "effect": "delay",
+      "description": "The foe loses its next turn."
+    },
+    "addition_spark": {
+      "name": "Addition Spark",
+      "element": "Time",
+      "topic": "addition",
+      "power": 15,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Sparks that add up."
+    },
+    "solar_sum": {
+      "name": "Solar Sum",
+      "element": "Time",
+      "topic": "addition",
+      "power": 25,
+      "focus": 2,
+      "kind": "special",
+      "description": "The sun's total, all at once."
+    },
+    "subtraction_splash": {
+      "name": "Subtraction Splash",
+      "element": "Dark",
+      "topic": "subtraction",
+      "power": 15,
+      "focus": 0,
+      "kind": "normal",
+      "description": "A splash that takes away."
+    },
+    "minus_tide": {
+      "name": "Minus Tide",
+      "element": "Dark",
+      "topic": "integers",
+      "power": 25,
+      "focus": 2,
+      "kind": "special",
+      "description": "A tide that drops below zero."
+    },
+    "times_bolt": {
+      "name": "Times Bolt",
+      "element": "Time",
+      "topic": "multiplication",
+      "power": 15,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Bolts in groups of three."
+    },
+    "multiply_storm": {
+      "name": "Multiply Storm",
+      "element": "Time",
+      "topic": "multiplication",
+      "power": 25,
+      "focus": 2,
+      "kind": "special",
+      "description": "A storm that multiplies."
+    },
+    "share_gust": {
+      "name": "Share Gust",
+      "element": "Earth",
+      "topic": "division",
+      "power": 15,
+      "focus": 0,
+      "kind": "normal",
+      "description": "A gust split into equal parts."
+    },
+    "division_dive": {
+      "name": "Division Dive",
+      "element": "Earth",
+      "topic": "division",
+      "power": 25,
+      "focus": 2,
+      "kind": "special",
+      "description": "Dives in equal shares."
+    },
+    "gem_split": {
+      "name": "Gem Split",
+      "element": "Crystal",
+      "topic": "fractions",
+      "power": 15,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Chips off an exact fraction."
+    },
+    "facet_burst": {
+      "name": "Facet Burst",
+      "element": "Crystal",
+      "topic": "fractions",
+      "power": 25,
+      "focus": 2,
+      "kind": "special",
+      "description": "Every facet fires at once."
+    },
+    "prism_bolt": {
+      "name": "Prism Bolt",
+      "element": "Crystal",
+      "topic": "multiplication",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Light split into rows of sparks."
+    },
+    "opal_gust": {
+      "name": "Opal Gust",
+      "element": "Crystal",
+      "topic": "division",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Starlight shared into beams."
+    },
+    "vector_beam": {
+      "name": "Vector Beam",
+      "element": "Time",
+      "topic": "sequences",
+      "power": 17,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Travels on a straight line."
+    },
+    "axis_nova": {
+      "name": "Axis Nova",
+      "element": "Time",
+      "topic": "algebra",
+      "power": 28,
+      "focus": 2,
+      "kind": "special",
+      "description": "Explodes where the axes cross."
+    },
+    "number_roar": {
+      "name": "Number Roar",
+      "element": "Dark",
+      "topic": "addition",
+      "power": 18,
+      "focus": 0,
+      "kind": "normal",
+      "description": "A roar of tangled sums."
+    },
+    "arithmetic_crush": {
+      "name": "Arithmetic Crush",
+      "element": "Dark",
+      "topic": "multiplication",
+      "power": 28,
+      "focus": 0,
+      "kind": "special",
+      "description": "Every operation at once."
+    },
+    "shadow_guard": {
+      "name": "Shadow Guard",
+      "element": "Dark",
+      "topic": "subtraction",
+      "power": 0,
+      "focus": 0,
+      "kind": "support",
+      "effect": "shield",
+      "description": "Wraps itself in shadow."
+    },
+    "prism_nova": {
+      "name": "Prism Nova",
+      "element": "Crystal",
+      "topic": "ratios",
+      "power": 33,
+      "focus": 2,
+      "kind": "special",
+      "description": "A nova split in perfect proportion. (Evolved move)"
+    },
+    "tectonic_slam": {
+      "name": "Tectonic Slam",
+      "element": "Earth",
+      "topic": "geometry",
+      "power": 34,
+      "focus": 2,
+      "kind": "special",
+      "description": "Plates of stone meet at right angles. (Evolved move)"
+    },
+    "abyss_collapse": {
+      "name": "Abyss Collapse",
+      "element": "Dark",
+      "topic": "integers",
+      "power": 35,
+      "focus": 2,
+      "kind": "special",
+      "description": "Pulls the foe far below zero. (Evolved move)"
+    },
+    "paradox_rift": {
+      "name": "Paradox Rift",
+      "element": "Time",
+      "topic": "algebra",
+      "power": 33,
+      "focus": 2,
+      "kind": "special",
+      "description": "Balances both sides of time, then strikes. (Evolved move)"
+    }
+  }
+}

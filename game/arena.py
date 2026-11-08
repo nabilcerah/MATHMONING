@@ -123,8 +123,8 @@ class ArenaScreen:
         if first_win:
             self.repository.set_world_flag(pid, trophy)
             self.flags.add(trophy)
-            self.repository.add_item(pid, "EXP Booster", 1)
-            rewards.append("TROPHY + EXP Booster")
+            self.repository.add_item(pid, "Math Capsule", 1)
+            rewards.append("TROPHY + Math Capsule")
             if self.rival.rival_id == "numeris":
                 self.repository.set_world_flag(pid, "arena:champion")
                 self.flags.add("arena:champion")

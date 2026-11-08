@@ -1,32 +1,65 @@
-"""Evidence-based difficulty changes; one success never raises difficulty."""
-from dataclasses import dataclass
+"""Agent 3 - Difficulty Manager (GDD 14). Rule-based, never an LLM decision.
+
+Starting point - the mastery band:
+    0-39 Foundation, 40-69 Intermediate, 70-84 Advanced, 85-100 Mastery challenge.
+Safeguards on top:
+    * not enough evidence  -> never above Intermediate;
+    * struggling recently (low accuracy, many second attempts, heavy hint use) -> one band down;
+    * never move more than one band away from the last question in this topic.
+"""
+from ai.agent_base import Agent
+from ai.schemas import DifficultyDecision, validate_difficulty
+from mathematics.curriculum import DIFFICULTIES
 
 
-@dataclass(frozen=True)
-class DifficultyDecision:
-    level: str
-    reason: str
+class DifficultyManager(Agent):
+    name = "difficulty_manager"
+    BANDS = ((85, "mastery"), (70, "advanced"), (40, "intermediate"), (0, "foundation"))
 
+    def band(self, mastery):
+        return next(level for threshold, level in self.BANDS if mastery >= threshold)
 
-class DifficultyManager:
-    LEVELS = ("easy", "intermediate", "advanced")
+    def recommend(self, analysis, previous=""):
+        level = self.band(analysis.mastery_score)
+        reasons = [f"mastery {analysis.mastery_score} suggests {level}"]
+        index = DIFFICULTIES.index(level)
+        if analysis.status == "insufficient_evidence":
+            index = min(index, 1)
+            reasons.append("still gathering evidence, so not above intermediate")
+        struggling = analysis.status == "weakness" or (analysis.evidence_count >= 3 and analysis.recent_accuracy < 0.5)
+        if struggling and index > 0:
+            index -= 1
+            reasons.append("recent answers show a struggle, so one step gentler")
+        if analysis.hint_rate > 0.6 and index > 0 and analysis.evidence_count >= 3:
+            index -= 1
+            reasons.append("hints are doing a lot of the work, so one step gentler")
+        if previous in DIFFICULTIES:
+            last = DIFFICULTIES.index(previous)
+            if abs(index - last) > 1:
+                index = last + (1 if index > last else -1)
+                reasons.append("changing one band at a time")
+        return validate_difficulty(DifficultyDecision(DIFFICULTIES[index], "; ".join(reasons).capitalize() + ".",
+                                                      previous))
+
+    # Pre-GDD interface (Arena): three levels from the old per-topic stats.
+    LEGACY = ("easy", "intermediate", "advanced")
 
     def choose(self, performance=None, fallback="easy"):
         performance = performance or {}
         current = performance.get("last_difficulty", fallback)
-        if current not in self.LEVELS:
-            current = "easy"
-        index = self.LEVELS.index(current)
+        index = self.LEGACY.index(current) if current in self.LEGACY else 0
         attempted = performance.get("attempted", 0)
         recent = performance.get("recent_accuracy", performance.get("accuracy", 0.5))
         overall = performance.get("accuracy", recent)
-        mastery = performance.get("mastery", 0)
         if attempted >= 3 and (recent < 0.45 or overall < 0.4):
-            index = max(0, index - 1)
-            reason = "Recent practice suggests a gentler step will help."
-        elif attempted >= 8 and recent >= 0.8 and overall >= 0.72 and mastery >= 65:
-            index = min(len(self.LEVELS) - 1, index + 1)
-            reason = "Consistent accuracy shows readiness for a bigger challenge."
+            index, reason = max(0, index - 1), "Recent practice suggests a gentler step will help."
+        elif attempted >= 8 and recent >= 0.8 and overall >= 0.72 and performance.get("mastery", 0) >= 65:
+            index, reason = min(2, index + 1), "Consistent accuracy shows readiness for a bigger challenge."
         else:
             reason = "Keeping the challenge steady while we build a reliable pattern."
-        return DifficultyDecision(self.LEVELS[index], reason)
+        return _LegacyDecision(self.LEGACY[index], reason)
+
+
+class _LegacyDecision:
+    def __init__(self, level, reason):
+        self.level, self.reason = level, reason

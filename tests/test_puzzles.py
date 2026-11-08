@@ -118,7 +118,7 @@ class ShrineTests(unittest.TestCase):
                 game._create_new_player()
                 world = game.world
                 shrine = world.objects["shrine_sequence"]
-                exp_before = game.player.exp + game.player.level * 1000
+                exp_before = game.party.lead.exp + game.party.lead.level * 1000
                 potions = game.repository.inventory(game.player.player_id)["Health Potion"]
                 x, y = shrine["pos"]
                 world.avatar.x, world.avatar.y = world.world.cell_to_feet((x, y + 1))
@@ -136,7 +136,7 @@ class ShrineTests(unittest.TestCase):
                 game._handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0))
                 game._handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0))
                 self.assertEqual(game.state, "overworld")
-                self.assertGreater(game.player.exp + game.player.level * 1000, exp_before)
+                self.assertGreater(game.party.lead.exp + game.party.lead.level * 1000, exp_before)
                 self.assertEqual(game.repository.inventory(game.player.player_id)["Health Potion"], potions + 1)
                 self.assertTrue(world.shrine_done("shrine_sequence"))
                 world.update()                       # the [E] prompt refreshes each frame

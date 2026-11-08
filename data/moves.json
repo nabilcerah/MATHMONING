@@ -302,6 +302,240 @@
       "focus": 2,
       "kind": "special",
       "description": "Balances both sides of time, then strikes. (Evolved move)"
+    },
+    "shade_sap": {
+      "name": "Shade Sap",
+      "element": "Dark",
+      "topic": "integers",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Drains a little below zero."
+    },
+    "below_zero": {
+      "name": "Below Zero",
+      "element": "Dark",
+      "topic": "integers",
+      "power": 26,
+      "focus": 2,
+      "kind": "special",
+      "description": "Drops the foe past zero."
+    },
+    "magma_equation": {
+      "name": "Magma Equation",
+      "element": "Time",
+      "topic": "algebra",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Lava that balances both sides."
+    },
+    "eruption_x": {
+      "name": "Eruption X",
+      "element": "Time",
+      "topic": "algebra",
+      "power": 27,
+      "focus": 2,
+      "kind": "special",
+      "description": "The unknown erupts."
+    },
+    "facet_strike": {
+      "name": "Facet Strike",
+      "element": "Crystal",
+      "topic": "geometry",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Every edge at the exact angle."
+    },
+    "prism_angle": {
+      "name": "Prism Angle",
+      "element": "Crystal",
+      "topic": "geometry",
+      "power": 27,
+      "focus": 2,
+      "kind": "special",
+      "description": "Light bends 90 degrees into the foe."
+    },
+    "volt_multiple": {
+      "name": "Volt Multiple",
+      "element": "Time",
+      "topic": "multiplication",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Strikes in multiples."
+    },
+    "storm_array": {
+      "name": "Storm Array",
+      "element": "Time",
+      "topic": "multiplication",
+      "power": 26,
+      "focus": 2,
+      "kind": "special",
+      "description": "Rows and columns of lightning."
+    },
+    "star_wing": {
+      "name": "Star Wing",
+      "element": "Crystal",
+      "topic": "addition",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Wings full of counted stars."
+    },
+    "nova_count": {
+      "name": "Nova Count",
+      "element": "Crystal",
+      "topic": "addition",
+      "power": 27,
+      "focus": 2,
+      "kind": "special",
+      "description": "A million stars, added at once."
+    },
+    "spore_split": {
+      "name": "Spore Split",
+      "element": "Earth",
+      "topic": "fractions",
+      "power": 15,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Splits into equal pieces."
+    },
+    "mycelium_burst": {
+      "name": "Mycelium Burst",
+      "element": "Earth",
+      "topic": "ratios",
+      "power": 25,
+      "focus": 2,
+      "kind": "special",
+      "description": "Spores in perfect proportion."
+    },
+    "sun_pattern": {
+      "name": "Sun Pattern",
+      "element": "Time",
+      "topic": "sequences",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Sees the next term coming."
+    },
+    "solar_sequence": {
+      "name": "Solar Sequence",
+      "element": "Time",
+      "topic": "sequences",
+      "power": 27,
+      "focus": 2,
+      "kind": "special",
+      "description": "Each beam brighter by the same step."
+    },
+    "double_sting": {
+      "name": "Double Sting",
+      "element": "Dark",
+      "topic": "sequences",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Doubles... and doubles."
+    },
+    "venom_power": {
+      "name": "Venom Power",
+      "element": "Dark",
+      "topic": "sequences",
+      "power": 28,
+      "focus": 2,
+      "kind": "special",
+      "description": "Venom raised to a power."
+    },
+    "riddle_tail": {
+      "name": "Riddle Tail",
+      "element": "Crystal",
+      "topic": "ratios",
+      "power": 16,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Nine tails, in proportion."
+    },
+    "nine_tails": {
+      "name": "Nine Tails",
+      "element": "Crystal",
+      "topic": "ratios",
+      "power": 27,
+      "focus": 2,
+      "kind": "special",
+      "description": "Every tail strikes its share."
+    },
+    "tusk_mix": {
+      "name": "Tusk Mix",
+      "element": "Earth",
+      "topic": "multiplication",
+      "power": 18,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Every operation, in order."
+    },
+    "all_operations": {
+      "name": "All Operations",
+      "element": "Earth",
+      "topic": "division",
+      "power": 28,
+      "focus": 2,
+      "kind": "special",
+      "description": "Brackets, powers, then the rest."
+    },
+    "balance_beam": {
+      "name": "Balance Beam",
+      "element": "Earth",
+      "topic": "algebra",
+      "power": 20,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Both sides strike at once."
+    },
+    "unknown_x": {
+      "name": "Unknown X",
+      "element": "Earth",
+      "topic": "algebra",
+      "power": 30,
+      "focus": 0,
+      "kind": "special",
+      "description": "No one can guess where it lands."
+    },
+    "dimension_claw": {
+      "name": "Dimension Claw",
+      "element": "Crystal",
+      "topic": "geometry",
+      "power": 21,
+      "focus": 0,
+      "kind": "normal",
+      "description": "Claws from a fourth dimension."
+    },
+    "tesseract_breath": {
+      "name": "Tesseract Breath",
+      "element": "Crystal",
+      "topic": "geometry",
+      "power": 31,
+      "focus": 0,
+      "kind": "special",
+      "description": "Breath shaped like a folded cube."
+    },
+    "infinite_loop": {
+      "name": "Infinite Loop",
+      "element": "Time",
+      "topic": "sequences",
+      "power": 22,
+      "focus": 0,
+      "kind": "normal",
+      "description": "It never seems to end."
+    },
+    "endless_series": {
+      "name": "Endless Series",
+      "element": "Time",
+      "topic": "sequences",
+      "power": 33,
+      "focus": 0,
+      "kind": "special",
+      "description": "Every term hits harder."
     }
   }
 }

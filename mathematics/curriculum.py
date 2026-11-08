@@ -15,6 +15,9 @@ SHORT = {"addition": "ADD", "subtraction": "SUB", "multiplication": "MUL", "divi
 
 # Number Forest's own topics (GDD 2.2, World 1).
 REGION_TOPICS = {"number_forest": ("addition", "subtraction", "multiplication", "division", "fractions"),
+                 "algebra_cavern": ("algebra", "integers"),
+                 "geometry_kingdom": ("geometry", "multiplication"),
+                 "chronos_dimension": ("sequences", "algebra"),
                  "crystal_realm": MASTERY_TOPICS}
 
 # GDD 14, Agent 3: four difficulty bands.

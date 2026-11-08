@@ -6,6 +6,10 @@
     4. decide which agents are needed    9. record the decision (ai_decisions table)
     5. invoke the agents / tools
 
+Agent 6, the AI Planner (ai/planner_agent.py), is the LLM agent: when a live provider is set up,
+Claude plans the learner's next step by calling the other agents as tools. An accepted plan steers
+the topic (and, within one band of the rules, the difficulty) of the next few questions.
+
 Each decision carries a ``trace`` - one line per step - which the profile screen shows as the
 "AI log", so the agent workflow is visible and demonstrable rather than described.
 
@@ -18,6 +22,7 @@ from ai.difficulty_manager import DifficultyManager
 from ai.game_master import GameMaster
 from ai.learning_analyst import LearningAnalyst
 from ai.offline_provider import OfflineProvider
+from ai.planner_agent import PlannerAgent
 from ai.question_agent import QuestionGeneratorAgent
 from ai.schemas import (OrchestratorDecision, SchemaError, TutorResponse, validate_question,
                         validate_recommendation, validate_tutor)
@@ -44,6 +49,8 @@ class AgentOrchestrator:
         self.game_master_agent = self.game_master
         self.quest_manager = None   # set by the game once a save is loaded (read-only use)
         self.last_decision = None
+        self.planner = PlannerAgent(self, self.llm)
+        self.plans = {}             # player_id -> {"plan": Plan, "remaining": questions left to steer}
 
     # ======================================================================== workflow
     def handle(self, event):
@@ -79,7 +86,13 @@ class AgentOrchestrator:
             analysis = self.analyst.analyse(player_id, affinity)
         else:
             topics = event.get("topics") or curriculum.REGION_TOPICS.get(self.region, curriculum.MASTERY_TOPICS)
-            analysis = self.analyst.weakest(player_id, topics)
+            plan = self._active_plan(player_id, topics)
+            if plan:
+                analysis = self.analyst.analyse(player_id, plan.focus_topic)
+                decision.step(f"2b. Following the AI Planner's plan: focus on {plan.focus_topic}")
+                self._use(decision, self.planner)
+            else:
+                analysis = self.analyst.weakest(player_id, topics)
         topic = self.questions.choose_topic([analysis], affinity)
         decision.analysis = analysis
         goals = {"weakness": "remediate", "insufficient_evidence": "gather evidence", "developing": "consolidate",
@@ -92,6 +105,14 @@ class AgentOrchestrator:
         history = self.repository.question_history(player_id, topic, limit=12)
         previous = history[0]["difficulty"] if history else ""
         difficulty = self.difficulty_manager.recommend(analysis, previous)
+        plan = None if affinity else self._active_plan(player_id, [topic])
+        if plan and plan.difficulty != difficulty.level:
+            gap = abs(curriculum.DIFFICULTIES.index(plan.difficulty) - curriculum.DIFFICULTIES.index(difficulty.level))
+            if gap <= 1:   # the planner may only nudge the rules by one band
+                difficulty = type(difficulty)(plan.difficulty, difficulty.reason + " AI Planner adjusted it by one band.",
+                                              previous)
+        if plan:
+            self.plans[player_id]["remaining"] -= 1
         if event.get("min_difficulty"):
             floor = curriculum.DIFFICULTIES.index(curriculum.normalise_difficulty(event["min_difficulty"]))
             if curriculum.DIFFICULTIES.index(difficulty.level) < floor:
@@ -246,6 +267,42 @@ class AgentOrchestrator:
         self._use(decision, self.analyst)
         decision.message = f"{right}/{len(answered)} correct vs {event.get('enemy', '?')} ({event.get('outcome')})"
         decision.step("8. Summary stored for future recommendations")
+
+    # ======================================================================== AI Planner (LLM agent)
+    def _active_plan(self, player_id, topics):
+        entry = self.plans.get(player_id)
+        if not entry or entry["remaining"] <= 0 or entry["plan"].focus_topic not in topics:
+            return None
+        return entry["plan"]
+
+    def start_planning(self, player_id, party_level=1, seals_done=False):
+        """Ask the AI Planner for a plan in the background. A Future resolving to a Plan or None."""
+        return self.planner.plan_async(player_id, party_level, seals_done)
+
+    def apply_plan(self, player_id, plan, steer_questions=3):
+        """Adopt a validated plan: log it with Claude's tool calls, store the advice, steer questions."""
+        decision = OrchestratorDecision("agent_plan", f"plan: focus on {curriculum.label(plan.focus_topic).lower()}")
+        decision.agents = [self.planner.name] + sorted({self._agent_for(name) for name in plan.tool_calls} - {""})
+        decision.step(f"1. AI Planner (Claude) given the goal: plan the next learning step")
+        for line in plan.trace:
+            decision.step(line)
+        if plan.reasoning:
+            decision.step(f"Reasoning: {plan.reasoning}")
+        decision.step(f"Plan validated against the rules; steering the next {steer_questions} questions")
+        decision.message = plan.message
+        decision.extra = {"objectives": plan.objectives, "quest_id": plan.quest_id}
+        self.plans[player_id] = {"plan": plan, "remaining": steer_questions}
+        self.repository.add_recommendation(player_id, plan.message)
+        decision.decision_id = self.repository.log_decision(player_id, "agent_plan", decision.objective,
+                                                            decision.agents, decision.summary(), plan.message[:200])
+        self.last_decision = decision
+        return decision
+
+    @staticmethod
+    def _agent_for(tool_name):
+        return {"get_learning_overview": "learning_analyst", "analyse_topic": "learning_analyst",
+                "recommend_difficulty": "difficulty_manager", "list_quests": "game_master",
+                "check_boss_readiness": "game_master", "get_training_spot": "game_master"}.get(tool_name, "")
 
     # ======================================================================== conveniences
     def request_question(self, player_id, topic=None, context="battle", subtopic=None, affinity="",

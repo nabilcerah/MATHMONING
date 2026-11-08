@@ -2,88 +2,736 @@
   "_comment": "GDD 11. Quest rules are deterministic: steps complete from game events and flags, rewards are fixed and saved. The AI Game Master may only RECOMMEND quests (by their topics); it can never change steps or rewards. Step types: talk(npc), win_battles(count), capture(count), visit(area), challenge(id), flags_all([...]), flag(name), open_chests(count).",
   "quests": {
     "fading_numera": {
-      "title": "THE FADING NUMERA", "category": "main", "giver": "rowan", "auto_start": true,
-      "topics": ["addition", "subtraction", "multiplication", "division", "fractions"],
+      "title": "THE FADING NUMERA",
+      "category": "main",
+      "giver": "rowan",
+      "auto_start": true,
+      "topics": [
+        "addition",
+        "subtraction",
+        "multiplication",
+        "division",
+        "fractions"
+      ],
       "summary": "The Numera is fading from Number Forest. Restore the three Numera Seals in the Ancient Number Ruins, then face the Arithmetic Beast at the old stone arch.",
       "steps": [
-        {"type": "talk", "npc": "rowan", "met_ok": true, "text": "Meet Professor Numeris in Starter Village."},
-        {"type": "win_battles", "count": 1, "text": "Win a battle in the Green Meadow grass."},
-        {"type": "visit", "area": "ridge", "text": "Reach the Ancient Number Ruins (south-east)."},
-        {"type": "flags_all", "flags": ["challenge:seal_add", "challenge:seal_mul", "challenge:seal_frac"], "text": "Restore the three Numera Seals in the ruins."},
-        {"type": "flag", "flag": "boss:numerex", "text": "Defeat THE ARITHMETIC BEAST at the stone arch."}
+        {
+          "type": "talk",
+          "npc": "rowan",
+          "met_ok": true,
+          "text": "Meet Professor Numeris in Starter Village."
+        },
+        {
+          "type": "win_battles",
+          "count": 1,
+          "text": "Win a battle in the Green Meadow grass."
+        },
+        {
+          "type": "visit",
+          "area": "ridge",
+          "text": "Reach the Ancient Number Ruins (south-east)."
+        },
+        {
+          "type": "flags_all",
+          "flags": [
+            "challenge:seal_add",
+            "challenge:seal_mul",
+            "challenge:seal_frac"
+          ],
+          "text": "Restore the three Numera Seals in the ruins."
+        },
+        {
+          "type": "flag",
+          "flag": "boss:numerex",
+          "text": "Defeat THE ARITHMETIC BEAST at the stone arch."
+        }
       ],
-      "rewards": {"exp": 300, "coins": 300, "items": {"Revival Crystal": 2}, "flags": ["region:number_forest_complete"]}
+      "rewards": {
+        "exp": 300,
+        "coins": 300,
+        "items": {
+          "Revival Crystal": 2
+        },
+        "flags": [
+          "region:number_forest_complete"
+        ]
+      }
     },
     "lost_numbers": {
-      "title": "THE LOST NUMBERS", "category": "side", "giver": "mira",
-      "topics": ["addition", "multiplication", "division"],
+      "title": "THE LOST NUMBERS",
+      "category": "side",
+      "giver": "mira",
+      "topics": [
+        "addition",
+        "multiplication",
+        "division"
+      ],
       "summary": "Mira dropped three numbered stones while fleeing a wild VOLTIX. Each stone only answers to the right arithmetic.",
       "steps": [
-        {"type": "talk", "npc": "mira", "text": "Talk to Mira in Starter Village."},
-        {"type": "challenge", "id": "stone_1", "text": "Stone I: in the Green Meadow grass, east of the crossroads."},
-        {"type": "challenge", "id": "stone_2", "text": "Stone II: among the crops of Sunny Farms."},
-        {"type": "challenge", "id": "stone_3", "text": "Stone III: in Woolly Pasture, near the arena."},
-        {"type": "talk", "npc": "mira", "text": "Bring the stones back to Mira."}
+        {
+          "type": "talk",
+          "npc": "mira",
+          "text": "Talk to Mira in Starter Village."
+        },
+        {
+          "type": "challenge",
+          "id": "stone_1",
+          "text": "Stone I: in the Green Meadow grass, east of the crossroads."
+        },
+        {
+          "type": "challenge",
+          "id": "stone_2",
+          "text": "Stone II: among the crops of Sunny Farms."
+        },
+        {
+          "type": "challenge",
+          "id": "stone_3",
+          "text": "Stone III: in Woolly Pasture, near the arena."
+        },
+        {
+          "type": "talk",
+          "npc": "mira",
+          "text": "Bring the stones back to Mira."
+        }
       ],
-      "rewards": {"exp": 80, "coins": 60, "items": {"Health Potion": 3}}
+      "rewards": {
+        "exp": 80,
+        "coins": 60,
+        "items": {
+          "Health Potion": 3
+        }
+      }
     },
     "broken_bridge": {
-      "title": "THE BROKEN BRIDGE", "category": "side", "giver": "bram",
-      "topics": ["geometry", "multiplication"],
+      "title": "THE BROKEN BRIDGE",
+      "category": "side",
+      "giver": "bram",
+      "topics": [
+        "geometry",
+        "multiplication"
+      ],
       "summary": "Bram the builder needs the plank and rail sums for the plateau bridge to the Sunsand Desert.",
       "steps": [
-        {"type": "talk", "npc": "bram", "text": "Talk to Bram at the plateau bridge (east of the falls)."},
-        {"type": "challenge", "id": "bridge_plan", "text": "Work out the materials for the bridge."}
+        {
+          "type": "talk",
+          "npc": "bram",
+          "text": "Talk to Bram at the plateau bridge (east of the falls)."
+        },
+        {
+          "type": "challenge",
+          "id": "bridge_plan",
+          "text": "Work out the materials for the bridge."
+        }
       ],
-      "rewards": {"exp": 100, "coins": 40, "items": {"Greater Potion": 2, "Stone Charm": 1}, "flags": ["bridge:repaired"]}
+      "rewards": {
+        "exp": 100,
+        "coins": 40,
+        "items": {
+          "Greater Potion": 2,
+          "Stone Charm": 1
+        },
+        "flags": [
+          "bridge:repaired"
+        ]
+      }
     },
     "crystal_seal": {
-      "title": "THE CRYSTAL SEAL", "category": "side", "giver": "crystal_seal",
-      "topics": ["fractions"],
+      "title": "THE CRYSTAL SEAL",
+      "category": "side",
+      "giver": "crystal_seal",
+      "topics": [
+        "fractions"
+      ],
       "summary": "An ancient crystal on Waterfall Plateau hums with broken fractions. Solve them to wake it.",
       "steps": [
-        {"type": "challenge", "id": "crystal_seal", "text": "Solve the fraction puzzles at the Crystal Seal."}
+        {
+          "type": "challenge",
+          "id": "crystal_seal",
+          "text": "Solve the fraction puzzles at the Crystal Seal."
+        }
       ],
-      "rewards": {"exp": 100, "coins": 0, "items": {"Crystal Shard": 3, "Evolution Crystal": 1}}
+      "rewards": {
+        "exp": 100,
+        "coins": 0,
+        "items": {
+          "Crystal Shard": 3,
+          "Evolution Crystal": 1
+        }
+      }
     },
     "unknown_runes": {
-      "title": "THE UNKNOWN RUNES", "category": "side", "giver": "tablet",
-      "topics": ["algebra"],
+      "title": "THE UNKNOWN RUNES",
+      "category": "side",
+      "giver": "tablet",
+      "topics": [
+        "algebra"
+      ],
       "summary": "A stone tablet in Pine Ridge is covered in equations. Each solved rune reveals the value hidden behind an x.",
       "steps": [
-        {"type": "challenge", "id": "rune_tablet", "text": "Solve the runes on the stone tablet in Pine Ridge."}
+        {
+          "type": "challenge",
+          "id": "rune_tablet",
+          "text": "Solve the runes on the stone tablet in Pine Ridge."
+        }
       ],
-      "rewards": {"exp": 90, "coins": 50, "items": {"Focus Crystal": 2}}
+      "rewards": {
+        "exp": 90,
+        "coins": 50,
+        "items": {
+          "Focus Crystal": 2
+        }
+      }
     },
     "hidden_treasures": {
-      "title": "HIDDEN TREASURES", "category": "exploration", "giver": "", "auto_start": true,
+      "title": "HIDDEN TREASURES",
+      "category": "exploration",
+      "giver": "",
+      "auto_start": true,
       "topics": [],
       "summary": "Old chests are hidden all over Number Forest. Explore every corner.",
       "steps": [
-        {"type": "open_chests", "count": 4, "text": "Open 4 treasure chests anywhere in Number Forest."}
+        {
+          "type": "open_chests",
+          "count": 4,
+          "text": "Open 4 treasure chests anywhere in Number Forest."
+        }
       ],
-      "rewards": {"exp": 60, "coins": 120, "items": {"Math Capsule": 3}}
+      "rewards": {
+        "exp": 60,
+        "coins": 120,
+        "items": {
+          "Math Capsule": 3
+        }
+      }
+    },
+    "unknown_guardian": {
+      "title": "THE UNKNOWN GUARDIAN",
+      "category": "main",
+      "giver": "vexa",
+      "topics": [
+        "algebra",
+        "integers"
+      ],
+      "summary": "Dr. Vexa's old laboratory is sealed by three Variable Seals. Behind them, a guardian hides every unknown.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "vexa",
+          "met_ok": true,
+          "text": "Meet Dr. Vexa at the Cave Mouth."
+        },
+        {
+          "type": "win_battles",
+          "count": 2,
+          "text": "Win 2 battles in the glowing tunnels."
+        },
+        {
+          "type": "flags_all",
+          "flags": [
+            "challenge:seal_x1",
+            "challenge:seal_x2",
+            "challenge:seal_x3"
+          ],
+          "text": "Restore the three Variable Seals."
+        },
+        {
+          "type": "flag",
+          "flag": "boss:guardian",
+          "text": "Defeat THE UNKNOWN GUARDIAN in the Lost Laboratory."
+        }
+      ],
+      "rewards": {
+        "exp": 400,
+        "coins": 400,
+        "items": {
+          "Greater Potion": 3,
+          "Revival Crystal": 1
+        },
+        "flags": [
+          "region:algebra_cavern_complete"
+        ]
+      }
+    },
+    "lab_notes": {
+      "title": "THE LAB NOTES",
+      "category": "side",
+      "giver": "lab_terminal",
+      "topics": [
+        "integers",
+        "algebra"
+      ],
+      "summary": "Finish an old scientist's notes on negative numbers and equations.",
+      "steps": [
+        {
+          "type": "challenge",
+          "id": "lab_notes",
+          "text": "Complete the notes at the lab terminal."
+        }
+      ],
+      "rewards": {
+        "exp": 150,
+        "coins": 120,
+        "items": {
+          "Focus Crystal": 2
+        }
+      }
+    },
+    "dimension_dragon": {
+      "title": "THE DIMENSION DRAGON",
+      "category": "main",
+      "giver": "hypot",
+      "topics": [
+        "geometry",
+        "multiplication"
+      ],
+      "summary": "Sir Hypot guards the Geometry Kingdom. The Dimension Dragon has folded its castle into impossible shapes.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "hypot",
+          "met_ok": true,
+          "text": "Meet Sir Hypot at the Temple Gate."
+        },
+        {
+          "type": "visit",
+          "area": "pillar_court",
+          "text": "Cross the kingdom to the Pillar Court."
+        },
+        {
+          "type": "flags_all",
+          "flags": [
+            "challenge:seal_g1",
+            "challenge:seal_g2",
+            "challenge:seal_g3"
+          ],
+          "text": "Restore the three Geometry Seals."
+        },
+        {
+          "type": "flag",
+          "flag": "boss:dragon",
+          "text": "Defeat THE DIMENSION DRAGON in the Dragon Keep."
+        }
+      ],
+      "rewards": {
+        "exp": 500,
+        "coins": 500,
+        "items": {
+          "Greater Potion": 3,
+          "Revival Crystal": 2
+        },
+        "flags": [
+          "region:geometry_kingdom_complete"
+        ]
+      }
+    },
+    "royal_garden": {
+      "title": "THE ROYAL GARDEN",
+      "category": "side",
+      "giver": "garden_plan",
+      "topics": [
+        "geometry",
+        "multiplication",
+        "fractions"
+      ],
+      "summary": "The royal gardener left plans for new flower beds - but no sums.",
+      "steps": [
+        {
+          "type": "challenge",
+          "id": "royal_garden",
+          "text": "Work out the garden plans."
+        }
+      ],
+      "rewards": {
+        "exp": 180,
+        "coins": 150,
+        "items": {
+          "Math Capsule": 3
+        }
+      }
+    },
+    "infinite_overlord": {
+      "title": "THE INFINITE OVERLORD",
+      "category": "main",
+      "giver": "tick",
+      "topics": [
+        "sequences",
+        "algebra"
+      ],
+      "summary": "Time has stopped in the Chronos Dimension. Keeper Tick needs the three Time Seals restored before the Infinite Overlord can be faced.",
+      "steps": [
+        {
+          "type": "talk",
+          "npc": "tick",
+          "met_ok": true,
+          "text": "Meet Keeper Tick at the Clock Gate."
+        },
+        {
+          "type": "win_battles",
+          "count": 3,
+          "text": "Win 3 battles on the floating isles."
+        },
+        {
+          "type": "flags_all",
+          "flags": [
+            "challenge:seal_t1",
+            "challenge:seal_t2",
+            "challenge:seal_t3"
+          ],
+          "text": "Restore the three Time Seals."
+        },
+        {
+          "type": "flag",
+          "flag": "boss:overlord",
+          "text": "Defeat THE INFINITE OVERLORD at the Time Spire."
+        }
+      ],
+      "rewards": {
+        "exp": 600,
+        "coins": 800,
+        "items": {
+          "Revival Crystal": 3
+        },
+        "flags": [
+          "game:complete"
+        ]
+      }
+    },
+    "broken_clocks": {
+      "title": "THE BROKEN CLOCKS",
+      "category": "side",
+      "giver": "clock_shrine",
+      "topics": [
+        "sequences"
+      ],
+      "summary": "Three stopped clocks on the isles each hide a puzzle in time.",
+      "steps": [
+        {
+          "type": "challenge",
+          "id": "broken_clocks",
+          "text": "Repair the broken clocks."
+        }
+      ],
+      "rewards": {
+        "exp": 200,
+        "coins": 200,
+        "items": {
+          "Focus Crystal": 3
+        }
+      }
     }
   },
   "challenges": {
-    "stone_1": {"title": "NUMBERED STONE I", "need": 1, "questions": [{"topic": "addition"}],
-                "intro": "The stone is warm. A sum is carved into it."},
-    "stone_2": {"title": "NUMBERED STONE II", "need": 1, "questions": [{"topic": "multiplication"}],
-                "intro": "Rows of seeds are carved into this stone."},
-    "stone_3": {"title": "NUMBERED STONE III", "need": 1, "questions": [{"topic": "division"}],
-                "intro": "This stone is split into equal grooves."},
-    "bridge_plan": {"title": "BRIDGE PLANS", "need": 2,
-                    "questions": [{"topic": "geometry", "subtopic": "bridge_area"}, {"topic": "multiplication", "subtopic": "bridge_bundles"}, {"topic": "geometry", "subtopic": "bridge_rail"}],
-                    "intro": "Bram unrolls a plan. 'Help me get the numbers right and the bridge goes back up today!'"},
-    "crystal_seal": {"title": "THE CRYSTAL SEAL", "need": 2, "questions": [{"topic": "fractions"}, {"topic": "fractions"}, {"topic": "fractions"}],
-                     "intro": "Three facets flicker. Each one shows a broken fraction."},
-    "rune_tablet": {"title": "THE UNKNOWN RUNES", "need": 2, "questions": [{"topic": "algebra"}, {"topic": "algebra"}, {"topic": "algebra"}],
-                    "intro": "Each rune hides a number behind an x."},
-    "seal_add": {"title": "SEAL OF SUMS", "need": 2, "questions": [{"topic": "addition"}, {"topic": "subtraction"}],
-                 "intro": "The seal's light flickers between plus and minus."},
-    "seal_mul": {"title": "SEAL OF PRODUCTS", "need": 2, "questions": [{"topic": "multiplication"}, {"topic": "division"}],
-                 "intro": "Grids of light fold into equal groups."},
-    "seal_frac": {"title": "SEAL OF PARTS", "need": 2, "questions": [{"topic": "fractions"}, {"topic": "fractions"}],
-                  "intro": "A crystal disc waits to be cut into fair parts."}
+    "stone_1": {
+      "title": "NUMBERED STONE I",
+      "need": 1,
+      "questions": [
+        {
+          "topic": "addition"
+        }
+      ],
+      "intro": "The stone is warm. A sum is carved into it."
+    },
+    "stone_2": {
+      "title": "NUMBERED STONE II",
+      "need": 1,
+      "questions": [
+        {
+          "topic": "multiplication"
+        }
+      ],
+      "intro": "Rows of seeds are carved into this stone."
+    },
+    "stone_3": {
+      "title": "NUMBERED STONE III",
+      "need": 1,
+      "questions": [
+        {
+          "topic": "division"
+        }
+      ],
+      "intro": "This stone is split into equal grooves."
+    },
+    "bridge_plan": {
+      "title": "BRIDGE PLANS",
+      "need": 2,
+      "questions": [
+        {
+          "topic": "geometry",
+          "subtopic": "bridge_area"
+        },
+        {
+          "topic": "multiplication",
+          "subtopic": "bridge_bundles"
+        },
+        {
+          "topic": "geometry",
+          "subtopic": "bridge_rail"
+        }
+      ],
+      "intro": "Bram unrolls a plan. 'Help me get the numbers right and the bridge goes back up today!'"
+    },
+    "crystal_seal": {
+      "title": "THE CRYSTAL SEAL",
+      "need": 2,
+      "questions": [
+        {
+          "topic": "fractions"
+        },
+        {
+          "topic": "fractions"
+        },
+        {
+          "topic": "fractions"
+        }
+      ],
+      "intro": "Three facets flicker. Each one shows a broken fraction."
+    },
+    "rune_tablet": {
+      "title": "THE UNKNOWN RUNES",
+      "need": 2,
+      "questions": [
+        {
+          "topic": "algebra"
+        },
+        {
+          "topic": "algebra"
+        },
+        {
+          "topic": "algebra"
+        }
+      ],
+      "intro": "Each rune hides a number behind an x."
+    },
+    "seal_add": {
+      "title": "SEAL OF SUMS",
+      "need": 2,
+      "questions": [
+        {
+          "topic": "addition"
+        },
+        {
+          "topic": "subtraction"
+        }
+      ],
+      "intro": "The seal's light flickers between plus and minus."
+    },
+    "seal_mul": {
+      "title": "SEAL OF PRODUCTS",
+      "need": 2,
+      "questions": [
+        {
+          "topic": "multiplication"
+        },
+        {
+          "topic": "division"
+        }
+      ],
+      "intro": "Grids of light fold into equal groups."
+    },
+    "seal_frac": {
+      "title": "SEAL OF PARTS",
+      "need": 2,
+      "questions": [
+        {
+          "topic": "fractions"
+        },
+        {
+          "topic": "fractions"
+        }
+      ],
+      "intro": "A crystal disc waits to be cut into fair parts."
+    },
+    "seal_x1": {
+      "title": "SEAL OF UNKNOWNS",
+      "need": 2,
+      "intro": "Runes of x glow on the stone. Find what each x is worth.",
+      "questions": [
+        {
+          "topic": "algebra",
+          "min_difficulty": "intermediate"
+        },
+        {
+          "topic": "algebra",
+          "min_difficulty": "intermediate"
+        }
+      ]
+    },
+    "seal_x2": {
+      "title": "SEAL OF BALANCE",
+      "need": 2,
+      "intro": "A great stone scale. Both sides must weigh the same.",
+      "questions": [
+        {
+          "topic": "algebra",
+          "min_difficulty": "advanced"
+        },
+        {
+          "topic": "algebra",
+          "min_difficulty": "advanced"
+        }
+      ]
+    },
+    "seal_x3": {
+      "title": "SEAL OF PAIRS",
+      "need": 2,
+      "intro": "Two equations are carved side by side. They share their secrets.",
+      "questions": [
+        {
+          "topic": "algebra",
+          "min_difficulty": "mastery"
+        },
+        {
+          "topic": "algebra",
+          "min_difficulty": "mastery"
+        }
+      ]
+    },
+    "lab_notes": {
+      "title": "THE LAB NOTES",
+      "need": 2,
+      "intro": "A dusty terminal still holds an old scientist's half-finished notes.",
+      "questions": [
+        {
+          "topic": "integers",
+          "min_difficulty": "intermediate"
+        },
+        {
+          "topic": "integers",
+          "min_difficulty": "advanced"
+        },
+        {
+          "topic": "algebra",
+          "min_difficulty": "intermediate"
+        }
+      ]
+    },
+    "seal_g1": {
+      "title": "SEAL OF AREAS",
+      "need": 2,
+      "intro": "The floor of this seal is a grid of tiles waiting to be counted.",
+      "questions": [
+        {
+          "topic": "geometry",
+          "min_difficulty": "foundation"
+        },
+        {
+          "topic": "geometry",
+          "min_difficulty": "foundation"
+        }
+      ]
+    },
+    "seal_g2": {
+      "title": "SEAL OF ANGLES",
+      "need": 2,
+      "intro": "Beams of light cross at every angle but one.",
+      "questions": [
+        {
+          "topic": "geometry",
+          "min_difficulty": "intermediate"
+        },
+        {
+          "topic": "geometry",
+          "min_difficulty": "intermediate"
+        }
+      ]
+    },
+    "seal_g3": {
+      "title": "SEAL OF SOLIDS",
+      "need": 2,
+      "intro": "A cube and a right angle are carved in the stone.",
+      "questions": [
+        {
+          "topic": "geometry",
+          "min_difficulty": "advanced"
+        },
+        {
+          "topic": "geometry",
+          "min_difficulty": "mastery"
+        }
+      ]
+    },
+    "royal_garden": {
+      "title": "THE ROYAL GARDEN",
+      "need": 2,
+      "intro": "The royal gardener's plans need their sums.",
+      "questions": [
+        {
+          "topic": "geometry",
+          "min_difficulty": "intermediate"
+        },
+        {
+          "topic": "multiplication",
+          "min_difficulty": "advanced"
+        },
+        {
+          "topic": "fractions",
+          "min_difficulty": "intermediate"
+        }
+      ]
+    },
+    "seal_t1": {
+      "title": "SEAL OF PATTERNS",
+      "need": 2,
+      "intro": "Numbers spiral around the seal. One is always missing.",
+      "questions": [
+        {
+          "topic": "sequences",
+          "min_difficulty": "intermediate"
+        },
+        {
+          "topic": "sequences",
+          "min_difficulty": "advanced"
+        }
+      ]
+    },
+    "seal_t2": {
+      "title": "SEAL OF HOURS",
+      "need": 2,
+      "intro": "Clock hands are frozen. Set them right.",
+      "questions": [
+        {
+          "topic": "sequences",
+          "min_difficulty": "mastery"
+        },
+        {
+          "topic": "sequences",
+          "min_difficulty": "mastery"
+        }
+      ]
+    },
+    "seal_t3": {
+      "title": "SEAL OF INFINITY",
+      "need": 2,
+      "intro": "The last seal mixes every idea you have learned.",
+      "questions": [
+        {
+          "topic": "algebra",
+          "min_difficulty": "mastery"
+        },
+        {
+          "topic": "sequences",
+          "min_difficulty": "advanced"
+        }
+      ]
+    },
+    "broken_clocks": {
+      "title": "THE BROKEN CLOCKS",
+      "need": 2,
+      "intro": "Three stopped clocks. Each shows a puzzle in time.",
+      "questions": [
+        {
+          "topic": "sequences",
+          "min_difficulty": "intermediate"
+        },
+        {
+          "topic": "sequences",
+          "min_difficulty": "intermediate"
+        },
+        {
+          "topic": "sequences",
+          "min_difficulty": "mastery"
+        }
+      ]
+    }
   }
 }

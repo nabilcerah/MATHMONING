@@ -36,6 +36,9 @@ Menus also work with the mouse.
   their topic.
 - **Quests:** restore the three Numera Seals and defeat THE ARITHMETIC BEAST, find Mira's lost numbered
   stones, rebuild Bram's bridge to the desert, wake the Crystal Seal, and decode the rune tablet.
+- **Beyond the forest:** beat the Arithmetic Beast and a cave opens in the ruins, leading to the **Algebra Cavern**,
+  then the **Geometry Kingdom** and the **Chronos Dimension** (GDD worlds 2–4). Each world has its own camp,
+  monsters, seals, side quest and boss.
 - **Learning profile (Tab → Profile):** mastery per topic, your history, and the AI log showing every
   agent decision step by step.
 
@@ -53,5 +56,6 @@ are decided by deterministic rules in `combat/`, `monsters/` and `world/`, confi
 .venv/Scripts/python -m pytest
 ```
 
-- `tools/make_variants.py` regenerates the recoloured sprites (evolutions, boss, Crystal Realm forms).
+- `tools/make_variants.py` regenerates the recoloured sprites (evolutions, bosses, Crystal Realm forms).
+- `tools/generate_worlds.py` regenerates the Algebra Cavern, Geometry Kingdom and Chronos Dimension maps.
 - `tools/build_web.py` builds the browser version.

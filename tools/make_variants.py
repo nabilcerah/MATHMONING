@@ -29,6 +29,8 @@ VARIANTS = {
     "CHRONODRAKE": ("CHRONOX", -0.07, 1.30, 1.10), # molten-gold clockwork dragon
     # The boss form of NUMEREX: darker and redder than the starter.
     "NUMEREX_BOSS": ("NUMEREX", 0.12, 1.25, 0.80),
+    # World 3 boss: the lava dragon refolded into a violet dimension-dragon.
+    "DIMENSION_DRAGON": ("INFERMATH", 0.62, 1.15, 0.95),
 }
 
 

@@ -51,11 +51,13 @@ SEALS = ("challenge:seal_add", "challenge:seal_mul", "challenge:seal_frac")
 
 
 class GameManager:
-    MAPS = ("number_forest", "crystal_realm", "village_shop", "village_sanctuary")
+    MAPS = ("number_forest", "crystal_realm", "village_shop", "village_sanctuary",
+            "algebra_cavern", "geometry_kingdom", "chronos_dimension")
     BOSS_FLAG = "boss:numerex"
     MENU_CHOICES = ("NEW GAME", "CONTINUE", "SETTINGS", "EXIT")
     FADE_FRAMES = 14
-    REGION_MIN_DIFFICULTY = {"crystal_realm": "intermediate"}
+    REGION_MIN_DIFFICULTY = {"crystal_realm": "intermediate", "geometry_kingdom": "intermediate",
+                             "chronos_dimension": "intermediate"}
 
     def __init__(self, database_path=None):
         pygame.init()
@@ -369,9 +371,19 @@ class GameManager:
     def party_level(self):
         return max((m.level for m in self.party.party), default=1) if self.party else 1
 
-    def seals_done(self):
+    def boss_gate(self):
+        """The current map's boss gate entry (seals, boss, level, texts), or None."""
+        if not self.world:
+            return None
+        return next((e for e in self.world.objects.values() if e.get("kind") == "boss_gate"), None)
+
+    def gate_seals(self, gate=None):
+        gate = gate or self.boss_gate()
+        return tuple(gate.get("seals", SEALS)) if gate else SEALS
+
+    def seals_done(self, gate=None):
         flags = self.world.flags if self.world else set()
-        return all(flag in flags for flag in SEALS)
+        return all(flag in flags for flag in self.gate_seals(gate))
 
     def on_shop_change(self):
         pass
@@ -410,10 +422,13 @@ class GameManager:
             self.world.set_flag(f"challenge:{screen.challenge_id}")
             messages, done = self.quests.notify("challenge", id=screen.challenge_id)
             self._quest_feedback(messages, done, f"{screen.spec['title']}: solved!")
-            if screen.challenge_id.startswith("seal_"):
-                count = sum(1 for flag in SEALS if self.world.has_flag(flag))
-                self.world.set_message(f"A Numera Seal glows again! ({count}/3 restored)" +
-                                       ("  The stone arch is open!" if count == 3 else ""), 260)
+            seals = self.gate_seals()
+            if f"challenge:{screen.challenge_id}" in seals:
+                count = sum(1 for flag in seals if self.world.has_flag(flag))
+                gate = self.boss_gate() or {}
+                self.world.set_message(f"{screen.spec['title'].title()} glows again! ({count}/{len(seals)} restored)" +
+                                       (f"  {gate.get('title', 'The gate').title()} is open!" if count == len(seals)
+                                        else ""), 260)
         self.save_all()
         self._refresh_boss_gate()
 
@@ -517,24 +532,28 @@ class GameManager:
             self._start_boss()
 
     def _boss_gate(self):
-        if self.world.has_flag(self.BOSS_FLAG):
-            self.world.open_dialogue("THE STONE ARCH", ["The arch is quiet now. The Numera flows freely through Number Forest."])
+        """Every world's boss gate works the same way; its seals, boss and texts are map data."""
+        gate = self.boss_gate() or {}
+        title = gate.get("title", "THE GATE")
+        if self.world.has_flag(gate.get("flag", self.BOSS_FLAG)):
+            self.world.open_dialogue(title, [gate.get("quiet", "All is quiet here now.")])
             return
-        if not self.seals_done():
-            count = sum(1 for flag in SEALS if self.world.has_flag(flag))
-            self.world.open_dialogue("THE STONE ARCH", [
-                f"Three Numera Seals bind the arch. {count}/3 have been restored.",
-                "Find the Seal of Sums, the Seal of Products and the Seal of Parts in the Ancient Number Ruins."])
+        seals = self.gate_seals(gate)
+        if not self.seals_done(gate):
+            count = sum(1 for flag in seals if self.world.has_flag(flag))
+            self.world.open_dialogue(title, [f"{gate.get('sealed', 'Seals bind the gate.')} {count}/{len(seals)} "
+                                             "have been restored.", gate.get("where", "")])
             return
         advice = self.orchestrator.recommendations(self.player.player_id, self.party_level(), True)
-        self.world.open_dialogue("THE STONE ARCH", [
-            "The seals blaze with light and the arch groans open. Something huge stirs inside...",
-            "AI Game Master: " + advice.extra.get("boss_advice", "")],
-            choices=[("Face the beast!", "boss_fight"), ("Prepare first", "close")])
+        self.world.open_dialogue(title, [gate.get("open", "The gate opens..."),
+                                         "AI Game Master: " + advice.extra.get("boss_advice", "")],
+                                 choices=[(gate.get("fight", "Fight!"), "boss_fight"), ("Prepare first", "close")])
 
     def _start_boss(self):
+        gate = self.boss_gate() or {}
         cfg = encounters()["boss"]
-        enemy = monster_factory.create(cfg["species"], cfg["level"])
+        enemy = monster_factory.create(gate.get("boss", cfg["species"]), gate.get("level", cfg["level"]))
+        self.boss_in_progress = gate
         self._start_battle(enemy, "boss")
 
     def _travel_to_map(self, map_id, cell):
@@ -591,7 +610,8 @@ class GameManager:
             self.repository.record_seen(self.player.player_id, enemy.species_id)
         bag = RepositoryBag(self.repository.inventory(self.player.player_id))
         self.battle = BattleScreen(self.orchestrator, self.player.player_id, self.party, enemy, kind, bag, self.rng,
-                                   self.llm, trainer_name, self.REGION_MIN_DIFFICULTY.get(self.player.world))
+                                   self.llm, trainer_name, self.REGION_MIN_DIFFICULTY.get(self.player.world),
+                                   scene=self.player.world)
         self.state = "battle"
 
     def _wild_encounter(self):
@@ -625,8 +645,10 @@ class GameManager:
             more, done = self.quests.notify("battle_won")
             messages += more
             if battle.battle.kind == "boss":
-                self.world.set_flag(self.BOSS_FLAG)
-                more, finished = self.quests.notify("flag", flag=self.BOSS_FLAG)
+                gate = getattr(self, "boss_in_progress", None) or self.boss_gate() or {}
+                flag = gate.get("flag", self.BOSS_FLAG)
+                self.world.set_flag(flag)
+                more, finished = self.quests.notify("flag", flag=flag)
                 messages += more
                 done += finished
         elif outcome == "captured":
@@ -635,7 +657,9 @@ class GameManager:
         lead = {"won": "Victory! Your team grows stronger.", "captured": "Captured! Press TAB > PARTY to see your team.",
                 "fled": "You got away safely."}.get(outcome, "")
         if battle.battle.kind == "boss" and outcome == "won":
-            lead = "THE ARITHMETIC BEAST is defeated! The Numera flows back into Number Forest. The crystal portal awakens!"
+            gate = getattr(self, "boss_in_progress", None) or self.boss_gate() or {}
+            lead = gate.get("victory", "The boss is defeated!")
+            self.boss_in_progress = None
         self._quest_feedback(messages, done, lead)
 
     def _recover(self):
@@ -647,8 +671,12 @@ class GameManager:
             self.player.x, self.player.y = self.world.world.safe_spot
         self.save_all()
         self._enter_world()
-        self.recovery_text = ("Your team fainted, but Sage Ilo carried everyone back to the Monster Sanctuary. "
-                              "Every monster is healed and nothing you caught or learned was lost.")
+        if self.player.world == "village_sanctuary":
+            self.recovery_text = ("Your team fainted, but Sage Ilo carried everyone back to the Monster Sanctuary. "
+                                  "Every monster is healed and nothing you caught or learned was lost.")
+        else:
+            self.recovery_text = (f"Your team fainted, but you woke safely at the {self.world.world.name} camp. Every "
+                                  "monster is healed and nothing you caught or learned was lost.")
         self.state = "recovery"
 
     # ================================================================== update

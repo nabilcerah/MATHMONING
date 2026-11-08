@@ -29,7 +29,8 @@ class ChallengeScreen(Screen):
     def _next_question(self):
         entry = self.spec["questions"][self.index]
         decision = self.game.orchestrator.request_question(self.player_id, entry["topic"], context="challenge",
-                                                           subtopic=entry.get("subtopic"))
+                                                           subtopic=entry.get("subtopic"),
+                                                           min_difficulty=entry.get("min_difficulty"))
         self.panel = QuestionPanel(self.game.orchestrator, self.player_id, decision.question, context="challenge",
                                    proactive_hint=decision.tutor, cancellable=False, llm=self.game.llm)
         self.state = "question"

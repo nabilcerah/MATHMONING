@@ -739,7 +739,21 @@
    ],
    "name": "stone arch",
    "verb": "Touch",
-   "title": "THE SHADOW GATE"
+   "title": "THE STONE ARCH",
+   "boss": "NUMEREX_BOSS",
+   "level": 10,
+   "flag": "boss:numerex",
+   "seals": [
+    "challenge:seal_add",
+    "challenge:seal_mul",
+    "challenge:seal_frac"
+   ],
+   "sealed": "Three Numera Seals bind the arch.",
+   "where": "Find the Seal of Sums, the Seal of Products and the Seal of Parts in the Ancient Number Ruins.",
+   "open": "The seals blaze with light and the arch groans open. Something huge stirs inside...",
+   "fight": "Face the beast!",
+   "victory": "THE ARITHMETIC BEAST is defeated! The Numera flows back into Number Forest. A cave opens in the ruins - the Algebra Cavern awaits!",
+   "quiet": "The arch is quiet now. The Numera flows freely through Number Forest."
   },
   {
    "id": "door_shop",
@@ -903,6 +917,29 @@
    "title": "THE CRYSTAL SEAL",
    "text": [
     "An ancient crystal structure. Its facets show broken fractions."
+   ]
+  },
+  {
+   "id": "cavern_entrance",
+   "kind": "portal",
+   "pos": [
+    76,
+    102
+   ],
+   "destination": "algebra_cavern",
+   "arrive": [
+    10,
+    24
+   ],
+   "requires": "boss:numerex",
+   "name": "cave entrance",
+   "verb": "Enter",
+   "title": "ALGEBRA CAVERN",
+   "text": [
+    "A cave has opened in the ruins. Crystal light glows deep inside. Go down into the Algebra Cavern?"
+   ],
+   "locked_text": [
+    "Rubble blocks a dark opening in the ruins. The Arithmetic Beast's power holds it shut."
    ]
   }
  ],

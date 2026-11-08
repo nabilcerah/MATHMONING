@@ -21,6 +21,12 @@ class ProfileScreen(Screen):
         self.advice = decision.message
         self.objectives = decision.extra.get("objectives", [])
         self.boss_advice = decision.extra.get("boss_advice", "")
+        # Agent 6: when a live AI provider is set up, Claude plans in the background (tool calls).
+        self.plan_future = game.orchestrator.start_planning(self.player_id, game.party_level(), game.seals_done())
+        self.planner_status = "thinking..." if game.orchestrator.planner.available else "off (rules only)"
+        self._load_decisions()
+
+    def _load_decisions(self):
         decisions, seen = [], set()
         for row in self.repo.recent_decisions(self.player_id, 30):
             if row["event"] in seen and row["event"] in ("recommend", "battle_end"):
@@ -28,6 +34,20 @@ class ProfileScreen(Screen):
             seen.add(row["event"])
             decisions.append(row)
         self.decisions = decisions[:6]
+
+    def update(self):
+        super().update()
+        if self.plan_future is None or not self.plan_future.done():
+            return
+        plan, self.plan_future = self.plan_future.result(), None
+        if plan is None:
+            self.planner_status = "no plan (using the rules)"
+            return
+        decision = self.game.orchestrator.apply_plan(self.player_id, plan)
+        self.advice = decision.message
+        self.objectives = plan.objectives or self.objectives
+        self.planner_status = f"plan ready - focus {curriculum.label(plan.focus_topic)} ({len(plan.tool_calls)} tool calls)"
+        self._load_decisions()
 
     def items(self):
         return []
@@ -91,7 +111,7 @@ class ProfileScreen(Screen):
             text(surface, f"- {goal}", (10, 186 + i * 10), 8, PALETTE["white"])
 
     def _ai_log(self, surface):
-        text(surface, f"AI MODE: {self.game.llm.label}   (rules decide all game mechanics)", (8, 40), 8, PALETTE["sky"])
+        text(surface, f"AI MODE: {self.game.llm.label}   AI PLANNER: {self.planner_status}", (8, 40), 8, PALETTE["sky"])
         y = 52
         if not self.decisions:
             text(surface, "The AI hasn't made any decisions yet - start a battle!", (8, y), 9, PALETTE["muted"])
@@ -99,7 +119,8 @@ class ProfileScreen(Screen):
             decision = row["decision"]
             text(surface, f"#{row['decision_id']} {row['event']}: {row['objective'][:40]}", (8, y), 9, PALETTE["gold"])
             y += 11
-            for step in decision.get("trace", [])[2:6]:
+            start = 1 if row["event"] == "agent_plan" else 2   # show the planner's first tool call
+            for step in decision.get("trace", [])[start:start + 4]:
                 used = wrapped(surface, step, (14, y, 296, 18), 8, PALETTE["white"], 9, 2)
                 y += 9 * used
                 if y > 176:

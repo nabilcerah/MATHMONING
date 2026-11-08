@@ -1099,9 +1099,11 @@ class Overworld:
 
     def quest_hint(self):
         """The main quest's current step, shown under the controls."""
-        for quest_id in self.quests.active():
-            if self.quests.definition(quest_id)["category"] == "main":
-                return "QUEST: " + self.quests.step_text(quest_id)
+        local = {npc.id for npc in self.npcs} | set(self.objects)
+        mains = [q for q in self.quests.active() if self.quests.definition(q)["category"] == "main"]
+        mains.sort(key=lambda q: self.quests.definition(q).get("giver") not in local)   # this world's story first
+        for quest_id in mains:
+            return "QUEST: " + self.quests.step_text(quest_id)
         active = self.quests.active()
         return ("QUEST: " + self.quests.step_text(active[0])) if active else ""
 

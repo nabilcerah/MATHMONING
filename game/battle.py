@@ -45,8 +45,9 @@ class RepositoryBag:
 
 class BattleScreen:
     def __init__(self, orchestrator, player_id, party, enemy, kind="wild", bag=None, rng=None, llm=None,
-                 trainer_name="", min_difficulty=None, mastery=None):
+                 trainer_name="", min_difficulty=None, mastery=None, scene="number_forest"):
         self.orchestrator, self.player_id, self.llm = orchestrator, player_id, llm
+        self.scene = scene
         self.rng = rng or random.Random()
         self.bag = bag if bag is not None else RepositoryBag({})
         mastery = mastery or (lambda topic: orchestrator.repository.mastery(player_id, topic))
@@ -419,9 +420,18 @@ class BattleScreen:
             self.state, "ARROWS/1-4: CHOOSE   ENTER: SELECT   ESC: BACK")
         text(surface, footer, (160, 228), 9, PALETTE["cream"], center=True)
 
+    # Battle scenery per world: (sky, ground, trees/rocks/towers).
+    SCENES = {"number_forest": ((76, 126, 132), (97, 157, 110), (53, 101, 75)),
+              "crystal_realm": ((30, 26, 70), (90, 76, 146), (60, 50, 110)),
+              "algebra_cavern": ((30, 26, 38), (78, 72, 92), (48, 42, 60)),
+              "geometry_kingdom": ((120, 170, 200), (120, 176, 100), (200, 196, 184)),
+              "chronos_dimension": ((26, 18, 48), (150, 120, 80), (70, 52, 100))}
+
     def _draw_background(self, surface, frame, boss):
-        sky, ground, trees = ((44, 30, 60), (70, 52, 84), (34, 22, 48)) if boss else \
-            ((76, 126, 132), (97, 157, 110), (53, 101, 75))
+        sky, ground, trees = self.SCENES.get(self.scene, self.SCENES["number_forest"])
+        if boss:   # boss fights are a darker version of the same place
+            sky, ground, trees = (tuple(c * 3 // 5 for c in sky), tuple(c * 3 // 4 for c in ground),
+                                  tuple(c * 3 // 5 for c in trees))
         surface.fill(sky)
         pygame.draw.rect(surface, ground, (0, 78, 320, 54))
         for i in range(12):
@@ -473,7 +483,8 @@ class BattleScreen:
         border = PALETTE["coral"] if self.battle.kind == "boss" else None
         panel(surface, (8, 8, 150, 42), PALETTE["night"], border)
         name = enemy.spec.display_name if self.battle.kind == "boss" else enemy.name
-        text(surface, name[:16], (14, 11), 11, PALETTE["white"])
+        text(surface, name[:24], (14, 11) if len(name) <= 16 else (14, 12), 11 if len(name) <= 16 else 8,
+             PALETTE["white"])
         text(surface, f"Lv {enemy.level}", (152, 11), 9, PALETTE["cream"], align="right")
         self._element_badge(surface, enemy.element, (14, 24))
         text(surface, f"{max(0, round(self.shown['enemy']))}/{enemy.max_hp}", (152, 24), 9, PALETTE["muted"], align="right")

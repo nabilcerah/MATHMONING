@@ -14,6 +14,7 @@ from game.battle import Battle
 from game.creatures import ENEMIES, STARTERS, WILD_BY_NAME, canonical_name, creature_spec, draw_creature, encounter_for
 from game.mathdex import MathDex
 from game.worldmap_screen import WorldMapScreen
+from game.puzzle_screen import PuzzleScreen
 from game.overworld import Overworld
 from game.player import Player
 from game import ui
@@ -21,6 +22,8 @@ from game.ui import menu, meter, panel, text, wrapped
 
 
 class GameManager:
+    MAPS = ("number_forest", "crystal_realm")
+    BOSS_FLAG = "boss:numerex"
     MENU_CHOICES = ("NEW GAME", "CONTINUE", "PLAYER PROFILE", "SETTINGS", "EXIT")
     FADE_FRAMES = 14
 
@@ -47,6 +50,8 @@ class GameManager:
         self.battle = None
         self.dex = None
         self.map_screen = None
+        self.puzzle = None
+        self.puzzle_id = None
         self.state = "menu"
         self.menu_selected = 0
         self.starter_selected = 0
@@ -131,6 +136,10 @@ class GameManager:
                         self.state = "menu"
         elif self.state == "overworld":
             self._overworld_key(event)
+        elif self.state == "puzzle" and self.puzzle:
+            self.puzzle.handle_key(event.key, event.unicode)
+            if self.puzzle.closed:
+                self._close_puzzle()
         elif self.state == "worldmap" and self.map_screen:
             self.map_screen.handle_key(event.key)
             if self.map_screen.closed:
@@ -199,11 +208,13 @@ class GameManager:
     @staticmethod
     def _to_player(record):
         # canonical_name upgrades saves made with the old starter ids (PYROX, TERRABIT).
+        # Old saves store "NUMBER FOREST" (the column default); map ids are lower-case file names.
+        world = record.world if record.world in GameManager.MAPS else "number_forest"
         return Player(record.name, canonical_name(record.creature), record.level, record.hp, record.max_hp,
-                      record.exp, record.x, record.y, record.player_id)
+                      record.exp, record.x, record.y, record.player_id, world)
 
     def _enter_world(self):
-        self.world = Overworld(self.player, self.rng, self.repository)
+        self.world = Overworld(self.player, self.rng, self.repository, self.player.world)
         self._refresh_boss_gate()
         self.save_timer = 0
         self.state = "overworld"
@@ -232,6 +243,12 @@ class GameManager:
             self.state = "dex"
             return
         action = self.world.handle_key(event.key)
+        if isinstance(action, tuple) and action[0] == "travel_map":
+            self._travel_to_map(action[1], action[2])
+            return
+        if isinstance(action, tuple) and action[0] == "puzzle":
+            self._open_puzzle(action[1])
+            return
         if action == "battle":
             # Trainers like Rex send out their own MATHMON; practice battles pick a local wild one.
             rival = WILD_BY_NAME.get(self.world.duel_spec or "")
@@ -257,6 +274,51 @@ class GameManager:
                 pages.append("Tip: ATTACK questions now favour the skills you still need. Practise in tall grass or press B.")
                 self.world.open_dialogue("THE SHADOW GATE", pages)
 
+    def _travel_to_map(self, map_id, cell):
+        """Step through a portal: load the other map and arrive next to its portal."""
+        self.player.world = map_id
+        self.player.x, self.player.y = cell
+        self.repository.save_player(self.player)
+        self._enter_world()
+        self.world.set_message(f"You step through the portal into {self.world.world.name}!", 200)
+
+    # ------------------------------------------------------------- puzzle shrines
+    PUZZLE_REWARDS = {"sequence": (12, "Health Potion"), "balance": (15, "Learning Crystal"),
+                      "target": (20, "EXP Booster"), "magic": (25, "Learning Crystal"), "starchart": (30, None)}
+
+    def _open_puzzle(self, shrine_id):
+        import random
+        entry = self.world.objects[shrine_id]
+        tier = 0 if self.player.level < 4 else 1 if self.player.level < 8 else 2
+        tier = max(tier, int(entry.get("min_tier", 0)))
+        # Same puzzle all day for this shrine and player; a new one tomorrow.
+        rng = random.Random(f"{shrine_id}:{self.world.today}:{self.player.player_id}")
+        self.puzzle = PuzzleScreen(entry["puzzle"], tier, rng, entry.get("title"))
+        self.puzzle_id = shrine_id
+        self.state = "puzzle"
+
+    def _close_puzzle(self):
+        puzzle, shrine_id = self.puzzle, self.puzzle_id
+        self.puzzle = self.puzzle_id = None
+        self.state = "overworld"
+        if not puzzle.solved:
+            self.world.set_message("The shrine waits patiently. Come back any time today.", 150)
+            return
+        exp, item = self.PUZZLE_REWARDS.get(puzzle.kind, (10, None))
+        exp += puzzle.tier * 5
+        if puzzle.revealed:
+            exp, item = exp // 2, None  # the shrine helped: still progress, smaller reward
+        leveled = self.player.add_exp(exp)
+        self.repository.save_player(self.player)
+        if item:
+            self.repository.add_item(self.player.player_id, item, 1)
+        self.world.set_flag(f"shrine:{shrine_id}:{self.world.today}")
+        if puzzle.kind == "starchart":
+            self.world.set_flag("secret:starchart")
+        reward = f"+{exp} EXP" + (f" and a {item}" if item else "") + ("  LEVEL UP!" if leveled else "")
+        self.world.set_message(f"Puzzle solved! {reward}", 240)
+        self._refresh_boss_gate()
+
     def _wild(self):
         """A wild creature from the current area's habitat (meadow creatures outside tall-grass zones)."""
         return encounter_for(self.world.area_id if self.world else "meadow", self.rng)
@@ -269,6 +331,7 @@ class GameManager:
         return int(dx), int(dy)
 
     def _start_battle(self, enemy=None):
+        self._last_battle_boss = bool(enemy is not None and enemy.element == "BOSS")
         self.repository.save_player(self.player)
         self.battle = Battle(self.player, self.repository, self.orchestrator, self.llm, enemy, self.rng)
         self.state = "battle"
@@ -281,6 +344,8 @@ class GameManager:
                 self.battle = None
                 self.state = "overworld"
                 self.saved_record = self.repository.load_player()
+                if outcome == "won" and getattr(self, "_last_battle_boss", False):
+                    self.world.set_flag(self.BOSS_FLAG)
                 self.world.resume()
                 self.world.refresh_flags()
                 self._refresh_boss_gate()
@@ -292,6 +357,8 @@ class GameManager:
                     self.world.set_message("The ranger helps your creature recover. Keep exploring at your own pace.")
                 else:
                     self.world.set_message("Back on the Number Forest trail.")
+        if self.state == "puzzle" and self.puzzle:
+            self.puzzle.update()
         if self.state == "overworld" and self.world:
             event = self.world.update(*self._held_direction())
             self.save_timer = getattr(self, "save_timer", 0) + 1
@@ -335,6 +402,8 @@ class GameManager:
             self.dex.draw(self.canvas, self.frame)
         elif self.state == "worldmap" and self.map_screen:
             self.map_screen.draw(self.canvas, self.frame)
+        elif self.state == "puzzle" and self.puzzle:
+            self.puzzle.draw(self.canvas, self.frame)
         elif self.state == "battle" and self.battle:
             self.battle.draw(self.canvas, self.frame)
         elif self.state == "profile":

@@ -1,5 +1,7 @@
 import random
 import unittest
+
+import pygame
 from unittest.mock import patch
 import os
 
@@ -52,7 +54,7 @@ class AgentWorkflowTests(unittest.TestCase):
         self.assertEqual(follow_up.topic, "addition")
         self.assertEqual(follow_up.difficulty, "easy")
 
-    def test_battle_replaces_repeated_miss_with_same_topic_question(self):
+    def test_battle_solves_a_repeated_miss_together(self):
         seed_question = self.orchestrator.next_question(
             self.player_id, "algebra", "intermediate"
         )["question"]
@@ -66,10 +68,21 @@ class AgentWorkflowTests(unittest.TestCase):
         for _ in range(3):
             battle.answer = "999"
             battle._submit()
-        self.assertEqual(battle.question.topic, "algebra")
-        self.assertEqual(battle.question.difficulty, "easy")
-        self.assertNotEqual(battle.question.prompt, first_prompt)
+        # Out of tries: the mentor walks through *this* question instead of swapping it away.
+        self.assertEqual(battle.state, "walkthrough")
+        walk = battle.walkthrough
+        self.assertEqual(walk["question"].prompt, first_prompt)
+        self.assertIn(walk["question"].answer, walk["steps"][-1])
+        enter = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0)
+        while not walk["typing"]:
+            battle.handle_event(enter)
+        hp = battle.enemy_hp
+        for ch in walk["question"].answer:
+            battle.handle_event(pygame.event.Event(pygame.KEYDOWN, key=0, unicode=ch, mod=0))
+        battle.handle_event(enter)
+        self.assertIsNone(battle.walkthrough)
         self.assertEqual(battle.wrong_count, 0)
+        self.assertLess(battle.enemy_hp, hp)  # a gentle "teamwork" hit
 
     def test_single_correct_answer_does_not_raise_difficulty(self):
         choice = DifficultyManager().choose({
@@ -94,6 +107,36 @@ class AgentWorkflowTests(unittest.TestCase):
                 self.assertEqual(future.result(timeout=2), "Offline hint is ready.")
             finally:
                 provider.close()
+
+    def test_ai_walkthrough_steps_are_checked_against_the_verified_answer(self):
+        from types import SimpleNamespace
+        from mathematics.solution_steps import steps_for
+        question = self.orchestrator.next_question(self.player_id, "addition")["question"]
+        offline = steps_for(question)
+
+        def fake_client(reply):
+            message = SimpleNamespace(content=[SimpleNamespace(type="text", text=reply)])
+            return SimpleNamespace(messages=SimpleNamespace(create=lambda **kwargs: message))
+
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "test-key"}):
+            provider = LLMProvider()
+        try:
+            good = f"Split into tens and ones.\nAdd the parts.\nSo the answer is {question.answer}."
+            with patch("anthropic.Anthropic", return_value=fake_client(good)):
+                steps = provider.solve_async(question, offline).result(timeout=5)
+            self.assertEqual(len(steps), 3)
+            self.assertIn(question.answer, steps[-1])
+            wrong = "Add them up.\nSo the answer is -12345."
+            with patch("anthropic.Anthropic", return_value=fake_client(wrong)):
+                self.assertEqual(provider.solve_async(question, offline).result(timeout=5), offline)
+        finally:
+            provider.close()
+        with patch.dict("os.environ", {"ANTHROPIC_API_KEY": ""}):
+            offline_provider = LLMProvider()
+        try:
+            self.assertEqual(offline_provider.solve_async(question, offline).result(timeout=2), offline)
+        finally:
+            offline_provider.close()
 
 
 if __name__ == "__main__":

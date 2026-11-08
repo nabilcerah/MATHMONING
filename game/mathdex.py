@@ -78,23 +78,29 @@ class MathDex:
         text(surface, f"CAPTURED {len(self.friends & {s.name for s in WILD})}/{len(WILD)}    "
                       f"SEEN {len(self.seen & {s.name for s in WILD})}/{len(WILD)}",
              (308, 9), 10, PALETTE["cream"], align="right")
-        for index, spec in enumerate(self.entries()):
+        entries = self.entries()
+        rows = (len(entries) + COLUMNS - 1) // COLUMNS
+        # One row of tall cards, or compact cards when the collection needs two rows.
+        card_h = CARD_H if rows == 1 else 58
+        sprite_h, sprite_y, name_y = (44, 80, 92) if rows == 1 else (30, 40, 47)
+        for index, spec in enumerate(entries):
             col, row = index % COLUMNS, index // COLUMNS
-            x, y = 12 + col * (CARD_W + 6), 30 + row * (CARD_H + 6)
+            x, y = 12 + col * (CARD_W + 6), 28 + row * (card_h + 4)
             chosen = index == self.selected
             partner = spec is self.partner
             friend, seen = partner or spec.name in self.friends, partner or spec.name in self.seen
             border = PALETTE["gold"] if chosen else (PALETTE["mint"] if friend else PALETTE["night"])
-            panel(surface, (x, y, CARD_W, CARD_H), PALETTE["night"] if friend else PALETTE["ink"], border)
+            panel(surface, (x, y, CARD_W, card_h), PALETTE["night"] if friend else PALETTE["ink"], border)
             bob = (frame // 15) % 2 if chosen and friend else 0
             tint = None if friend else ((52, 66, 86) if seen else (32, 40, 58))
             pose = "happy" if chosen and friend and (frame // 40) % 3 == 2 else "idle"
-            surface.set_clip((x + 2, y + 2, CARD_W - 4, CARD_H - 4))  # wide creatures stay inside their card
-            draw_creature(surface, spec, (x + CARD_W // 2, y + 80 - bob), 44, pose, tint=tint)
+            surface.set_clip((x + 2, y + 2, CARD_W - 4, card_h - 4))  # wide creatures stay inside their card
+            draw_creature(surface, spec, (x + CARD_W // 2, y + sprite_y - bob), sprite_h, pose, tint=tint)
             surface.set_clip(None)
-            pygame.draw.rect(surface, TOPIC_COLORS.get(spec.topic, PALETTE["muted"]), (x + 5, y + CARD_H - 9, CARD_W - 10, 3))
+            pygame.draw.rect(surface, TOPIC_COLORS.get(spec.topic, PALETTE["muted"]), (x + 5, y + card_h - 6, CARD_W - 10, 2))
             label = spec.name if seen else "???"
-            text(surface, label, (x + CARD_W // 2, y + 92), 10, PALETTE["white"] if friend else PALETTE["muted"], center=True)
+            text(surface, label, (x + CARD_W // 2, y + name_y), 10 if rows == 1 else 8,
+                 PALETTE["white"] if friend else PALETTE["muted"], center=True)
             if spec.name == self.leader:
                 heart(surface, x + CARD_W - 14, y + 6, PALETTE["gold"])
             if partner:
@@ -111,6 +117,10 @@ class MathDex:
             text(surface, f"{spec.element}  •  {topic}", (304, 159), 9, TOPIC_COLORS.get(spec.topic, PALETTE["muted"]),
                  align="right")
             wrapped(surface, spec.blurb, (16, 172, 288, 20), 10, PALETTE["white"], 11, 2)
+        elif spec.rarity == 0:
+            text(surface, "??? - SECRET", (16, 157), 13, (190, 150, 255))
+            wrapped(surface, "Something travels on straight lines among the stars. Finish the Star Chart in the "
+                    "Crystal Realm...", (16, 172, 288, 20), 10, PALETTE["muted"], 11, 2)
         else:
             text(surface, "???", (16, 157), 13, PALETTE["muted"])
             wrapped(surface, f"Not seen yet. Search the tall grass of {homes}.", (16, 172, 288, 20), 10,

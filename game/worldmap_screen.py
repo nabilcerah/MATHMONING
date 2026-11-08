@@ -121,6 +121,9 @@ class WorldMapScreen:
                 pygame.draw.rect(surface, PALETTE["gold"], (mx - 1, my - 1, 3, 3))
             elif kind == "spring":
                 pygame.draw.circle(surface, PALETTE["sky"], (int(mx), int(my)), 2)
+            elif kind == "shrine" and not self.overworld.shrine_done(entry["id"]):
+                pygame.draw.rect(surface, PALETTE["ink"], (mx - 2, my - 3, 5, 7))
+                pygame.draw.rect(surface, (190, 150, 255), (mx - 1, my - 2, 3, 5))
             elif kind == "boss_gate":
                 pulse = 2 + (frame // 15) % 2
                 pygame.draw.circle(surface, (190, 120, 255), (int(mx), int(my)), pulse)
@@ -194,7 +197,7 @@ class WorldMapScreen:
         # Legend for the map markers.
         legend_y = rect.bottom - 50
         for i, (label, color) in enumerate((("You", PALETTE["coral"]), ("Wild (topic colour)", PALETTE["mint"]),
-                                            ("Chest", PALETTE["gold"]), ("Villager", PALETTE["white"]))):
+                                            ("Chest", PALETTE["gold"]), ("Puzzle shrine", (190, 150, 255)))):
             pygame.draw.rect(surface, color, (x, legend_y + i * 9 + 2, 4, 4))
             text(surface, label, (x + 7, legend_y + i * 9), 8, PALETTE["muted"])
         if area["id"] == self.overworld.area_id:

@@ -29,9 +29,10 @@ class PlayerRepository:
 
     def save_player(self, player):
         with self.database.connect() as db:
-            db.execute("""UPDATE players SET level=?, hp=?, max_hp=?, exp=?, x=?, y=?,
+            db.execute("""UPDATE players SET level=?, hp=?, max_hp=?, exp=?, x=?, y=?, world=?,
                          updated_at=CURRENT_TIMESTAMP WHERE player_id=?""",
-                       (player.level, player.hp, player.max_hp, player.exp, player.x, player.y, player.player_id))
+                       (player.level, player.hp, player.max_hp, player.exp, player.x, player.y,
+                        getattr(player, "world", "number_forest"), player.player_id))
 
     def record_attempt(self, player_id, question, submitted, correct):
         with self.database.connect() as db:

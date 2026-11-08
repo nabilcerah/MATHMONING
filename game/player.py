@@ -13,6 +13,7 @@ class Player:
     x: int = 4
     y: int = 6
     player_id: int = 0
+    world: str = "number_forest"   # which map the player is on
 
     @property
     def next_level_exp(self) -> int:

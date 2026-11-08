@@ -97,6 +97,11 @@
     {"id": "tablet", "kind": "flavour", "pos": [27, 34], "name": "stone tablet", "verb": "Read",
      "title": "ANCIENT TABLET",
      "text": ["Old carved numbers among the ruins: 4 × 3 = 3 + 3 + 3 + 3.", "Beneath it, someone has scratched: 'and 12 ÷ 3 = 4 undoes it!'"]},
+    {"id": "shrine_sequence", "kind": "shrine", "puzzle": "sequence", "pos": [44, 60], "name": "stone shrine", "verb": "Study", "title": "SEQUENCE STONES", "text": ["Numbers are carved into a row of stones. One stone is blank. What comes next?"]},
+    {"id": "shrine_balance", "kind": "shrine", "puzzle": "balance", "pos": [30, 28], "name": "scale shrine", "verb": "Study", "title": "BALANCE SCALE", "text": ["An ancient scale tips to one side. Find the missing weight to make it balance."]},
+    {"id": "shrine_target", "kind": "shrine", "puzzle": "target", "pos": [88, 60], "name": "target shrine", "verb": "Study", "title": "TARGET NUMBER", "text": ["Three number tiles and a glowing target. Combine the tiles to hit it exactly."]},
+    {"id": "shrine_magic", "kind": "shrine", "puzzle": "magic", "pos": [50, 100], "name": "square shrine", "verb": "Study", "title": "MAGIC SQUARE", "text": ["A 3x3 grid of stones. Every row, column and diagonal must add up to 15."]},
+    {"id": "portal_realm", "kind": "portal", "pos": [79, 101], "destination": "crystal_realm", "arrive": [10, 26], "requires": "boss:numerex", "name": "crystal portal", "verb": "Enter", "title": "CRYSTAL PORTAL", "locked_text": "A cold stone ring. It is dormant... Legends say it wakes when NUMEREX, the Arithmetic Beast, is beaten at the Shadow Gate.", "text": ["The portal blazes with crystal light! Beyond it float islands of glass and starlight, where stronger MATHMON roam. Step through?"]},
     {"id": "arch", "kind": "boss_gate", "pos": [82, 97], "solid": [[81, 97], [83, 97]], "name": "shadow gate", "verb": "Touch",
      "title": "THE SHADOW GATE"}
   ],

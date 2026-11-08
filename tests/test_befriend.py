@@ -51,6 +51,59 @@ class BefriendTests(unittest.TestCase):
         self.assertIn("CAPTURE", battle.actions())
         self.assertNotIn("CAPTURE", self.battle(BOSS).actions())
 
+    def ko(self, battle):
+        battle.enemy_hp = 1
+        battle._start_question("addition")
+        battle.answer = battle.question.answer
+        battle._submit()
+
+    def test_one_shot_knockout_can_still_be_captured(self):
+        battle = self.battle()
+        self.ko(battle)
+        self.assertEqual(battle.state, "ko_offer")
+        battle.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0))
+        self.assertIsNotNone(battle.bond)
+        self.bond_answer(battle, True)
+        self.bond_answer(battle, True)
+        self.assertEqual(battle.outcome, "befriended")
+        self.assertIn("dex_friend:VOLTIX", self.flags())
+
+    def test_failed_capture_after_knockout_is_still_a_win(self):
+        battle = self.battle()
+        self.ko(battle)
+        battle.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0))
+        self.bond_answer(battle, False)
+        self.bond_answer(battle, False)
+        self.assertEqual(battle.outcome, "won")
+        self.assertIn("slipped away", battle.feedback)
+        self.assertNotIn("dex_friend:VOLTIX", self.flags())
+
+    def test_bosses_and_rivals_are_never_offered_capture_after_knockout(self):
+        boss = self.battle(BOSS)
+        self.ko(boss)
+        self.assertEqual(boss.outcome, "won")
+        rival = self.battle()
+        rival.is_trainer = True
+        self.ko(rival)
+        self.assertEqual(rival.outcome, "won")
+
+    def test_walkthrough_screens_draw(self):
+        surface = pygame.Surface((320, 240))
+        battle = self.battle()
+        battle._start_question("multiplication")
+        for _ in range(3):
+            battle.answer = "-1"
+            battle._submit()
+        enter = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0)
+        for _ in range(8):
+            battle.update()
+            battle.draw(surface, 1)
+            battle.handle_event(enter)
+        self.ko(self.battle())
+        ko_battle = self.battle()
+        self.ko(ko_battle)
+        ko_battle.draw(surface, 2)
+
     def test_a_rivals_monster_cannot_be_captured(self):
         battle = self.battle()
         battle.enemy_hp = 1

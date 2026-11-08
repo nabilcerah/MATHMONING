@@ -1,5 +1,6 @@
 """Optional asynchronous Anthropic provider with offline-safe fallback."""
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor
 
 from dotenv import load_dotenv
@@ -35,6 +36,38 @@ class LLMProvider:
             text = " ".join(block.text for block in response.content if getattr(block, "type", "") == "text")
             text = " ".join(text.split())[:700]
             return text or fallback
+        except Exception:
+            return fallback
+
+    def solve_async(self, question, offline_steps):
+        """Worked steps for a question the learner could not finish (the answer IS revealed here).
+
+        Resolves to a list of short steps; falls back to ``offline_steps`` without a key or on error.
+        """
+        if not self.available:
+            return self.executor.submit(lambda: offline_steps)
+        return self.executor.submit(self._solve, question, offline_steps)
+
+    def _solve(self, question, fallback):
+        try:
+            from anthropic import Anthropic
+            client = Anthropic(api_key=self.api_key, timeout=12.0, max_retries=0)
+            response = client.messages.create(
+                model=self.model, max_tokens=300,
+                system=("You are a warm maths tutor for a child aged 8-12 who tried a question three times. "
+                        "Solve it with them in 3 or 4 very short steps (one line each, under 18 words), "
+                        "using friendly strategies like splitting into tens and ones. The last step must state "
+                        "the final answer. Output only the steps, one per line, with no numbering or extra text."),
+                messages=[{"role": "user", "content": f"Question: {question.prompt}\nVerified answer: {question.answer}"}],
+            )
+            text = "\n".join(block.text for block in response.content if getattr(block, "type", "") == "text")
+            # Drop only a *leading* bullet or "1." / "2)" marker; the answer at the end must survive.
+            steps = [re.sub(r"^\s*(?:[-*•]|\d+[.)])\s*", "", line).strip() for line in text.splitlines() if line.strip()]
+            steps = [s[:120] for s in steps if s][:5]
+            # Only trust the model's steps if they reach the verified answer.
+            if steps and question.answer in steps[-1]:
+                return steps
+            return fallback
         except Exception:
             return fallback
 

@@ -24,6 +24,7 @@ class CreatureSpec:
     rarity: int = 10           # relative encounter weight inside its habitat
     sprite: str = ""           # folder name under assets/sprites/monsters
     size: float = 1.0          # drawing scale (evolved forms stand taller)
+    min_difficulty: str = ""   # realm monsters never ask easy questions
 
 
 STARTERS = {
@@ -81,13 +82,28 @@ FRACTELLA = CreatureSpec("FRACTELLA", "CRYSTAL", 30, 6, (250, 150, 230), (150, 9
 CHRONOX = CreatureSpec("CHRONOX", "TIME", 36, 8, (230, 190, 90), (140, 90, 40), ("Clockwork Plus", "Time Split"), 99,
                        "", ("meadow", "grove", "ridge", "falls"), sprite="CHRONOX", rarity=2,
                        blurb="A legendary clockwork dragon. It appears to learners who keep practising.")
+# Crystal Realm: stronger recoloured forms (tools/make_variants.py) that ask harder questions.
+PRISMVOLT = CreatureSpec("PRISMVOLT", "CRYSTAL", 44, 10, (120, 230, 240), (236, 90, 190), ("Prism Bolt", "Times Storm"), 99,
+                         "multiplication", ("glimmer",), sprite="PRISMVOLT", min_difficulty="intermediate",
+                         blurb="VOLTIX's crystal form. Light splits through its tails into neat rows of sparks.")
+OPALOWL = CreatureSpec("OPALOWL", "CRYSTAL", 46, 9, (230, 150, 240), (150, 80, 190), ("Opal Gust", "Share Storm"), 99,
+                       "division", ("glimmer", "shardgrove"), sprite="OPALOWL", min_difficulty="intermediate",
+                       blurb="A shimmering owl that shares starlight into perfectly equal beams.")
+GEMELLA = CreatureSpec("GEMELLA", "CRYSTAL", 48, 9, (120, 240, 200), (40, 160, 150), ("Gem Split", "Facet Burst"), 99,
+                       "subtraction", ("shardgrove",), sprite="GEMELLA", min_difficulty="intermediate",
+                       blurb="A gem slime that chips away a little of itself with every bounce.")
+GRAPHION = CreatureSpec("GRAPHION", "COSMIC", 56, 11, (120, 140, 255), (40, 50, 160), ("Vector Beam", "Axis Nova"), 99,
+                        "", ("starfall",), sprite="GRAPHION", rarity=0, min_difficulty="advanced",
+                        blurb="SECRET. A clockwork comet that travels on straight lines. It appears only to "
+                              "rangers who complete the Star Chart.")
+
 BOSS = CreatureSpec("NUMEREX", "BOSS", 58, 7, (190, 120, 255), (60, 30, 110), ("Number Roar",), 99,
                     "", (), sprite="NUMEREX", size=1.2,
                     blurb="The Arithmetic Beast, a shadow spirit guarding the old stone arch. It tests every skill.")
 
 # ENEMIES keeps its historic shape: three wild creatures followed by the boss at index 3.
 ENEMIES = (VOLTIX, DIVOWL, FRACTELLA, BOSS)
-WILD = (VOLTIX, DIVOWL, FRACTELLA, CHRONOX)
+WILD = (VOLTIX, DIVOWL, FRACTELLA, CHRONOX, PRISMVOLT, OPALOWL, GEMELLA, GRAPHION)
 WILD_BY_NAME = {spec.name: spec for spec in WILD}
 TOPIC_COLORS = {"addition": (137, 199, 124), "subtraction": (110, 177, 206),
                 "multiplication": (242, 187, 82), "division": (235, 112, 92), "": (220, 200, 240)}
@@ -105,7 +121,8 @@ def leader_spec(player, flags):
 
 def encounter_for(area_id, rng):
     """Pick a wild creature for the area's tall grass, weighted by rarity."""
-    pool = [spec for spec in WILD if area_id in spec.habitat] or [spec for spec in WILD if "meadow" in spec.habitat]
+    # rarity 0 means "never random": such creatures appear only through special zones.
+    pool = [spec for spec in WILD if area_id in spec.habitat and spec.rarity > 0] or         [spec for spec in WILD if "meadow" in spec.habitat and spec.rarity > 0]
     return rng.choices(pool, weights=[spec.rarity for spec in pool])[0]
 
 

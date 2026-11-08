@@ -18,7 +18,10 @@ from game.world_map import TILE, load_map
 
 VIEW_TOP, VIEW_HEIGHT = 24, 192
 INTERACT_RANGE = 13
-MAP_VERSION_FLAG = "map:painted-v1"  # saves from the old tile map restart at the new spawn
+MAP_VERSION_FLAG = "map:painted-v1"
+SHRINE_COLORS = {"sequence": (110, 177, 206), "balance": (137, 199, 124), "target": (242, 187, 82),
+                 "magic": (235, 112, 92), "starchart": (190, 150, 255)}
+  # saves from the old tile map restart at the new spawn
 _backgrounds = {}
 
 
@@ -126,9 +129,11 @@ class Overworld:
         self.rng = rng or random.Random()
         self.repository = repository
         self.world = load_map(map_id)
+        # The forest keeps its original flag names; other maps prefix theirs (fog chunks are per map).
+        self.chunk_prefix = "chunk:" if map_id == "number_forest" else f"chunk@{map_id}:"
         self.flags = set(repository.world_flags(player.player_id)) if repository and player.player_id else set()
         saved = (player.x, player.y)
-        if self.world.background and MAP_VERSION_FLAG not in self.flags:
+        if self.world.map_id == "number_forest" and self.world.background and MAP_VERSION_FLAG not in self.flags:
             saved = self.world.spawn  # an old tile-map position means nothing on the painted world
         start = self.world.nearest_walkable(saved)
         self.avatar = Avatar(*self.world.cell_to_feet(start))
@@ -150,12 +155,15 @@ class Overworld:
         self.age = 0
         self.encounter_spec = None
         self.duel_spec = None
+        import datetime
+        self.today = datetime.date.today().isoformat()  # shrines offer a fresh puzzle each day
         self.zones = self._encounter_zones()
         self.roamers = []
         self.respawns = []
         for zone in self.zones:
-            for _ in range(zone["quota"]):
-                self._spawn_roamer(zone)
+            if self._zone_open(zone):
+                for _ in range(zone["quota"]):
+                    self._spawn_roamer(zone)
         self._update_area()
         self._reveal_around()
         if self.world.background:
@@ -209,11 +217,28 @@ class Overworld:
             if not cells:
                 continue
             area_id, _ = self.world.area_at((x0 + w // 2, y0 + h // 2))
-            zones.append({"rect": (x0, y0, w, h), "cells": cells, "area": area_id,
-                          "quota": max(1, min(self.MAX_ROAMERS_PER_ZONE, round(len(cells) / 40)))})
+            extra = entry if isinstance(entry, dict) else {}
+            quota = extra.get("quota") or max(1, min(self.MAX_ROAMERS_PER_ZONE, round(len(cells) / 40)))
+            zones.append({"rect": (x0, y0, w, h), "cells": cells, "area": area_id, "quota": quota,
+                          "species": extra.get("species"), "requires": extra.get("requires")})
         return zones
 
+    def _zone_open(self, zone):
+        return not zone.get("requires") or self.has_flag(zone["requires"])
+
+    def _wake_special_zones(self):
+        """A secret zone opens the moment its flag is earned (e.g. finishing the Star Chart)."""
+        for zone in self.zones:
+            if zone.get("requires") and self._zone_open(zone):
+                live = sum(1 for r in self.roamers if r.zone is zone) + sum(1 for _, z in self.respawns if z is zone)
+                for _ in range(zone["quota"] - live):
+                    self._spawn_roamer(zone)
+
     def _spawn_roamer(self, zone, avoid=None):
+        if zone.get("species"):
+            from game.creatures import WILD_BY_NAME
+            self.roamers.append(Roamer(WILD_BY_NAME[zone["species"]], zone, self.world, self.rng, avoid))
+            return
         spec = encounter_for(zone["area"], self.rng)
         # Rare creatures (like CHRONOX) appear at most once on the map at a time.
         for _ in range(8):
@@ -227,6 +252,8 @@ class Overworld:
         self.roamers.append(Roamer(spec, zone, self.world, self.rng, avoid))
 
     def _update_roamers(self):
+        if self.age % 30 == 0:
+            self._wake_special_zones()
         touched = None
         for roamer in self.roamers:
             if roamer.update(self.avatar) and not self.encounter_grace and not self.dialogue and touched is None:
@@ -248,7 +275,7 @@ class Overworld:
 
     def explored(self, cell):
         cx, cy = self.chunk_of(cell)
-        return f"chunk:{cx},{cy}" in self.flags
+        return f"{self.chunk_prefix}{cx},{cy}" in self.flags
 
     def _reveal_around(self):
         """Fog of war: reveal the map chunks around the player (saved with the game)."""
@@ -257,7 +284,7 @@ class Overworld:
         for y in range(cy - r, cy + r + 1):
             for x in range(cx - r, cx + r + 1):
                 if 0 <= x * self.CHUNK < self.world.width and 0 <= y * self.CHUNK < self.world.height:
-                    self.set_flag(f"chunk:{x},{y}")
+                    self.set_flag(f"{self.chunk_prefix}{x},{y}")
 
     def teleport(self, cell):
         """Fast travel: jump to ``cell`` (or the nearest walkable tile) and snap the camera."""
@@ -425,6 +452,9 @@ class Overworld:
         self.close_dialogue()
         return None if action == "close" else action
 
+    def shrine_done(self, object_id):
+        return self.has_flag(f"shrine:{object_id}:{self.today}")
+
     def _grant(self, item, count):
         if self.repository and self.player.player_id:
             self.repository.add_item(self.player.player_id, item, count)
@@ -451,6 +481,22 @@ class Overworld:
             return None
         if kind == "boss_gate":
             return "boss"
+        if kind == "portal":
+            needed = entry.get("requires")
+            if needed and not self.has_flag(needed):
+                self.open_dialogue(title, [entry.get("locked_text", "The portal is dark and silent.")])
+                return None
+            self.open_dialogue(title, entry.get("text", ["The portal shimmers."]),
+                               choices=[("Step through", ("travel_map", entry["destination"], tuple(entry["arrive"]))),
+                                        ("Not yet", "close")])
+            return None
+        if kind == "shrine":
+            if self.shrine_done(object_id):
+                self.open_dialogue(title, ["The shrine is resting. Come back tomorrow for a brand-new puzzle!"])
+            else:
+                self.open_dialogue(title, entry.get("text", ["An old stone shrine hums softly."]),
+                                   choices=[("Solve it!", ("puzzle", object_id)), ("Later", "close")])
+            return None
         self.set_flag(f"seen:{object_id}")
         self.open_dialogue(title, entry.get("text", ["Nothing unusual."]))
         return None
@@ -470,6 +516,11 @@ class Overworld:
             return base + "  (empty)"
         if kind == "spring":
             return base + "  - restores HP"
+        if kind == "shrine":
+            return base + ("  - solved today" if self.shrine_done(target["id"]) else "  - new puzzle!")
+        if kind == "portal":
+            needed = target.get("requires")
+            return base + ("  - dormant" if needed and not self.has_flag(needed) else "  - travel")
         if kind == "boss_gate":
             return base + ("  - the boss awaits!" if self.boss_ready else "  - still sealed")
         return base
@@ -720,6 +771,35 @@ class Overworld:
             pygame.draw.rect(surface, (96, 88, 110), (left, y - 16, 3 * TILE, 8))
             pygame.draw.rect(surface, (130, 120, 146), (left + 2, y - 14, 3 * TILE - 4, 4))
             pygame.draw.rect(surface, PALETTE["gold"], (left + 22, y - 15, 4, 6))
+        elif kind == "portal":
+            needed = entry.get("requires")
+            awake = not needed or self.has_flag(needed)
+            pygame.draw.ellipse(surface, shadow, (x - 2, y + 11, 20, 6))
+            pygame.draw.rect(surface, (90, 92, 110), (x, y - 6, 3, 21))
+            pygame.draw.rect(surface, (90, 92, 110), (x + 13, y - 6, 3, 21))
+            pygame.draw.rect(surface, (120, 124, 140), (x - 1, y - 9, 18, 4))
+            if awake:
+                for ring in range(3):
+                    phase = (frame // 4 + ring * 5) % 15
+                    color = [(120, 230, 240), (190, 150, 255), (240, 140, 220)][ring]
+                    pygame.draw.ellipse(surface, color, (x + 3 + phase // 5, y - 5 + phase // 3,
+                                                         10 - 2 * (phase // 5), 18 - 2 * (phase // 3)), 1)
+                if frame % 20 < 10:
+                    pygame.draw.rect(surface, (230, 250, 255), (x + 7, y + 3, 2, 2))
+            else:
+                pygame.draw.rect(surface, (40, 44, 60), (x + 3, y - 5, 10, 18))
+        elif kind == "shrine":
+            rune = SHRINE_COLORS.get(entry.get("puzzle"), PALETTE["gold"])
+            done = self.shrine_done(object_id)
+            pygame.draw.ellipse(surface, shadow, (x, y + 12, 16, 5))
+            pygame.draw.rect(surface, (96, 98, 104), (x + 2, y + 9, 12, 6))
+            pygame.draw.rect(surface, (128, 132, 136), (x + 3, y + 1, 10, 10))
+            pygame.draw.rect(surface, (160, 164, 168), (x + 4, y + 2, 8, 2))
+            glow = rune if not done else (90, 96, 100)
+            pulse = 0 if done else (frame // 12) % 2
+            pygame.draw.rect(surface, glow, (x + 6, y + 4 - pulse, 4, 5))
+            if not done and frame % 50 < 6:
+                pygame.draw.rect(surface, PALETTE["white"], (x + 7, y + 1, 1, 1))
         elif object_id == "campfire":
             pygame.draw.rect(surface, (110, 112, 108), (x + 2, y + 10, 12, 4))
             pygame.draw.rect(surface, (102, 69, 48), (x + 3, y + 9, 10, 3))
@@ -794,6 +874,7 @@ class Overworld:
         for entry in self.objects.values():
             kind, object_id = entry.get("kind"), entry["id"]
             fresh = (kind == "chest" and not self.has_flag(f"opened:{object_id}")) or \
+                    (kind == "shrine" and not self.shrine_done(object_id)) or \
                     (kind in ("sign", "flavour") and not self.has_flag(f"seen:{object_id}"))
             if fresh:
                 x, y = self.to_screen(entry["pos"][0] * TILE + 8, entry["pos"][1] * TILE)

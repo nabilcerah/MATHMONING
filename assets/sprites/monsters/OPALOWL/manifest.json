@@ -1,0 +1,63 @@
+{
+  "name": "OPALOWL",
+  "source": "DIVOWL.jpg",
+  "poses": [
+    {
+      "pose": "idle",
+      "file": "0.png",
+      "dx": -55,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -48,
+      "dy": -100
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -49,
+      "dy": -100
+    },
+    {
+      "pose": "windup",
+      "file": "3.png",
+      "dx": -64,
+      "dy": -99
+    },
+    {
+      "pose": "attack",
+      "file": "4.png",
+      "dx": -63,
+      "dy": -99
+    },
+    {
+      "pose": "special",
+      "file": "5.png",
+      "dx": -58,
+      "dy": -108
+    },
+    {
+      "pose": "burst",
+      "file": "6.png",
+      "dx": -62,
+      "dy": -107
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -48,
+      "dy": -92
+    },
+    {
+      "pose": "happy",
+      "file": "8.png",
+      "dx": -66,
+      "dy": -104
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 111,
+  "variant_of": "DIVOWL"
+}

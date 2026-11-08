@@ -6,6 +6,7 @@ import pygame
 from config import PALETTE, VIRTUAL_WIDTH
 from game.creatures import ENEMIES, STARTERS, WILD_BY_NAME, bond_topic, creature_spec, draw_creature, leader_spec
 from game.ui import heart, menu, meter, panel, text, wrapped
+from mathematics.solution_steps import steps_for
 
 
 class Battle:
@@ -23,6 +24,10 @@ class Battle:
         "Share Gust": "division", "Division Dive": "division",
         "Shard Split": "division", "Fraction Burst": "division",
         "Clockwork Plus": "addition", "Time Split": "subtraction",
+        "Prism Bolt": "multiplication", "Times Storm": "multiplication",
+        "Opal Gust": "division", "Share Storm": "division",
+        "Gem Split": "subtraction", "Facet Burst": "subtraction",
+        "Vector Beam": "addition", "Axis Nova": "multiplication",
     }
     ENEMY_TURN_DELAY = 42
     MAX_TRIES = 3
@@ -91,6 +96,10 @@ class Battle:
         self.flags = set(flags)
         self.player_spec = self._leader()
         self.bond = None
+        self.walkthrough = None   # "solve it together" after the last try is used up
+        self.solve_future = None
+        self.ko_offer = False     # a knocked-out wild MATHMON can still be captured
+        self.ko_selected = 0
         self.is_trainer = False  # a rival's MATHMON belongs to them and cannot be captured
         self.bond_cooldown = 0
         self.bond_offered = False
@@ -108,6 +117,14 @@ class Battle:
             except Exception:
                 pass
             self.mentor_future = None
+        if self.solve_future and self.solve_future.done():
+            try:
+                steps = self.solve_future.result()
+                if self.walkthrough and self.walkthrough["shown"] <= 1 and steps:
+                    self.walkthrough["steps"] = list(steps)
+            except Exception:
+                pass
+            self.solve_future = None
         if self.state == "question":
             self.question_frames += 1
         if self.state == "resolving":
@@ -146,7 +163,20 @@ class Battle:
     def handle_event(self, event):
         if event.type != pygame.KEYDOWN:
             return
-        if self.state == "question":
+        if self.state == "walkthrough":
+            self._walkthrough_key(event)
+        elif self.state == "ko_offer":
+            if event.key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
+                self.ko_selected = 1 - self.ko_selected
+            elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                if self.ko_selected == 0:
+                    self.ko_offer = True
+                    self._start_bond()
+                    self.feedback = (f"{self.spec.name} is too tired to run! Get {self.BOND_NEEDED} of "
+                                     f"{self.BOND_ROUNDS} right on the first try to capture it.")
+                else:
+                    self._victory()
+        elif self.state == "question":
             self._question_key(event)
         elif self.state in ("skills", "items"):
             self._list_key(event)
@@ -225,7 +255,7 @@ class Battle:
         if self.is_boss:
             topic = self.BOSS_TOPICS[self.boss_round % len(self.BOSS_TOPICS)]
         result = self.orchestrator.next_question(self.player.player_id, topic)
-        self.question = result["question"]
+        self.question = self._at_least(result["question"], self.spec.min_difficulty)
         self.last_question = self.question
         self.answer = ""
         self.wrong_count = 0
@@ -243,7 +273,8 @@ class Battle:
 
     def _next_bond_question(self):
         topic = bond_topic(self.spec, self.rng)
-        self.question = self.last_question = self.orchestrator.next_question(self.player.player_id, topic)["question"]
+        question = self.orchestrator.next_question(self.player.player_id, topic)["question"]
+        self.question = self.last_question = self._at_least(question, self.spec.min_difficulty)
         self.answer = ""
         self.wrong_count = 0
         self.question_frames = 0
@@ -266,6 +297,10 @@ class Battle:
         misses = bond["round"] - bond["hearts"]
         if bond["hearts"] >= self.BOND_NEEDED:
             self._befriended()
+        elif misses > self.BOND_ROUNDS - self.BOND_NEEDED and self.ko_offer:
+            self.bond = None
+            self._victory()
+            self.feedback = f"{message} {self.spec.name} slipped away into the grass. " + self.feedback
         elif misses > self.BOND_ROUNDS - self.BOND_NEEDED:
             self.bond, self.bond_cooldown, self.state = None, 1, "menu"
             self.feedback = (f"{message} {self.spec.name} broke free! Land one more ATTACK, "
@@ -295,6 +330,79 @@ class Battle:
         count = sum(1 for name in self.friends if WILD_BY_NAME.get(name) and WILD_BY_NAME[name].topic == topic)
         return 1 + self.FRIEND_BONUS_STEP * min(count, self.FRIEND_BONUS_CAP)
 
+    LEVELS = ("easy", "intermediate", "advanced")
+
+    def _at_least(self, question, minimum):
+        """Crystal Realm monsters never ask below their minimum difficulty."""
+        if not minimum or self.LEVELS.index(question.difficulty) >= self.LEVELS.index(minimum):
+            return question
+        generator = self.orchestrator.questions.generator
+        profile = self.repository.get_learning_profile(self.player.player_id)
+        return generator.generate(minimum, question.topic, profile)
+
+    @property
+    def capturable_after_ko(self):
+        return not self.is_boss and not self.is_trainer and self.spec.name not in self.friends
+
+    # ------------------------------------------------- "solve it together" walkthrough
+    WALK_DAMAGE = 0.5  # finishing a walkthrough still lands a gentle "teamwork" hit
+
+    def _start_walkthrough(self):
+        """Out of tries: the mentor solves *this* question step by step, then the child types the answer."""
+        steps = steps_for(self.question)
+        self.walkthrough = {"steps": steps, "shown": 1, "question": self.question, "typing": False}
+        self.answer = ""
+        self.state = "walkthrough"
+        self.mentor_future = None
+        if self.llm_provider is not None and getattr(self.llm_provider, "available", False):
+            self.solve_future = self.llm_provider.solve_async(self.question, steps)
+        self.feedback = "No worries - let's solve it together, one step at a time."
+
+    def _walkthrough_key(self, event):
+        walk = self.walkthrough
+        if not walk["typing"]:
+            if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_KP_ENTER):
+                if walk["shown"] < len(walk["steps"]):
+                    walk["shown"] += 1
+                else:
+                    walk["typing"] = True
+                    self.feedback = "Your turn: type the answer you just found, then press ENTER."
+            return
+        if event.key == pygame.K_BACKSPACE:
+            self.answer = self.answer[:-1]
+        elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER) and self.answer.strip():
+            from mathematics.answer_validator import AnswerValidator
+            if AnswerValidator.check(self.answer, walk["question"].answer):
+                self._finish_walkthrough()
+            else:
+                self.answer = ""
+                self.answer_shake = 14
+                self.feedback = f"Look at the last step again - it shows the answer {walk['question'].answer}."
+        elif event.unicode and event.unicode in "0123456789.-/" and len(self.answer) < 14:
+            self.answer += event.unicode
+
+    def _finish_walkthrough(self):
+        # Not recorded as a correct attempt (the answer was shown), so no EXP, but the team still acts.
+        question = self.walkthrough["question"]
+        self.walkthrough = None
+        self.wrong_count = 0
+        self.answer = ""
+        base = question.base_damage + self.player.level + self.player_spec.attack // 2
+        damage = max(2, round(base * self.WALK_DAMAGE))
+        self.enemy_hp = max(0, self.enemy_hp - damage)
+        self.enemy_flash, self.enemy_shake = 12, 8
+        self._popup(f"-{damage}", 258, 14, PALETTE["mint"])
+        self._pose("player", "attack", 24)
+        self.feedback = f"You got it! Teamwork hit for {damage} damage. Next time you'll solve one like it on your own."
+        if self.enemy_hp <= 0:
+            if self.capturable_after_ko:
+                self.state, self.ko_selected = "ko_offer", 0
+                self.feedback += f" {self.spec.name} is exhausted... capture it?"
+                return
+            self._victory()
+            return
+        self._queue_enemy_turn()
+
     @property
     def combo_multiplier(self):
         return 1 + self.COMBO_STEP * min(self.combo, self.COMBO_CAP)
@@ -320,16 +428,7 @@ class Battle:
                 self.combo -= 1
                 cooled = f" Your combo cools to x{self.combo_multiplier:.1f}." if self.combo else " Your combo cools down."
             if self.wrong_count >= self.MAX_TRIES:
-                topic = self.question.topic
-                profile = self.repository.get_learning_profile(self.player.player_id)
-                coaching = self.orchestrator.tutor.mentor(self.question, profile)
-                next_question = self.orchestrator.next_question(
-                    self.player.player_id, topic, decision.next_difficulty
-                )["question"]
-                self.question = self.last_question = next_question
-                self.wrong_count = 0
-                self.mentor_future = None
-                self.feedback = f"{coaching} A fresh {topic} challenge is ready."
+                self._start_walkthrough()
             else:
                 self.feedback = decision.feedback + cooled
             return
@@ -372,6 +471,11 @@ class Battle:
         if self.bond_cooldown:
             self.bond_cooldown -= 1
         if self.enemy_hp <= 0:
+            if self.capturable_after_ko:
+                self.state, self.ko_selected = "ko_offer", 0
+                self.feedback += f" {self.spec.name} is exhausted but still here... capture it?"
+                self._pose("enemy", "hurt", -1)
+                return
             self._victory()
             return
         if self.can_befriend and not self.bond_offered:
@@ -567,6 +671,10 @@ class Battle:
                      center=True, shadow=PALETTE["ink"])
 
         # Dialogue/question at lower left, action list at lower right.
+        if self.state == "walkthrough" and self.walkthrough:
+            self._draw_walkthrough(surface, frame)
+            self._draw_footer(surface, frame)
+            return
         panel(surface, (7, 128, 193, 83), PALETTE["night"])
         if self.state == "question" and self.question:
             if self.bond:
@@ -630,6 +738,9 @@ class Battle:
                 color = PALETTE["mint"] if i < tries_left else PALETTE["deep"]
                 pygame.draw.rect(surface, color, (214 + i * 9, 198, 6, 6))
             text(surface, "TRIES", (244, 197), 9, PALETTE["muted"])
+        elif self.state == "ko_offer":
+            menu(surface, (207, 128, 106, 83), ["CAPTURE!", "LET IT GO"], self.ko_selected, 10, frame,
+                 highlight=(0,))
         elif self.state == "resolving":
             panel(surface, (207, 128, 106, 83), PALETTE["night"])
             text(surface, f"{self.spec.name[:10]}", (216, 143), 11, PALETTE["coral"])
@@ -640,13 +751,46 @@ class Battle:
                      "befriended": "CAPTURED!"}.get(self.outcome, "ENTER")
             text(surface, title, (216, 143), 12, PALETTE["gold"])
             text(surface, "ENTER to continue" if self.outcome else "ENTER to go back", (216, 160), 9, PALETTE["white"])
+        self._draw_footer(surface, frame)
+
+    def _draw_footer(self, surface, frame):
         if self.screen_flash:
             flash = pygame.Surface(surface.get_size())
             flash.fill(PALETTE["white"])
             flash.set_alpha(18 * self.screen_flash)
             surface.blit(flash, (0, 0))
-        hints = {
-            "question": "TYPE ANSWER   ENTER SUBMIT   H HINT   ESC BACK",
-            "resolving": "ENTER SKIP",
-        }.get(self.state, "UP/DOWN SELECT   ENTER CHOOSE   ESC BACK")
+        walk = self.walkthrough
+        if self.state == "walkthrough" and walk:
+            hints = "TYPE THE ANSWER   ENTER CHECK" if walk["typing"] else "ENTER: NEXT STEP"
+        else:
+            hints = {
+                "question": "TYPE ANSWER   ENTER SUBMIT   H HINT   ESC BACK",
+                "resolving": "ENTER SKIP",
+            }.get(self.state, "UP/DOWN SELECT   ENTER CHOOSE   ESC BACK")
         text(surface, hints, (160, 226), 9, PALETTE["cream"], center=True)
+
+    def _draw_walkthrough(self, surface, frame):
+        """Full-width panel: the missed question, solved one revealed step at a time."""
+        walk = self.walkthrough
+        panel(surface, (7, 128, 306, 83), PALETTE["night"], PALETTE["sky"])
+        text(surface, "LET'S SOLVE IT TOGETHER", (14, 133), 10, PALETTE["sky"])
+        text(surface, walk["question"].prompt, (14, 145), 13, PALETTE["white"])
+        y = 160
+        for index, step in enumerate(walk["steps"][:walk["shown"]]):
+            last = index == walk["shown"] - 1
+            color = PALETTE["gold"] if last and not walk["typing"] else PALETTE["cream"]
+            pygame.draw.rect(surface, PALETTE["sky"], (14, y + 3, 3, 3))
+            lines = wrapped(surface, step, (21, y, 286, 22), 9, color, 10, 2)
+            y += 10 * lines + 1
+            if y > 200:
+                break
+        if walk["typing"]:
+            jiggle = self._shake(self.answer_shake)
+            box = PALETTE["coral"] if self.answer_shake else PALETTE["gold"]
+            pygame.draw.rect(surface, box, (219 + jiggle, 141, 88, 17))
+            pygame.draw.rect(surface, PALETTE["ink"], (220 + jiggle, 142, 86, 15))
+            caret = "_" if frame % 50 < 28 else " "
+            text(surface, "> " + self.answer + caret, (224 + jiggle, 144), 12, PALETTE["cream"])
+        elif walk["shown"] < len(walk["steps"]) and frame % 40 < 26:
+            x, yy = 300, 202
+            pygame.draw.polygon(surface, PALETTE["sky"], [(x, yy), (x + 6, yy), (x + 3, yy + 4)])

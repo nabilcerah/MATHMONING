@@ -72,6 +72,10 @@ class BattlePolishTests(unittest.TestCase):
         battle._start_question("addition")
         battle.answer = battle.question.answer
         battle._submit()
+        # A knocked-out wild MATHMON offers a capture first; letting it go is a normal win.
+        self.assertEqual(battle.state, "ko_offer")
+        battle.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN, unicode="", mod=0))
+        battle.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0))
         self.assertEqual(battle.outcome, "won")
         self.assertIn("+18 EXP", battle.feedback)
 

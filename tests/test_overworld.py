@@ -95,14 +95,14 @@ class OverworldTests(unittest.TestCase):
         self.assertTrue(self.world.world.is_walkable(self.world.avatar.cell()))
 
     def test_chest_gives_item_only_once_and_persists(self):
-        before = self.repository.inventory(self.player.player_id)["Math Capsule"]
+        before = self.repository.inventory(self.player.player_id)["Basic Mathball"]
         self.face(self.object_pos("chest_ridge"))
         self.assertEqual(self.world.target_id(), "chest_ridge")
         self.press()
         self.finish_dialogue()
         self.press()
         self.finish_dialogue()
-        self.assertEqual(self.repository.inventory(self.player.player_id)["Math Capsule"], before + 1)
+        self.assertEqual(self.repository.inventory(self.player.player_id)["Basic Mathball"], before + 1)
         reopened = make_world(self.repository, self.player, 1)
         self.assertTrue(reopened.has_flag("opened:chest_ridge"))
 
@@ -127,7 +127,7 @@ class OverworldTests(unittest.TestCase):
     def test_riddle_rewards_the_correct_answer_once(self):
         tamsin = next(n for n in self.world.npcs if n.id == "tamsin")
         tamsin.state, tamsin.wait = "working", 10 ** 6
-        crystals = self.repository.inventory(self.player.player_id)["Focus Crystal"]
+        crystals = self.repository.inventory(self.player.player_id)["Energy Potion"]
         self.face(tamsin.cell())
         self.assertEqual(self.world.target_id(), "tamsin")
         self.press()
@@ -136,7 +136,7 @@ class OverworldTests(unittest.TestCase):
         self.press()
         self.finish_dialogue()
         self.assertTrue(self.world.has_flag("riddle:tamsin"))
-        self.assertEqual(self.repository.inventory(self.player.player_id)["Focus Crystal"], crystals + 1)
+        self.assertEqual(self.repository.inventory(self.player.player_id)["Energy Potion"], crystals + 1)
 
     def test_spring_restores_the_party(self):
         lead = self.world.party.lead

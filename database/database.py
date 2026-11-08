@@ -43,3 +43,16 @@ class Database:
                 existing = {row["name"] for row in db.execute(f"PRAGMA table_info({table})")}
                 if column not in existing:
                     db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+            self._rename_items(db)
+
+    @staticmethod
+    def _rename_items(db):
+        """Items renamed for the Mathmart (e.g. Health Potion -> Math Potion): old saves keep their stock."""
+        import json
+        renamed = json.loads((ROOT / "data" / "items.json").read_text(encoding="utf-8")).get("renamed", {})
+        for old, new in renamed.items():
+            db.execute("""INSERT INTO inventory(player_id, item, quantity)
+                          SELECT player_id, ?, quantity FROM inventory WHERE item = ? AND quantity > 0
+                          ON CONFLICT(player_id, item) DO UPDATE SET quantity = quantity + excluded.quantity""",
+                       (new, old))
+            db.execute("DELETE FROM inventory WHERE item = ?", (old,))

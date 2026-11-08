@@ -32,13 +32,19 @@ class InventoryScreen(Screen):
             return
         name = self.items()[index]
         info = item_data()[name]
-        if info["use"] in ("both",) and info["effect"] in ("heal", "revive"):
+        if (info["use"] == "both" and info["effect"] in ("heal", "revive")) or info["use"] == "field":
             self.choosing_target, self.selected = name, 0
             self.notice = f"Use {name} on which monster?"
         elif info["use"] == "battle":
             self.notice = f"{name} can only be used in battle."
         else:
             self.notice = f"{name} is a key item. {info['description']}"
+
+    def tome_exp(self, info):
+        """Knowledge Tome: rewards what you have learned - more EXP for every Proficient maths topic."""
+        profile = self.repo.learning_profile(self.player_id)
+        proficient = sum(1 for stats in profile.values() if stats["mastery"] >= 70 and stats["sufficient"])
+        return int(info["base"]) + int(info["per_topic"]) * proficient
 
     def use_on(self, item, monster):
         info = item_data()[item]
@@ -50,6 +56,15 @@ class InventoryScreen(Screen):
                 return
             healed = monster.heal(round(monster.max_hp * info["amount"]))
             self.notice = f"{monster.name} recovered {healed} HP."
+        elif info["effect"] in ("tome", "exp_star"):
+            if monster.at_max_level:
+                self.notice = f"{monster.name} is already at the top level."
+                return
+            exp = self.tome_exp(info) if info["effect"] == "tome" else monster.next_level_exp - monster.exp
+            if not self.repo.use_item(self.player_id, item):
+                return
+            levels = monster.add_exp(exp)
+            self.notice = f"{monster.name} gained {exp} EXP" + (f" and reached Lv {monster.level}!" if levels else ".")
         else:
             if not monster.fainted:
                 self.notice = f"{monster.name} hasn't fainted."

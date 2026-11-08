@@ -19,7 +19,8 @@ from monsters import elemental_system
 from monsters.monster_data import items as item_data
 
 ACTIONS = ("FIGHT", "MONSTER", "BAG", "RUN")
-BATTLE_ITEMS = ("Health Potion", "Greater Potion", "Focus Crystal", "Revival Crystal", "Math Capsule")
+from monsters.monster_data import items as _item_data
+BATTLE_ITEMS = tuple(name for name, info in _item_data().items() if info["use"] in ("battle", "both"))
 EVENT_FRAMES = 70       # how long each battle message stays (ENTER skips)
 MENU_RECT = (207, 150, 106, 62)
 LIST_RECT = (7, 128, 306, 84)
@@ -370,7 +371,7 @@ class BattleScreen:
         info = item_data()[item]
         if info["effect"] == "capture":
             try:
-                topic = self.battle.begin_capture()
+                topic = self.battle.begin_capture(item)
             except BattleError as error:
                 self.message = str(error)
                 return
@@ -573,7 +574,7 @@ class BattleScreen:
                 text(surface, f"x{count}", (196, y), 9, PALETTE["cream"], align="right")
                 if chosen:
                     detail = item_data()[choice]["description"] + " Uses your turn."
-                    if choice == "Math Capsule" and self.battle.capture_block_reason():
+                    if item_data()[choice]["effect"] == "capture" and self.battle.capture_block_reason():
                         detail = self.battle.capture_block_reason()
         panel(surface, (208, 140, 102, 68), PALETTE["ink"], PALETTE["deep"])
         wrapped(surface, detail or self.message, (213, 145, 94, 60), 8, PALETTE["cream"], 9, 6)

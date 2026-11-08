@@ -1,15 +1,24 @@
 {
-  "_comment": "GDD 7.9 and 12. use: where it can be used (battle, field, both, key = never consumed by use). effect values are fractions of max HP or Focus points. price 0 = not sold.",
+  "_comment": "Items and the MATHMART stock (bug report: item list and prices). use: battle, field, both, or key (never used up). effect values are fractions of max HP, Focus points, capture-chance bonus (percentage points), or a damage multiplier for the rest of the battle. price 0 = not sold.",
   "items": {
-    "Health Potion":     {"effect": "heal", "amount": 0.3, "use": "both",   "price": 20, "description": "Restores 30% of max HP."},
-    "Greater Potion":    {"effect": "heal", "amount": 0.6, "use": "both",   "price": 45, "description": "Restores 60% of max HP."},
-    "Focus Crystal":     {"effect": "focus", "amount": 2,  "use": "battle", "price": 30, "description": "Restores 2 Focus in battle."},
-    "Math Capsule":      {"effect": "capture",             "use": "battle", "price": 25, "description": "Captures a weakened wild monster after a binding challenge."},
-    "Revival Crystal":   {"effect": "revive", "amount": 0.3, "use": "both", "price": 60, "description": "Revives a fainted monster with 30% HP."},
-    "Evolution Crystal": {"effect": "key",                 "use": "key",    "price": 0,  "description": "Awakens the Evolution Shrine. Not used up."},
+    "Math Potion":       {"effect": "heal", "amount": 0.3, "use": "both", "price": 50, "description": "Restores 30% of max HP."},
+    "Energy Potion":     {"effect": "focus", "amount": 2, "use": "battle", "price": 40, "description": "Restores 2 Focus in battle."},
+    "Full Restore":      {"effect": "heal", "amount": 1.0, "use": "both", "price": 150, "description": "Restores all HP."},
+    "Basic Mathball":    {"effect": "capture", "bonus": 0, "use": "battle", "price": 100, "description": "Captures a weakened wild monster after a binding challenge."},
+    "Advanced Mathball": {"effect": "capture", "bonus": 15, "use": "battle", "price": 250, "description": "A stronger Mathball: +15% capture chance."},
+    "Attack Boost":      {"effect": "boost_attack", "amount": 1.25, "use": "battle", "price": 120, "description": "Your monsters deal 25% more damage for the rest of the battle."},
+    "Defence Boost":     {"effect": "boost_defence", "amount": 0.75, "use": "battle", "price": 120, "description": "Your monsters take 25% less damage for the rest of the battle."},
+    "Revive Crystal":    {"effect": "revive", "amount": 0.5, "use": "both", "price": 200, "description": "Revives a fainted monster with 50% HP."},
+    "Knowledge Tome":    {"effect": "tome", "base": 40, "per_topic": 20, "use": "field", "price": 200, "description": "Study with a monster: 40 EXP, plus 20 EXP for every maths topic you have made Proficient."},
+    "EXP Star":          {"effect": "exp_star", "use": "field", "price": 300, "description": "A monster instantly gains enough EXP for its next level."},
+    "Greater Potion":    {"effect": "heal", "amount": 0.6, "use": "both", "price": 0, "description": "Restores 60% of max HP. (Quest reward)"},
+    "Evolution Crystal": {"effect": "key", "use": "key", "price": 0, "description": "Awakens the Evolution Shrine. Not used up."},
     "Stone Charm":       {"effect": "charm", "species": ["GEOMAX", "GEOMAXIMUS"], "guard": 0.9, "use": "key", "price": 0,
                           "description": "Bram's thanks. GEOMAX and GEOMAXIMUS take 10% less damage while you carry it."},
-    "Crystal Shard":    {"effect": "sell",                "use": "key",    "price": 0,  "sell": 30, "description": "A shard from the Crystal Seal. Sell it at the shop."}
+    "Crystal Shard":     {"effect": "sell", "use": "key", "price": 0, "sell": 30, "description": "A shard from the Crystal Seal. Sell it at the Mathmart."}
   },
-  "shop": ["Health Potion", "Greater Potion", "Focus Crystal", "Math Capsule", "Revival Crystal"]
+  "shop": ["Math Potion", "Energy Potion", "Full Restore", "Basic Mathball", "Advanced Mathball", "Attack Boost",
+           "Defence Boost", "Revive Crystal", "Knowledge Tome", "EXP Star"],
+  "renamed": {"Health Potion": "Math Potion", "Focus Crystal": "Energy Potion", "Math Capsule": "Basic Mathball",
+              "Revival Crystal": "Revive Crystal", "EXP Booster": "Basic Mathball", "Learning Crystal": "Energy Potion"}
 }

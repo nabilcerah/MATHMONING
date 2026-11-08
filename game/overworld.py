@@ -331,7 +331,10 @@ class Overworld:
         if self.dialogue:
             self.dialogue.age += 1
             dx = dy = 0
-        moved = self.avatar.walk(dx, dy, self.world, self.npcs)
+        # The player can always walk through people (bug report: NPCs standing in narrow paths blocked the way).
+        moved = self.avatar.walk(dx, dy, self.world, ())
+        if (dx or dy) and not moved:
+            self._explain_blocked(dx, dy)
         fx, fy, _ = self.avatar.follower_spot()
         if math.hypot(fx - self.avatar.x, fy - self.avatar.y) > 48:
             self.avatar.reset_trail()
@@ -356,6 +359,14 @@ class Overworld:
                     self.encounter_spec, self.encounter_level = self.encounters.pick(self.area_id)
                     return "encounter"
         return None
+
+    def _explain_blocked(self, dx, dy):
+        """Bumping into a closed barrier says why it's closed and how to open it."""
+        cx, cy = self.avatar.cell()
+        ahead = (cx + (dx > 0) - (dx < 0), cy + (dy > 0) - (dy < 0))
+        for barrier in self.world.barriers:
+            if not barrier.get("open") and ahead in barrier["cells"] and not self.message_frames:
+                self.set_message(barrier.get("blocked_text", "The way is blocked for now."), 150)
 
     def tick(self):
         """Backwards-compatible single frame with no movement."""
@@ -465,7 +476,7 @@ class Overworld:
             self.open_dialogue(title, pages, subtitle, [("Browse the shop", "shop"), ("Goodbye", "close")], npc, "npc")
         elif npc.kind == "sanctuary":
             pages = self._npc_pages(npc, "any", ["Welcome to the Sanctuary."])
-            self.open_dialogue(title, pages, subtitle, [("Heal my party", "heal"), ("Manage monsters", "sanctuary"),
+            self.open_dialogue(title, pages, subtitle, [("Manage monsters", "sanctuary"),
                                                         ("Goodbye", "close")], npc, "npc")
         elif npc.kind in ("duel", "tutorial"):
             greetings = npc.spec.get("greeting", ["Ready for a practice battle?"])
@@ -546,6 +557,8 @@ class Overworld:
             self.open_dialogue(title, list(entry.get("text", [])) + [spec.get("intro", "")],
                                choices=[("Solve it!", ("challenge", challenge)), ("Later", "close")])
             return None
+        if kind == "clinic":
+            return "clinic"
         if kind == "evolution":
             self.open_dialogue(title, entry.get("text", []), choices=[("Approach the shrine", "evolution"), ("Later", "close")])
             return None
@@ -599,6 +612,8 @@ class Overworld:
             return base + ("  - solved" if self.has_flag(f"challenge:{target['challenge']}") else "  - maths challenge")
         if kind == "evolution":
             return base + "  - evolve monsters"
+        if kind == "clinic":
+            return base + "  - heal with maths"
         if kind == "shrine":
             return base + ("  - solved today" if self.shrine_done(target["id"]) else "  - new puzzle!")
         if kind == "portal":
@@ -617,7 +632,10 @@ class Overworld:
         width, height = self.world.pixel_size()
         gx = self.avatar.x - VIRTUAL_WIDTH / 2
         gy = self.avatar.y - 8 - VIEW_HEIGHT / 2
-        return max(0, min(width - VIRTUAL_WIDTH, gx)), max(0, min(height - VIEW_HEIGHT, gy))
+        # Rooms smaller than the screen (shop, clinic) sit in the middle instead of the top-left corner.
+        gx = (width - VIRTUAL_WIDTH) / 2 if width <= VIRTUAL_WIDTH else max(0, min(width - VIRTUAL_WIDTH, gx))
+        gy = (height - VIEW_HEIGHT) / 2 if height <= VIEW_HEIGHT else max(0, min(height - VIEW_HEIGHT, gy))
+        return gx, gy
 
     def _camera_follow(self):
         gx, gy = self._camera_goal()
@@ -640,7 +658,10 @@ class Overworld:
         player_cell = (self.player.x, self.player.y)
         painted = bool(self.world.background)
         if painted:
-            surface.blit(painted_background(self.world), (0, VIEW_TOP), (cam_x, cam_y, VIRTUAL_WIDTH, VIEW_HEIGHT))
+            # Negative camera values centre a small room: shift the destination instead of the source.
+            dest = (max(0, -cam_x), VIEW_TOP + max(0, -cam_y))
+            surface.blit(painted_background(self.world), dest, (max(0, cam_x), max(0, cam_y), VIRTUAL_WIDTH, VIEW_HEIGHT))
+            self._draw_decor(surface)
         for my in range(first_y, first_y + VIEW_HEIGHT // TILE + 2):
             for mx in range(first_x, first_x + VIRTUAL_WIDTH // TILE + 2):
                 sx, sy = mx * TILE - cam_x, my * TILE - cam_y + VIEW_TOP
@@ -674,7 +695,8 @@ class Overworld:
         if painted and self.world.canopy:
             # Tree tops in front of anyone standing just north of the forest edge.
             canopy = painted_background(self.world, self.world.canopy, alpha=True)
-            surface.blit(canopy, (0, VIEW_TOP), (cam_x, cam_y, VIRTUAL_WIDTH, VIEW_HEIGHT))
+            surface.blit(canopy, (max(0, -cam_x), VIEW_TOP + max(0, -cam_y)),
+                         (max(0, cam_x), max(0, cam_y), VIRTUAL_WIDTH, VIEW_HEIGHT))
         self._draw_barriers(surface, frame)
         self._draw_markers(surface, frame)
         if self.target is not None:
@@ -936,6 +958,15 @@ class Overworld:
                 pygame.draw.circle(surface, (96, 98, 104), (x + 8, y + 7), 8)
                 pygame.draw.circle(surface, (140, 144, 150), (x + 8, y + 7), 6)
                 pygame.draw.circle(surface, glow, (x + 8, y + 7), 3)
+        elif kind == "clinic":
+            pulse = (frame // 8) % 6
+            pygame.draw.ellipse(surface, shadow, (x - 1, y + 11, 18, 5))
+            pygame.draw.rect(surface, (60, 64, 76), (x + 1, y + 9, 14, 6))
+            pygame.draw.rect(surface, (40, 44, 56), (x + 3, y - 10, 10, 20))
+            pygame.draw.rect(surface, (110, 230, 150), (x + 4, y - 9 + pulse // 2, 8, 17 - pulse // 2))
+            pygame.draw.rect(surface, (200, 255, 210), (x + 5, y - 8, 2, 14))
+            pygame.draw.rect(surface, (235, 112, 92), (x + 6, y - 15, 4, 4))
+            pygame.draw.rect(surface, PALETTE["white"], (x + 7, y - 14, 2, 2))
         elif kind == "evolution":
             pulse = (frame // 10) % 6
             pygame.draw.ellipse(surface, shadow, (x - 1, y + 11, 18, 5))
@@ -1106,6 +1137,14 @@ class Overworld:
             return "QUEST: " + self.quests.step_text(quest_id)
         active = self.quests.active()
         return ("QUEST: " + self.quests.step_text(active[0])) if active else ""
+
+    def _draw_decor(self, surface):
+        """Building art painted over the map (the Mathmart and Recovery Center exteriors)."""
+        for decor in self.world.data.get("decor", []):
+            image = painted_background(self.world, decor["image"], alpha=True)
+            x0, y0, w, h = decor["rect"]
+            bottom_x, bottom_y = self.to_screen((x0 + w / 2) * TILE, (y0 + h) * TILE)
+            surface.blit(image, (round(bottom_x - image.get_width() / 2), bottom_y - image.get_height()))
 
     def _draw_barriers(self, surface, frame):
         """The broken plank bridge: a gap with dangling planks until Bram's quest is done."""

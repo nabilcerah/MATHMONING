@@ -158,21 +158,21 @@ class BattleFlowTests(unittest.TestCase):
         self.assertEqual(gained["GEOMAX"], round(40 * 0.35))                    # shared training
 
     def test_items_consume_the_turn(self):
-        b = battle(bag={"Health Potion": 1, "Focus Crystal": 1, "Revival Crystal": 1}, extra=("GEOMAX",))
+        b = battle(bag={"Math Potion": 1, "Energy Potion": 1, "Revive Crystal": 1}, extra=("GEOMAX",))
         with self.assertRaises(BattleError):
-            b.use_item("Health Potion")   # already at full HP
+            b.use_item("Math Potion")   # already at full HP
         b.active.hp = 10
-        b.use_item("Health Potion")
+        b.use_item("Math Potion")
         self.assertEqual(b.active.hp, 10 + round(b.active.max_hp * 0.3))
         self.assertEqual(b.awaiting, "enemy")
         b.awaiting = "action"
-        b.use_item("Focus Crystal")
+        b.use_item("Energy Potion")
         self.assertEqual(b.focus, 2)
         b.awaiting = "action"
         b.party.party[1].hp = 0
-        b.use_item("Revival Crystal", 1)
-        self.assertEqual(b.party.party[1].hp, round(b.party.party[1].max_hp * 0.3))
-        self.assertEqual(b.inventory.count("Health Potion"), 0)
+        b.use_item("Revive Crystal", 1)
+        self.assertEqual(b.party.party[1].hp, round(b.party.party[1].max_hp * 0.5))
+        self.assertEqual(b.inventory.count("Math Potion"), 0)
 
     def test_running(self):
         self.assertEqual(battle_rules.escape_chance(10, 10), 50)
@@ -216,3 +216,36 @@ class BattleFlowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MathmartItemTests(unittest.TestCase):
+    def test_boosts_last_the_battle_and_do_not_stack(self):
+        plain = battle("CHRONOX", "PYRON", bag={})
+        boosted = battle("CHRONOX", "PYRON", bag={"Attack Boost": 2, "Defence Boost": 1})
+        boosted.use_item("Attack Boost")
+        with self.assertRaises(BattleError):
+            boosted.awaiting = "action"
+            boosted.use_item("Attack Boost")
+        boosted.awaiting = "action"
+        boosted.use_item("Defence Boost")
+        self.assertAlmostEqual(boosted.incoming_multiplier(boosted.active), plain.incoming_multiplier(plain.active) * 0.75)
+        for b in (plain, boosted):
+            b.awaiting = "action"
+            b.choose_move("pattern_swipe")
+            b.resolve_move("first_try")
+        self.assertGreater(boosted.enemy.max_hp - boosted.enemy.hp, plain.enemy.max_hp - plain.enemy.hp)
+
+    def test_full_restore_and_advanced_mathball(self):
+        from monsters import capture_manager
+        b = battle(bag={"Full Restore": 1})
+        b.active.hp = 1
+        b.use_item("Full Restore")
+        self.assertEqual(b.active.hp, b.active.max_hp)
+        self.assertEqual(capture_manager.capture_chance(0.5, False, 15), 60)
+        c = battle(bag={"Advanced Mathball": 1})
+        c.enemy.hp = 1
+        c.begin_capture("Advanced Mathball")
+        c.resolve_capture(True)
+        self.assertEqual(c.inventory.count("Advanced Mathball"), 0)
+        roll = next(e for e in c.log if e["kind"] == "capture_roll")
+        self.assertEqual(roll["chance"], capture_manager.capture_chance(1 / c.enemy.max_hp, True, 15))

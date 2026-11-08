@@ -52,7 +52,7 @@ SEALS = ("challenge:seal_add", "challenge:seal_mul", "challenge:seal_frac")
 
 class GameManager:
     MAPS = ("number_forest", "crystal_realm", "village_shop", "village_sanctuary",
-            "algebra_cavern", "geometry_kingdom", "chronos_dimension")
+            "algebra_cavern", "geometry_kingdom", "chronos_dimension", "village_recovery")
     BOSS_FLAG = "boss:numerex"
     MENU_CHOICES = ("NEW GAME", "CONTINUE", "SETTINGS", "EXIT")
     FADE_FRAMES = 14
@@ -329,6 +329,16 @@ class GameManager:
         self.orchestrator.quest_manager = self.quests
         self.orchestrator.region = world if world in curriculum.REGION_TOPICS else "number_forest"
 
+    def _play_music(self, boss=False):
+        if boss:
+            audio.music("boss")
+        elif self.state in ("battle", "mbattle"):
+            audio.music("battle")
+        elif self.state in ("menu", "name", "avatar", "starter", "settings", "confirm_new"):
+            audio.music("menu")
+        elif self.player:
+            audio.music(self.player.world)      # each world has its own theme
+
     def _enter_world(self):
         self.world = Overworld(self.player, self.rng, self.repository, self.player.world, self.party, self.quests,
                                self.on_world_event)
@@ -336,8 +346,10 @@ class GameManager:
         self.save_timer = 0
         self.states.clear()
         self.state = "overworld"
+        self._play_music()
 
     # ================================================================== saving
+
     def _sync_player(self):
         lead = self.party.lead if self.party and self.party.party else None
         if lead:
@@ -411,6 +423,12 @@ class GameManager:
             self.states.clear()
             self.state, self.battle = "menu", None
             self.saved_record = self.repository.load_player()
+
+    def open_clinic(self):
+        from states.clinic_state import ClinicScreen
+        screen = ClinicScreen(self)
+        self.states.push(screen, self._screen_closed)
+        return screen
 
     def open_challenge(self, challenge_id):
         screen = ChallengeScreen(self, challenge_id)
@@ -516,6 +534,8 @@ class GameManager:
                 self.party.heal_all(1.0)
                 self.save_party()
             self.open_screen(action)
+        elif action == "clinic":
+            self.open_clinic()
         elif action == "heal":
             healed = self.party.heal_all(1.0)
             self.save_party()
@@ -566,8 +586,8 @@ class GameManager:
             self.world.set_message(f"You arrive in {self.world.world.name}.", 160)
 
     # ------------------------------------------------------------------ puzzle shrines (bonus)
-    PUZZLE_REWARDS = {"sequence": (12, "Health Potion"), "balance": (15, "Focus Crystal"),
-                      "target": (20, "Math Capsule"), "magic": (25, "Greater Potion"), "starchart": (30, None)}
+    PUZZLE_REWARDS = {"sequence": (12, "Math Potion"), "balance": (15, "Energy Potion"),
+                      "target": (20, "Basic Mathball"), "magic": (25, "Greater Potion"), "starchart": (30, None)}
 
     def _open_puzzle(self, shrine_id):
         entry = self.world.objects[shrine_id]
@@ -665,14 +685,14 @@ class GameManager:
     def _recover(self):
         """GDD 4.1 / 22: Game Over -> Recovery. Nothing is ever deleted; you wake at the nearest safe spot."""
         self.party.heal_all(rules()["defeat"]["recover_fraction"])
-        if self.player.world in ("number_forest", "village_shop", "village_sanctuary"):
-            self.player.world, (self.player.x, self.player.y) = "village_sanctuary", (6, 6)
+        if self.player.world in ("number_forest", "village_shop", "village_sanctuary", "village_recovery"):
+            self.player.world, (self.player.x, self.player.y) = "village_recovery", (14, 10)
         else:
             self.player.x, self.player.y = self.world.world.safe_spot
         self.save_all()
         self._enter_world()
-        if self.player.world == "village_sanctuary":
-            self.recovery_text = ("Your team fainted, but Sage Ilo carried everyone back to the Monster Sanctuary. "
+        if self.player.world == "village_recovery":
+            self.recovery_text = ("Your team fainted, but Nurse Hana brought everyone to the Mathmon Recovery Center. "
                                   "Every monster is healed and nothing you caught or learned was lost.")
         else:
             self.recovery_text = (f"Your team fainted, but you woke safely at the {self.world.world.name} camp. Every "
@@ -707,8 +727,7 @@ class GameManager:
             self.persister.sync()
         if self.state != self._last_state:
             boss = self.state == "battle" and self.battle is not None and self.battle.battle.kind == "boss"
-            audio.music("boss" if boss else {"battle": "battle", "overworld": "overworld",
-                                             "menu": "menu"}.get(self.state, "overworld"))
+            self._play_music(boss)
             self.fade = self.FADE_FRAMES if self._last_state is not None else 0
             self._last_state = self.state
         elif self.fade:

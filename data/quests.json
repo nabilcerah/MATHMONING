@@ -50,7 +50,7 @@
         "exp": 300,
         "coins": 300,
         "items": {
-          "Revival Crystal": 2
+          "Revive Crystal": 2
         },
         "flags": [
           "region:number_forest_complete"
@@ -98,7 +98,7 @@
         "exp": 80,
         "coins": 60,
         "items": {
-          "Health Potion": 3
+          "Math Potion": 3
         }
       }
     },
@@ -178,7 +178,7 @@
         "exp": 90,
         "coins": 50,
         "items": {
-          "Focus Crystal": 2
+          "Energy Potion": 2
         }
       }
     },
@@ -200,7 +200,7 @@
         "exp": 60,
         "coins": 120,
         "items": {
-          "Math Capsule": 3
+          "Basic Mathball": 3
         }
       }
     },
@@ -245,7 +245,7 @@
         "coins": 400,
         "items": {
           "Greater Potion": 3,
-          "Revival Crystal": 1
+          "Revive Crystal": 1
         },
         "flags": [
           "region:algebra_cavern_complete"
@@ -272,7 +272,7 @@
         "exp": 150,
         "coins": 120,
         "items": {
-          "Focus Crystal": 2
+          "Energy Potion": 2
         }
       }
     },
@@ -317,7 +317,7 @@
         "coins": 500,
         "items": {
           "Greater Potion": 3,
-          "Revival Crystal": 2
+          "Revive Crystal": 2
         },
         "flags": [
           "region:geometry_kingdom_complete"
@@ -345,7 +345,7 @@
         "exp": 180,
         "coins": 150,
         "items": {
-          "Math Capsule": 3
+          "Basic Mathball": 3
         }
       }
     },
@@ -389,7 +389,7 @@
         "exp": 600,
         "coins": 800,
         "items": {
-          "Revival Crystal": 3
+          "Revive Crystal": 3
         },
         "flags": [
           "game:complete"
@@ -415,7 +415,7 @@
         "exp": 200,
         "coins": 200,
         "items": {
-          "Focus Crystal": 3
+          "Energy Potion": 3
         }
       }
     }

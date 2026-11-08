@@ -1,96 +1,45 @@
 {
- "_comment": "Village Shop: a small building interior (tile map drawn in code). Safe area: no encounters.",
+ "_comment": "MATHMART interior. Background art: assets/backgrounds/village_shop_interior.png (from 'Interior mathmart.jpeg'); collision from tools/process_building_art.py.",
  "id": "village_shop",
- "name": "Village Shop",
- "size": [
-  12,
-  9
- ],
- "base": "F",
- "border": "W",
+ "name": "Mathmart",
  "interior": true,
+ "background": "village_shop_interior.png",
+ "background_scale": 1,
+ "baked_features": true,
+ "collision_file": "village_shop_collision.txt",
  "player_spawn": [
-  6,
+  4,
   7
  ],
  "safe_spot": [
-  6,
-  6
+  4,
+  7
  ],
  "exit_map": "number_forest",
- "fills": [],
- "props": [
-  {
-   "tile": "C",
-   "cells": [
-    [
-     2,
-     3
-    ],
-    [
-     3,
-     3
-    ],
-    [
-     4,
-     3
-    ],
-    [
-     8,
-     3
-    ],
-    [
-     9,
-     3
-    ]
-   ]
-  },
-  {
-   "tile": "S",
-   "cells": [
-    [
-     1,
-     1
-    ],
-    [
-     2,
-     1
-    ],
-    [
-     9,
-     1
-    ],
-    [
-     10,
-     1
-    ]
-   ]
-  }
- ],
  "areas": [
   {
    "id": "village",
-   "name": "Village Shop",
+   "name": "Mathmart",
    "rect": [
     0,
     0,
-    12,
+    11,
     9
    ],
    "travel": [
-    6,
-    6
+    4,
+    7
    ]
   }
  ],
  "waypoints": {
   "counter": [
-   6,
-   2
+   4,
+   3
   ],
   "counter2": [
    5,
-   2
+   3
   ]
  },
  "interactables": [
@@ -98,7 +47,7 @@
    "id": "exit_shop",
    "kind": "portal",
    "pos": [
-    6,
+    4,
     8
    ],
    "name": "door",
@@ -112,19 +61,20 @@
    "text": [
     "Back outside."
    ],
-   "door": true
+   "door": true,
+   "painted": true
   }
  ],
  "npcs": [
   {
    "id": "shopkeeper",
    "name": "Penny",
-   "role": "Shopkeeper",
+   "role": "Mathmart Clerk",
    "kind": "shop",
    "look": {
     "hair": "#b8522e",
     "skin": "#f0c49b",
-    "clothes": "#c0392b",
+    "clothes": "#2f6fc0",
     "accent": "#f2bb52",
     "pants": "#2e3240",
     "shoes": "#2a1d14"
@@ -143,12 +93,12 @@
    ],
    "dialogue": {
     "any": [
-     "Welcome to the shop! Potions, Focus Crystals and Math Capsules - all for Numera Coins you earn on your adventure."
+     "Welcome to the MATHMART! Potions, Mathballs, boosts and study tomes - all for Numera Coins."
     ]
    },
    "remarks": [
-    "Math Capsules on special!",
-    "Coins come from battles and quests."
+    "Advanced Mathballs in stock!",
+    "EXP Stars are back!"
    ]
   }
  ],

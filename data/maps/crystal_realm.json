@@ -193,7 +193,7 @@
       ],
       "name": "crystal chest",
       "verb": "Open",
-      "item": "Math Capsule",
+      "item": "Basic Mathball",
       "count": 2,
       "title": "CRYSTAL CHEST"
     },
@@ -206,7 +206,7 @@
       ],
       "name": "geode chest",
       "verb": "Open",
-      "item": "Focus Crystal",
+      "item": "Energy Potion",
       "count": 2,
       "title": "GEODE CHEST"
     }

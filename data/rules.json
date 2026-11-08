@@ -25,10 +25,11 @@
     "boss_multiplier": 2.0,
     "discovery": 15
   },
-  "coins": {"battle_base": 8, "battle_per_level": 2, "boss_bonus": 150, "start": 100},
+  "coins": {"battle_base": 15, "battle_per_level": 4, "boss_bonus": 300, "start": 300},
   "evolution": {"min_level": 12, "min_mastery": 60, "min_evidence": 10},
   "mastery": {"window": 20, "mastered_min_evidence": 10,
               "bands": [[0, "Foundation"], [40, "Developing"], [70, "Proficient"], [85, "Mastered"]]},
   "defeat": {"recover_fraction": 1.0},
-  "starting_items": {"Health Potion": 3, "Math Capsule": 5, "Focus Crystal": 1}
+  "clinic": {"questions": 3, "heal_correct": 0.34, "heal_wrong": 0.1},
+  "starting_items": {"Math Potion": 3, "Basic Mathball": 5, "Energy Potion": 1}
 }

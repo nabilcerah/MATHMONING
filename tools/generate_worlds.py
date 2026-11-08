@@ -63,7 +63,7 @@ WORLDS = {
                                              "something guards the chamber beyond. Win a few battles to warm up, then restore the seals."],
                              "active": ["The seals answer to algebra: find the unknown, keep both sides balanced, and solve pairs together."],
                              "completed": ["The lab is ours again! Its gateway leads to the Geometry Kingdom."]}},
-        "chests": [("B", "Greater Potion", 2), ("C", "Math Capsule", 3)],
+        "chests": [("B", "Greater Potion", 2), ("C", "Basic Mathball", 3)],
         "sign": ["ALGEBRA CAVERN", "Monsters here think in unknowns. Every x has a value - find it!"],
     },
     "geometry_kingdom": {
@@ -94,7 +94,7 @@ WORLDS = {
                                              "the Pillar Court, restore the three Geometry Seals and the keep will open."],
                              "active": ["Areas, angles and solids - the three seals measure everything. Measure carefully!"],
                              "completed": ["The kingdom is square again - in the best way. Onward to Chronos!"]}},
-        "chests": [("B", "Revival Crystal", 1), ("C", "Greater Potion", 2)],
+        "chests": [("B", "Revive Crystal", 1), ("C", "Greater Potion", 2)],
         "sign": ["GEOMETRY KINGDOM", "Every stone here was cut to an exact measure. So were its monsters."],
     },
     "chronos_dimension": {
@@ -126,7 +126,7 @@ WORLDS = {
                                              "battles on the isles, restore the three Time Seals, and climb the Time Spire."],
                              "active": ["Patterns, hours and infinity - the three seals keep time itself."],
                              "completed": ["Time flows again! The whole of Mathea has its Numera back."]}},
-        "chests": [("B", "Revival Crystal", 2), ("C", "Greater Potion", 3)],
+        "chests": [("B", "Revive Crystal", 2), ("C", "Greater Potion", 3)],
         "sign": ["CHRONOS DIMENSION", "Time stands still here. Only patterns still move."],
     },
 }
@@ -211,8 +211,9 @@ def objects_for(world_id, cfg, ground, corridor, grass):
     back = cfg["back"]
     objs.append({"id": f"{world_id}_back", "kind": "portal", "pos": at("A", -5, -3), "destination": back["destination"],
                  "arrive": back["arrive"], "name": "portal", "verb": "Enter", "title": back["title"], "text": back["text"]})
-    objs.append({"id": f"{world_id}_spring", "kind": "spring", "pos": at("A", -5, 3), "name": "healing spring",
-                 "verb": "Use", "title": "HEALING SPRING", "text": ["Warm Numera water bubbles up here."]})
+    objs.append({"id": f"{world_id}_spring", "kind": "clinic", "pos": at("A", -5, 3), "name": "Recovery Station",
+                 "verb": "Use", "title": "RECOVERY STATION",
+                 "text": ["A travelling Recovery Chamber. Solve problems to power it and heal your team."]})
     objs.append({"id": f"{world_id}_sign", "kind": "sign", "pos": at("A", 0, -5), "name": "sign", "verb": "Read",
                  "title": cfg["sign"][0], "text": cfg["sign"][1:]})
     npc = cfg["npc"]

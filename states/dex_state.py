@@ -29,13 +29,44 @@ class DexScreen(Screen):
         super().handle_key(key, unicode)
         self.scroll = min(max(self.scroll, self.selected - self.VISIBLE + 1), self.selected)
 
+    def owned(self, species_id):
+        """Your monsters of this species (or its evolved forms), strongest first."""
+        mine = [m for m in self.party.all_monsters()
+                if m.species_id == species_id or m.spec.evolves_from == species_id]
+        return sorted(mine, key=lambda m: -m.level)
+
     def activate(self, index):
-        pass
+        """Make the chosen species your companion: it leads your party and follows you around."""
+        sid = self.ids[index]
+        mine = self.owned(sid)
+        if not mine:
+            self.notice = "Catch one first - then it can be your companion."
+            return
+        monster = next((m for m in mine if not m.fainted), None)
+        if monster is None:
+            self.notice = f"{mine[0].name} needs healing before it can lead."
+            return
+        party = self.party
+        if monster in party.storage:
+            box = party.storage.index(monster)
+            try:
+                if party.party_full:
+                    party.swap(len(party.party) - 1, box)     # the last party slot rests in the Sanctuary
+                else:
+                    party.withdraw(box)
+            except Exception as error:
+                self.notice = str(error)
+                return
+        party.set_lead(party.party.index(monster))
+        self.game.save_party()
+        self.notice = f"{monster.name} is now your companion!"
 
     def draw(self, surface, frame=0):
         caught = sum(1 for sid in self.ids if self.records.get(sid, {}).get("captured"))
         seen = sum(1 for sid in self.ids if self.records.get(sid, {}).get("seen") or self.records.get(sid, {}).get("captured"))
-        self.draw_frame(surface, f"MATHDEX   seen {seen}   caught {caught}/{len(self.ids)}")
+        self.draw_frame(surface, f"MATHDEX   seen {seen}   caught {caught}/{len(self.ids)}",
+                        footer="ARROWS: CHOOSE   ENTER: MAKE COMPANION   ESC: BACK")
+        lead = self.party.lead if self.party and self.party.party else None
         for row, sid in enumerate(self.ids[self.scroll:self.scroll + self.VISIBLE]):
             index = row + self.scroll
             record = self.records.get(sid, {})
@@ -47,8 +78,10 @@ class DexScreen(Screen):
                 pygame.draw.rect(surface, PALETTE["deep"], (4, y - 2, 118, 14))
             name = species(sid).name if known else "?????"
             mark = "C" if record.get("captured") else ("S" if known else " ")
+            if lead and sid in (lead.species_id, lead.spec.evolves_from):
+                mark = "*"          # your companion
             text(surface, f"{index + 1:02d} {name}", (8, y), 9, PALETTE["gold"] if chosen else PALETTE["white"])
-            text(surface, mark, (118, y), 8, PALETTE["mint"] if mark == "C" else PALETTE["muted"], align="right")
+            text(surface, mark, (118, y), 8, PALETTE["gold"] if mark == "*" else PALETTE["mint"] if mark == "C" else PALETTE["muted"], align="right")
         sid = self.ids[min(self.selected, len(self.ids) - 1)]
         spec = species(sid)
         record = self.records.get(sid, {})

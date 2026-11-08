@@ -158,16 +158,16 @@
   },
   {
    "id": "geometry_kingdom_spring",
-   "kind": "spring",
+   "kind": "clinic",
    "pos": [
     6,
     27
    ],
-   "name": "healing spring",
+   "name": "Recovery Station",
    "verb": "Use",
-   "title": "HEALING SPRING",
+   "title": "RECOVERY STATION",
    "text": [
-    "Warm Numera water bubbles up here."
+    "A travelling Recovery Chamber. Solve problems to power it and heal your team."
    ]
   },
   {
@@ -253,7 +253,7 @@
    ],
    "name": "chest",
    "verb": "Open",
-   "item": "Revival Crystal",
+   "item": "Revive Crystal",
    "count": 1,
    "title": "TREASURE CHEST"
   },

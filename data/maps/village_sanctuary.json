@@ -117,20 +117,6 @@
     "Back outside."
    ],
    "door": true
-  },
-  {
-   "id": "healing_pool",
-   "kind": "spring",
-   "pos": [
-    2,
-    6
-   ],
-   "name": "healing pool",
-   "verb": "Use",
-   "title": "HEALING POOL",
-   "text": [
-    "The Numera-rich water glows softly."
-   ]
   }
  ],
  "npcs": [
@@ -156,7 +142,8 @@
    ],
    "dialogue": {
     "any": [
-     "Welcome to the Monster Sanctuary. I can heal your party, and up to twenty monsters can rest here while you travel with three."
+     "Welcome to the Monster Sanctuary. Up to twenty monsters can rest here while you travel with three.",
+     "Need healing? The Mathmon Recovery Center is the blue building just south of here."
     ]
    },
    "remarks": [

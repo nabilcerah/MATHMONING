@@ -86,7 +86,7 @@ class GameSmokeTests(unittest.TestCase):
                 game.llm.close()
                 pygame.quit()
 
-    def test_defeat_returns_to_the_sanctuary_without_losing_anything(self):
+    def test_defeat_returns_to_the_recovery_center_without_losing_anything(self):
         with tempfile.TemporaryDirectory() as folder:
             game = GameManager(database_path=folder + "/defeat.sqlite3")
             try:
@@ -97,7 +97,7 @@ class GameSmokeTests(unittest.TestCase):
                 self.assertEqual(game.battle.outcome, "defeated")
                 game._update()
                 self.assertEqual(game.state, "recovery")
-                self.assertEqual(game.player.world, "village_sanctuary")
+                self.assertEqual(game.player.world, "village_recovery")
                 self.assertTrue(all(m.hp == m.max_hp for m in game.party.party))
                 after = game.repository.capture_records(game.player.player_id)
                 self.assertEqual({k: v["captured"] for k, v in after.items() if v["captured"]},

@@ -39,6 +39,10 @@ Menus also work with the mouse.
 - **Beyond the forest:** beat the Arithmetic Beast and a cave opens in the ruins, leading to the **Algebra Cavern**,
   then the **Geometry Kingdom** and the **Chronos Dimension** (GDD worlds 2–4). Each world has its own camp,
   monsters, seals, side quest and boss.
+- **Village services:** the MATHMART sells potions, Mathballs, boosts, Knowledge Tomes and EXP Stars; the
+  MATHMON RECOVERY CENTER heals your team when you solve Nurse Hana's problems.
+- **Hints you can see:** press H while answering and an animated picture (number line, fraction bars, balance
+  scale, shapes...) shows the strategy.
 - **Learning profile (Tab → Profile):** mastery per topic, your history, and the AI log showing every
   agent decision step by step.
 
@@ -58,4 +62,6 @@ are decided by deterministic rules in `combat/`, `monsters/` and `world/`, confi
 
 - `tools/make_variants.py` regenerates the recoloured sprites (evolutions, bosses, Crystal Realm forms).
 - `tools/generate_worlds.py` regenerates the Algebra Cavern, Geometry Kingdom and Chronos Dimension maps.
+- `tools/process_building_art.py` turns the Mathmart / Recovery Center art into interiors, frames and exteriors.
+- `tools/generate_audio.py` regenerates the music and sound effects.
 - `tools/build_web.py` builds the browser version.

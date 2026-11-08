@@ -147,10 +147,10 @@ class RegionFlowTests(unittest.TestCase):
         for stone in ("stone_1", "stone_2", "stone_3"):
             self.talk_through(stone)
             self.solve_open_challenge()
-        potions = game.repository.inventory(game.player.player_id)["Health Potion"]
+        potions = game.repository.inventory(game.player.player_id)["Math Potion"]
         self.talk_through("mira")
         self.assertEqual(quests.status("lost_numbers"), "completed")
-        self.assertEqual(game.repository.inventory(game.player.player_id)["Health Potion"], potions + 3)
+        self.assertEqual(game.repository.inventory(game.player.player_id)["Math Potion"], potions + 3)
         # THE BROKEN BRIDGE: the desert is cut off until Bram's sums are done.
         desert = (104, 23)
         self.assertFalse(game.world.world.find_path(game.world.world.spawn, desert))

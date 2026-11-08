@@ -59,6 +59,8 @@ class BattleManager:
         self.pending_move = None
         self.player_shield = self.enemy_shield = False
         self.enemy_debuffed = self.enemy_delayed = False
+        self.attack_boost = self.defence_boost = 1.0    # Mathmart boosts, for the rest of this battle
+        self.capture_item = None
         self.enemy_slowed = 1.0
         self.topic_streaks = {}    # id(monster) -> correct answers in its passive topic this battle
         self.rhythm = 0            # consecutive first-try answers (CHRONOX passive)
@@ -77,8 +79,15 @@ class BattleManager:
 
     @property
     def can_capture(self):
-        allowed, _ = capture_manager.can_capture(self.enemy, self.kind, self.inventory.count("Math Capsule"))
+        allowed, _ = capture_manager.can_capture(self.enemy, self.kind, self.capture_count())
         return allowed and not (self.party.party_full and self.party.storage_full)
+
+    def capture_items(self):
+        """Mathballs in the bag (Basic, Advanced, ...): any item whose effect is capture."""
+        return [name for name, info in item_data().items() if info["effect"] == "capture" and self.inventory.count(name)]
+
+    def capture_count(self):
+        return sum(self.inventory.count(name) for name in self.capture_items())
 
     def move_usable(self, move):
         if move.focus > self.focus:
@@ -173,7 +182,7 @@ class BattleManager:
 
     def _player_hit(self, move, attacker, answer):
         element = elemental_system.multiplier(move.element, self.enemy.element)
-        extra = self.passive_power(attacker, move)
+        extra = self.passive_power(attacker, move) * self.attack_boost
         shielded = self.enemy_shield
         if shielded:
             extra *= rules()["shield"]["incoming_multiplier"]
@@ -230,14 +239,14 @@ class BattleManager:
                 events.append(self._event("info", "Choose who battles next."))
             else:
                 self.awaiting, self.outcome = "over", "defeated"
-                events.append(self._event("defeat", "Your whole team needs a rest. You hurry back to the "
-                                                    "Monster Sanctuary. Nothing you caught or learned is lost."))
+                events.append(self._event("defeat", "Your whole team needs a rest. You hurry to the "
+                                                    "Mathmon Recovery Center. Nothing you caught or learned is lost."))
             return events
         self.awaiting = "action"
         return events
 
     def incoming_multiplier(self, target):
-        multiplier = rules()["damage"]["enemy_scale"][self.kind]
+        multiplier = rules()["damage"]["enemy_scale"][self.kind] * self.defence_boost
         if self.enemy_debuffed:
             multiplier *= rules()["debuff"]["attack_multiplier"]
         passive = target.spec.passive
@@ -295,16 +304,20 @@ class BattleManager:
             return False, f"{target.name} hasn't fainted."
         if effect == "focus" and self.focus >= battle_rules.max_focus():
             return False, "Focus is already full."
+        if effect == "boost_attack" and self.attack_boost != 1.0:
+            return False, "Your attack is already boosted this battle."
+        if effect == "boost_defence" and self.defence_boost != 1.0:
+            return False, "Your defence is already boosted this battle."
         if effect == "capture":
             return self.can_capture, self.capture_block_reason()
         return True, ""
 
     def use_item(self, item, target_index=None):
-        """Potions, Focus and Revival Crystals. Using one consumes your turn."""
+        """Potions, Focus and Revive Crystals. Using one consumes your turn."""
         self._require("action")
         info = item_data().get(item, {})
         if info.get("effect") == "capture":
-            raise BattleError("Use begin_capture() for Math Capsules.")
+            raise BattleError("Use begin_capture() for Mathballs.")
         target = self.party.party[target_index] if target_index is not None else self.active
         ok, reason = self.item_usable(item, target)
         if not ok:
@@ -317,6 +330,14 @@ class BattleManager:
         elif effect == "revive":
             target.revive(info["amount"])
             event = self._event("item", f"{item}: {target.name} is back on its feet!", item=item)
+        elif effect == "boost_attack":
+            self.attack_boost = float(info["amount"])
+            event = self._event("item", f"{item}: your monsters hit {round((self.attack_boost - 1) * 100)}% harder "
+                                        "this battle!", item=item)
+        elif effect == "boost_defence":
+            self.defence_boost = float(info["amount"])
+            event = self._event("item", f"{item}: your monsters take {round((1 - self.defence_boost) * 100)}% less "
+                                        "damage this battle!", item=item)
         else:
             gained = min(int(info["amount"]), battle_rules.max_focus() - self.focus)
             self.focus += gained
@@ -326,29 +347,33 @@ class BattleManager:
 
     # ------------------------------------------------------------------ capture
     def capture_block_reason(self):
-        allowed, reason = capture_manager.can_capture(self.enemy, self.kind, self.inventory.count("Math Capsule"))
+        allowed, reason = capture_manager.can_capture(self.enemy, self.kind, self.capture_count())
         if not allowed:
             return reason
         if self.party.party_full and self.party.storage_full:
             return "Your party and the Monster Sanctuary are full."
         return ""
 
-    def begin_capture(self):
+    def begin_capture(self, item=None):
         self._require("action")
         reason = self.capture_block_reason()
         if reason:
             raise BattleError(reason)
+        held = self.capture_items()
+        self.capture_item = item if item in held else held[0]
         self.awaiting = "capture_question"
         return self.enemy.mastery_topic
 
     def resolve_capture(self, correct):
         self._require("capture_question")
-        self.inventory.take("Math Capsule")
-        result = capture_manager.attempt(self.enemy, correct, self.rng)
+        item = self.capture_item or "Basic Mathball"
+        self.inventory.take(item)
+        bonus = float(item_data().get(item, {}).get("bonus", 0))
+        result = capture_manager.attempt(self.enemy, correct, self.rng, bonus)
         events = [self._event("capture_roll", f"Capture chance {round(result.chance)}%...",
                               chance=result.chance, success=result.success)]
         if not result.success:
-            events.append(self._event("capture_fail", "The monster escaped the capsule!"))
+            events.append(self._event("capture_fail", "The monster escaped the Mathball!"))
             self.awaiting = "enemy"
             return events
         self.enemy.hp = max(1, self.enemy.hp)

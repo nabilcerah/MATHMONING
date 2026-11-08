@@ -18,9 +18,9 @@ class DatabaseTests(unittest.TestCase):
             reopened = PlayerRepository(Database(path))
             self.assertEqual(reopened.load_player().name, "Mina")
             self.assertEqual(reopened.get_learning_profile(player_id)["addition"]["correct"], 1)
-            self.assertEqual(repository.inventory(player_id)["Health Potion"], 3)
-            self.assertTrue(repository.use_item(player_id, "Health Potion"))
-            self.assertEqual(repository.inventory(player_id)["Health Potion"], 2)
+            self.assertEqual(repository.inventory(player_id)["Math Potion"], 3)
+            self.assertTrue(repository.use_item(player_id, "Math Potion"))
+            self.assertEqual(repository.inventory(player_id)["Math Potion"], 2)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ import pygame
 from ai.schemas import TutorResponse, validate_tutor
 from combat import battle_rules
 from game import audio
+from game.visual_hint import draw_visual, hint_visual
 from config import PALETTE
 from game.ui import panel, text, wrap_lines, wrapped
 from mathematics import curriculum
@@ -38,6 +39,8 @@ class QuestionPanel:
         self.recommendation = ""
         self.shake = 0
         self.future = None
+        self.visual = hint_visual(question) if proactive_hint else None   # struggling learners see it at once
+        self.visual_age = 0
 
     # ------------------------------------------------------------------ properties
     @property
@@ -83,12 +86,20 @@ class QuestionPanel:
         decision = self.orchestrator.handle({"type": "hint_request", "player_id": self.player_id,
                                              "question": self.question, "level": 1 if self.attempts else 0})
         self.hint_text = decision.message
+        self.visual = hint_visual(self.question) or self.visual
+        self.visual_age = 0
+        audio.play("select")
 
     def request_worked(self):
         self.worked_example = True
         decision = self.orchestrator.handle({"type": "worked_example", "player_id": self.player_id,
                                              "question": self.question})
         self.worked_text = decision.message
+        # Show the worked example as a picture too (it uses different numbers, so it may finish the sum).
+        prompt = decision.message.split(": ", 1)[-1]
+        example = type("Example", (), {"prompt": prompt, "topic": self.question.topic})()
+        self.visual = hint_visual(example) or self.visual
+        self.visual_age = 0
 
     def submit(self, answer):
         answer = str(answer).strip()
@@ -128,6 +139,7 @@ class QuestionPanel:
         return "resolved"
 
     def update(self):
+        self.visual_age += 1
         if self.shake:
             self.shake -= 1
         if self.future is not None and self.future.done():
@@ -151,30 +163,43 @@ class QuestionPanel:
         if not self.resolved:
             left = self.max_attempts - len(self.attempts)
             text(surface, f"TRIES {left}/{self.max_attempts}", (x + w - 7, y + 5), 9, PALETTE["muted"], align="right")
-            size = 14 if len(q.prompt) <= 22 else 11 if len(q.prompt) <= 60 else 10
-            lines = wrapped(surface, q.prompt, (x + 7, y + 16, w - 14, 30), size, PALETTE["white"], size + 1, 3)
+            vis_w = 118 if self.visual else 0
+            inner = w - 14 - (vis_w + 4 if vis_w else 0)
+            if vis_w:   # the picture IS the hint: it takes the right-hand side of the panel
+                draw_visual(surface, self.visual, (x + w - vis_w - 5, y + 15, vis_w, h - 20), self.visual_age)
+                bulb = PALETTE["gold"] if frame % 30 < 20 else PALETTE["cream"]
+                pygame.draw.circle(surface, bulb, (x + w - vis_w - 2, y + 17), 4)
+                pygame.draw.rect(surface, PALETTE["muted"], (x + w - vis_w - 4, y + 21, 4, 2))
+            size = 14 if len(q.prompt) <= 22 and inner > 150 else 11 if len(q.prompt) <= 60 else 10
+            lines = wrapped(surface, q.prompt, (x + 7, y + 16, inner, 30), size, PALETTE["white"], size + 1, 3)
             box_y = y + 18 + lines * (size + 1)
             jiggle = ((self.shake % 4) - 1.5) * 2 if self.shake else 0
-            pygame.draw.rect(surface, PALETTE["coral"] if self.shake else PALETTE["ink"], (x + 6 + jiggle, box_y, 120, 17))
-            pygame.draw.rect(surface, PALETTE["ink"], (x + 7 + jiggle, box_y + 1, 118, 15))
+            box_w = min(120, inner)
+            pygame.draw.rect(surface, PALETTE["coral"] if self.shake else PALETTE["ink"], (x + 6 + jiggle, box_y, box_w, 17))
+            pygame.draw.rect(surface, PALETTE["ink"], (x + 7 + jiggle, box_y + 1, box_w - 2, 15))
             caret = "_" if frame % 50 < 28 else " "
             text(surface, "> " + self.answer + caret, (x + 11 + jiggle, box_y + 3), 12, PALETTE["cream"])
-            hint_x = x + 132
             options = []
             if self.can_hint:
                 options.append("H: HINT")
             if self.can_worked:
                 options.append("W: EXAMPLE")
-            text(surface, "   ".join(options), (hint_x, box_y + 4), 9, PALETTE["sky"])
-            info_y = box_y + 21
+            if vis_w:
+                text(surface, "   ".join(options), (x + 7, box_y + 20), 9, PALETTE["sky"])
+                info_y = box_y + (31 if options else 21)
+            else:
+                text(surface, "   ".join(options), (x + 132, box_y + 4), 9, PALETTE["sky"])
+                info_y = box_y + 21
             message = self.worked_text or self.hint_text or self.feedback
+            if vis_w and not self.attempts:
+                message = self.hint_text.split(". ")[0] if self.hint_text else ""   # a short caption, not a paragraph
             color = PALETTE["sky"] if (self.worked_text or self.hint_text) else (
                 PALETTE["mint"] if self.proactive and not self.attempts else PALETTE["cream"])
             if self.feedback and (self.hint_text or self.worked_text) and self.attempts:
                 message = f"{self.feedback}  {self.hint_text or self.worked_text}"
             if message:
                 room = max(1, (y + h - info_y - 2) // 10)
-                wrapped(surface, message, (x + 7, info_y, w - 14, room * 10), 9, color, 10, room)
+                wrapped(surface, message, (x + 7, info_y, inner, room * 10), 9, color, 10, room)
         else:
             verdict = {"first_try": "CORRECT!", "after_hint": "CORRECT (WITH A HINT)", "second_attempt":
                        "CORRECT ON THE SECOND TRY", "failed": "NOT THIS TIME"}[self.outcome]

@@ -491,7 +491,7 @@
    "title": "STARTER VILLAGE",
    "text": [
     "Welcome to Starter Village, trainer! Wild MATHMON hide in the TALL GRASS of the Green Meadow, east along the path.",
-    "The red house is the SHOP, the yellow house is the MONSTER SANCTUARY. The Evolution Shrine stands by the north path."
+    "The red MATHMART sells items, the yellow house is the MONSTER SANCTUARY, and the blue MATHMON RECOVERY CENTER heals your team. The Evolution Shrine stands by the north path."
    ]
   },
   {
@@ -532,7 +532,7 @@
    ],
    "name": "fisher's chest",
    "verb": "Open",
-   "item": "Health Potion",
+   "item": "Math Potion",
    "count": 2,
    "title": "FISHER'S CHEST"
   },
@@ -545,7 +545,7 @@
    ],
    "name": "mossy chest",
    "verb": "Open",
-   "item": "Math Capsule",
+   "item": "Basic Mathball",
    "count": 1,
    "title": "MOSSY CHEST"
   },
@@ -558,7 +558,7 @@
    ],
    "name": "plateau chest",
    "verb": "Open",
-   "item": "Focus Crystal",
+   "item": "Energy Potion",
    "count": 1,
    "title": "PLATEAU CHEST"
   },
@@ -571,7 +571,7 @@
    ],
    "name": "sun-bleached chest",
    "verb": "Open",
-   "item": "Math Capsule",
+   "item": "Basic Mathball",
    "count": 2,
    "title": "DESERT CHEST"
   },
@@ -762,9 +762,9 @@
     14,
     58
    ],
-   "name": "shop door",
+   "name": "Mathmart",
    "verb": "Enter",
-   "title": "VILLAGE SHOP",
+   "title": "MATHMART",
    "painted": true,
    "destination": "village_shop",
    "arrive": [
@@ -772,7 +772,7 @@
     7
    ],
    "text": [
-    "The shop bell jingles."
+    "The Mathmart door slides open."
    ],
    "door": true
   },
@@ -941,6 +941,27 @@
    "locked_text": [
     "Rubble blocks a dark opening in the ruins. The Arithmetic Beast's power holds it shut."
    ]
+  },
+  {
+   "id": "door_recovery",
+   "kind": "portal",
+   "pos": [
+    14,
+    64
+   ],
+   "name": "Recovery Center",
+   "verb": "Enter",
+   "title": "MATHMON RECOVERY CENTER",
+   "painted": true,
+   "destination": "village_recovery",
+   "arrive": [
+    14,
+    16
+   ],
+   "door": true,
+   "text": [
+    "The Recovery Center doors whoosh open."
+   ]
   }
  ],
  "npcs": [
@@ -987,7 +1008,7 @@
    ],
    "lines": [
     "Press TAB for your trainer menu: party, bag, quests and your learning profile.",
-    "Weaken a wild monster, then throw a Math Capsule from your BAG to capture it.",
+    "Weaken a wild monster, then throw a Basic Mathball from your BAG to capture it.",
     "Crystal beats Time, Time beats Dark, Dark beats Earth, Earth beats Crystal!",
     "Your monsters evolve at the shrine when they are strong in battle AND you are strong in their maths topic."
    ],
@@ -1076,7 +1097,7 @@
     "answer": "24",
     "correct": "Exactly! 6 groups of 4 make 24. Take this crystal - it helps the thinking glow.",
     "wrong": "Not quite. Think of 4 mornings, each with 6 fish. Come back and try again!",
-    "reward": "Focus Crystal",
+    "reward": "Energy Potion",
     "count": 1
    },
    "lines": [
@@ -1186,7 +1207,30 @@
    ],
    "open_flag": "bridge:repaired",
    "style": "broken_bridge",
-   "_note": "THE BROKEN BRIDGE quest repairs this plank bridge to the Sunsand Desert."
+   "_note": "THE BROKEN BRIDGE quest repairs this plank bridge to the Sunsand Desert.",
+   "blocked_text": "The plank bridge has collapsed! Bram the builder (just west of here) needs help with the sums to fix it."
+  }
+ ],
+ "decor": [
+  {
+   "image": "mathmart_exterior.png",
+   "rect": [
+    13,
+    56,
+    3,
+    3
+   ],
+   "_note": "the red house becomes the Mathmart"
+  },
+  {
+   "image": "recovery_center_exterior.png",
+   "rect": [
+    13,
+    62,
+    3,
+    3
+   ],
+   "_note": "the blue house becomes the MCR"
   }
  ]
 }

@@ -1,0 +1,92 @@
+{
+ "_comment": "MATHMON RECOVERY CENTER (MCR) interior. Background art: assets/backgrounds/village_recovery_interior.png (from 'Interior Mathmon Recovery Center (MCR).jpeg'); collision from tools/process_building_art.py. The nurse and the information desk are part of the painting, so their interactables are painted.",
+ "id": "village_recovery",
+ "name": "Mathmon Recovery Center",
+ "interior": true,
+ "background": "village_recovery_interior.png",
+ "background_scale": 1,
+ "baked_features": true,
+ "collision_file": "village_recovery_collision.txt",
+ "player_spawn": [
+  14,
+  16
+ ],
+ "safe_spot": [
+  14,
+  10
+ ],
+ "exit_map": "number_forest",
+ "areas": [
+  {
+   "id": "village",
+   "name": "Recovery Center",
+   "rect": [
+    0,
+    0,
+    30,
+    18
+   ],
+   "travel": [
+    14,
+    16
+   ]
+  }
+ ],
+ "waypoints": {},
+ "interactables": [
+  {
+   "id": "exit_recovery",
+   "kind": "portal",
+   "pos": [
+    14,
+    17
+   ],
+   "name": "door",
+   "verb": "Leave",
+   "title": "STARTER VILLAGE",
+   "destination": "number_forest",
+   "arrive": [
+    14,
+    65
+   ],
+   "text": [
+    "Back outside."
+   ],
+   "door": true,
+   "painted": true
+  },
+  {
+   "id": "nurse_desk",
+   "kind": "clinic",
+   "pos": [
+    14,
+    7
+   ],
+   "name": "Nurse Hana",
+   "verb": "Talk to",
+   "title": "NURSE HANA",
+   "painted": true,
+   "text": [
+    "Welcome to the Mathmon Recovery Center! Our Recovery Chamber runs on maths."
+   ]
+  },
+  {
+   "id": "info_desk",
+   "kind": "sign",
+   "pos": [
+    7,
+    5
+   ],
+   "name": "information desk",
+   "verb": "Ask at",
+   "title": "TOURIST INFORMATION",
+   "painted": true,
+   "text": [
+    "Mathea has four worlds: Number Forest, the Algebra Cavern, the Geometry Kingdom and the Chronos Dimension.",
+    "Each world's camp has a Recovery Station. Solve problems there to heal on the road!"
+   ]
+  }
+ ],
+ "npcs": [],
+ "encounters": []
+}

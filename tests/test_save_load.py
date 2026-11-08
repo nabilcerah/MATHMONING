@@ -32,8 +32,8 @@ class SaveLoadTests(Base):
         party = self.repository.load_party(self.player_id)
         self.assertEqual([m.species_id for m in party.party], ["NUMEREX"])
         self.assertEqual(party.party[0].level, 1)
-        self.assertEqual(self.repository.coins(self.player_id), 100)
-        self.assertEqual(self.repository.inventory(self.player_id)["Math Capsule"], 5)
+        self.assertEqual(self.repository.coins(self.player_id), 300)
+        self.assertEqual(self.repository.inventory(self.player_id)["Basic Mathball"], 5)
         self.assertEqual(self.repository.capture_records(self.player_id)["NUMEREX"]["captured"], 1)
 
     def test_party_and_storage_survive_a_restart(self):
@@ -86,16 +86,16 @@ class SaveLoadTests(Base):
 
     def test_shop_is_transactional(self):
         shop = Shop(self.repository, self.player_id)
-        ok, _ = shop.buy("Math Capsule")
+        ok, _ = shop.buy("Basic Mathball")
         self.assertTrue(ok)
-        self.assertEqual(self.repository.coins(self.player_id), 75)
-        for _ in range(3):
-            shop.buy("Math Capsule")
-        ok, message = shop.buy("Math Capsule")
+        self.assertEqual(self.repository.coins(self.player_id), 200)
+        for _ in range(2):
+            shop.buy("Basic Mathball")
+        ok, message = shop.buy("Basic Mathball")
         self.assertFalse(ok)                                  # 0 coins left: nothing changes
         self.assertIn("Not enough", message)
         self.assertEqual(self.repository.coins(self.player_id), 0)
-        self.assertEqual(self.repository.inventory(self.player_id)["Math Capsule"], 9)
+        self.assertEqual(self.repository.inventory(self.player_id)["Basic Mathball"], 8)
         self.assertFalse(shop.buy("Evolution Crystal")[0])   # quest items are never sold
 
     def test_failed_transactions_roll_back(self):
@@ -123,9 +123,30 @@ class LegacyMigrationTests(unittest.TestCase):
             self.assertEqual([m.species_id for m in party.party], ["PYRON", "VOLTIX", "DIVOWL"])
             self.assertEqual([m.species_id for m in party.storage], ["FRACTELLA"])    # unknown species dropped
             self.assertEqual(party.party[0].level, 6)
-            self.assertEqual(repository.coins(pid), 100)
+            self.assertEqual(repository.coins(pid), 300)
             self.assertEqual(len(repository.load_party(pid).party), 3)              # migrated only once
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ItemRenameMigrationTests(unittest.TestCase):
+    def test_old_item_names_become_mathmart_items(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = folder + "/old_items.sqlite3"
+            repository = PlayerRepository(Database(path))
+            pid = repository.create_player("Old", "GEOMAX")
+            with repository.database.connect() as db:
+                db.execute("INSERT INTO inventory(player_id, item, quantity) VALUES (?, 'Health Potion', 4)", (pid,))
+                db.execute("INSERT INTO inventory(player_id, item, quantity) VALUES (?, 'Math Capsule', 2)", (pid,))
+            bag = PlayerRepository(Database(path)).inventory(pid)
+            self.assertEqual(bag["Math Potion"], 3 + 4)
+            self.assertEqual(bag["Basic Mathball"], 5 + 2)
+            self.assertNotIn("Health Potion", bag)
+
+    def test_mathmart_sells_the_requested_list_at_the_requested_prices(self):
+        expected = {"Math Potion": 50, "Energy Potion": 40, "Full Restore": 150, "Basic Mathball": 100,
+                    "Advanced Mathball": 250, "Attack Boost": 120, "Defence Boost": 120, "Revive Crystal": 200,
+                    "Knowledge Tome": 200, "EXP Star": 300}
+        self.assertEqual({name: info["price"] for name, info in Shop.stock()}, expected)

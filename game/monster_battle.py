@@ -282,13 +282,13 @@ class MonsterBattleScreen:
         elif action == "POTION":
             if engine.player.hp >= engine.player.max_hp:
                 self.message = "HP is already full."
-            elif not self.repository.use_item(self.player.player_id, "Health Potion"):
-                self.message = "No Health Potions left. Win battles to earn more."
+            elif not self.repository.use_item(self.player.player_id, "Math Potion"):
+                self.message = "No Math Potions left. Win battles to earn more."
             else:
                 healed = engine.heal_player(round(engine.player.max_hp * POTION_HEAL))
                 self._popup(f"+{healed}", PLAYER_AT[0], PLAYER_AT[1] - 48, PALETTE["mint"])
-                engine.log.append(("item", f"A Health Potion restores {healed} HP."))
-                self.message = f"A Health Potion restores {healed} HP. {engine.name} takes its turn..."
+                engine.log.append(("item", f"A Math Potion restores {healed} HP."))
+                self.message = f"A Math Potion restores {healed} HP. {engine.name} takes its turn..."
                 self._monster_turn()
         elif action == "LOG":
             self.show_log = True

@@ -27,7 +27,7 @@ from game.player import Player
 from game.puzzle_screen import PuzzleScreen
 from game.state_manager import StateManager
 from game.team import Team
-from game.touch_controls import TouchControls
+from game.touch_controls import TouchControls, game_scale
 from game.trials_screen import TrialsScreen
 from game.ui import menu, meter, panel, text, wrapped
 from game.worldmap_screen import WorldMapScreen
@@ -61,6 +61,10 @@ class GameManager:
                              "chronos_dimension": "intermediate"}
 
     def __init__(self, database_path=None):
+        if WEB:
+            # The browser runs audio on the same single thread as the game: a big buffer (~90 ms)
+            # keeps the music smooth when a frame takes a little longer (no crackles).
+            pygame.mixer.pre_init(44100, -16, 2, audio.WEB_BUFFER)
         pygame.init()
         pygame.display.set_caption(TITLE)
         self.fullscreen = False
@@ -1096,10 +1100,7 @@ class GameManager:
 
     def _present(self):
         win_w, win_h = self.window.get_size()
-        scale = min(win_w / VIRTUAL_WIDTH, win_h / VIRTUAL_HEIGHT)
-        if scale >= 1:
-            scale = int(scale)
-        scale = max(scale, 0.25)
+        scale = game_scale((win_w, win_h), whole_steps=not self.touch.enabled)
         size = (int(VIRTUAL_WIDTH * scale), int(VIRTUAL_HEIGHT * scale))
         offset = ((win_w - size[0]) // 2, (win_h - size[1]) // 2)
         if self.touch.enabled and win_h > win_w:

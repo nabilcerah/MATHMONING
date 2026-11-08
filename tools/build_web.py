@@ -87,6 +87,13 @@ def write_deploy_files(web):
     (web / "vercel.json").write_text(json.dumps(
         {"framework": None, "installCommand": "", "buildCommand": "", "outputDirectory": "."}, indent=2) + "\n")
     (web / ".vercelignore").write_text(".env\n.env.*\n")
+    # "Add to Home Screen" opens the game like an app: full screen, landscape, no browser bars.
+    (web / "manifest.webmanifest").write_text(json.dumps({
+        "name": "MATHMON", "short_name": "MATHMON", "start_url": ".", "scope": ".",
+        "display": "fullscreen", "orientation": "landscape",
+        "background_color": "#000000", "theme_color": "#131a2a",
+        "icons": [{"src": "favicon.png", "sizes": "any", "type": "image/png"}],
+    }, indent=2) + "\n")
 
 
 def main():

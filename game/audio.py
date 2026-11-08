@@ -3,7 +3,9 @@ fall back to tiny generated chiptune blips (or silence). Nothing here can crash 
 call is wrapped, and a machine without an audio device simply plays nothing."""
 from array import array
 
-from config import ROOT
+from config import ROOT, WEB
+
+WEB_BUFFER = 4096          # samples; the desktop keeps pygame's low-latency default
 
 SOUND_DIR = ROOT / "assets" / "sounds"
 # name -> (frequencies in Hz, milliseconds per note) for the generated placeholder effects.
@@ -18,7 +20,7 @@ MUSIC = {"menu": "menu", "overworld": "forest", "number_forest": "forest", "vill
          "geometry_kingdom": "kingdom", "chronos_dimension": "chronos", "crystal_realm": "chronos",
          "battle": "battle", "boss": "boss"}
 
-_state = {"ready": None, "sounds": {}, "music": None, "enabled": True}
+_state = {"ready": None, "sounds": {}, "music": None, "enabled": True, "loop_sound": None}
 
 
 def _ready():
@@ -26,8 +28,10 @@ def _ready():
         try:
             import pygame
             if not pygame.mixer.get_init():
-                pygame.mixer.init(22050, -16, 1, 512)
+                pygame.mixer.init(44100 if WEB else 22050, -16, 2 if WEB else 1, WEB_BUFFER if WEB else 512)
             _state["ready"] = bool(pygame.mixer.get_init())
+            if _state["ready"] and WEB:
+                pygame.mixer.set_reserved(1)       # channel 0 is kept for the music loop
         except Exception:
             _state["ready"] = False
     return _state["ready"]
@@ -82,7 +86,9 @@ def music(track):
         name = MUSIC.get(track, track)
         path = next((SOUND_DIR / f"{name}{ext}" for ext in (".ogg", ".wav") if (SOUND_DIR / f"{name}{ext}").exists()),
                     None)
-        if path is not None:
+        if WEB:
+            _web_music(path)
+        elif path is not None:
             pygame.mixer.music.load(str(path))
             pygame.mixer.music.set_volume(0.45)
             pygame.mixer.music.play(-1)
@@ -90,6 +96,21 @@ def music(track):
             pygame.mixer.music.stop()
     except Exception:
         pass
+
+
+def _web_music(path):
+    """Browser: decode the whole track once and loop it from memory. Streaming (mixer.music)
+    decodes OGG chunk by chunk on the game's only thread, which crackles whenever a frame is slow."""
+    import pygame
+    channel = pygame.mixer.Channel(0)
+    channel.stop()
+    _state["loop_sound"] = None               # free the previous track
+    if path is None:
+        return
+    sound = pygame.mixer.Sound(str(path))
+    sound.set_volume(0.45)
+    _state["loop_sound"] = sound
+    channel.play(sound, loops=-1)
 
 
 def set_enabled(enabled):
@@ -100,6 +121,7 @@ def set_enabled(enabled):
             if pygame.mixer.get_init():
                 pygame.mixer.stop()
                 pygame.mixer.music.stop()
+                _state["loop_sound"] = None
         except Exception:
             pass
 

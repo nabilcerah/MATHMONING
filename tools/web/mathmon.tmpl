@@ -196,6 +196,10 @@ function show_infobox() {
     <meta name="theme-color" content="#131a2a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MATHMON">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="favicon.png">
 
 
     <link rel="icon" type="image/png" href="favicon.png" sizes="16x16">
@@ -253,6 +257,23 @@ function show_infobox() {
             left: 0;
             right: 0;
         }
+
+        /* MATHMON full-screen button (phones only) and the iPhone tip */
+        #mm-full {
+            position: fixed; z-index: 20; width: 38px; height: 38px; border-radius: 9px;
+            background: rgba(28, 42, 65, 0.85); color: #f2bb52; border: 2px solid #f2bb52;
+            font: bold 20px arial; line-height: 34px; text-align: center; display: none;
+            top: calc(8px + env(safe-area-inset-top)); left: calc(8px + env(safe-area-inset-left));
+        }
+        #mm-tip {
+            position: fixed; z-index: 21; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            max-width: 80vw; background: #1c2a41; color: #f9e7b4; border: 3px solid #f2bb52;
+            border-radius: 12px; padding: 16px 20px; font: bold 15px arial; line-height: 1.45;
+            text-align: center; display: none;
+        }
+        #mm-tip b { color: #f2bb52; }
+        #mm-tip button { margin-top: 12px; font: bold 15px arial; padding: 8px 22px; border-radius: 8px;
+            background: #f2bb52; color: #131a2a; border: 0; }
 
         body {
             font-family: arial;
@@ -323,6 +344,59 @@ width="1px"
 height="1px"
     oncontextmenu="event.preventDefault()" tabindex=1>
     </canvas>
+
+    <div id="mm-full" title="Full screen">&#x26F6;</div>
+    <div id="mm-tip">
+        To play <b>full screen</b> on iPhone:<br>
+        tap <b>Share</b> &#x2191; then <b>Add to Home Screen</b>,<br>
+        and open <b>MATHMON</b> from your Home Screen.<br>
+        <small>(Apple doesn't let web pages hide Safari's bars.)</small><br>
+        <button id="mm-tip-ok">OK</button>
+    </div>
+    <script>
+    // MATHMON: full screen on phones. Android/iPad: the Fullscreen API (first tap, or the button).
+    // iPhone Safari has no Fullscreen API for pages - "Add to Home Screen" opens it like an app.
+    (function () {
+        const root = document.documentElement
+        const standalone = () => window.navigator.standalone === true ||
+            (window.matchMedia && window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches)
+        const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement)
+        const iPhone = /iPhone|iPod/i.test(navigator.userAgent)
+        // iPhone Safari reports no page full screen (fullscreenEnabled is false there).
+        const canFull = () => !iPhone && !!(document.fullscreenEnabled || document.webkitFullscreenEnabled) &&
+            !!(root.requestFullscreen || root.webkitRequestFullscreen)
+        const button = document.getElementById("mm-full")
+        const tip = document.getElementById("mm-tip")
+        function goFull() {
+            if (isFull() || standalone()) return
+            if (!canFull()) { tip.style.display = "block"; return }
+            const request = root.requestFullscreen ? root.requestFullscreen({ navigationUI: "hide" })
+                                                   : root.webkitRequestFullscreen()
+            Promise.resolve(request).then(() => {
+                if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {})
+            }).catch(() => { if (iPhone) tip.style.display = "block" })
+        }
+        function refresh() {
+            button.style.display = (window.mathmon_is_mobile() && !isFull() && !standalone()) ? "block" : "none"
+        }
+        button.addEventListener("click", (e) => { e.stopPropagation(); goFull() })
+        document.getElementById("mm-tip-ok").addEventListener("click", (e) => {
+            e.stopPropagation(); tip.style.display = "none"
+        })
+        // The first tap on the game switches to full screen where the browser allows it.
+        let tried = false
+        window.addEventListener("pointerdown", () => {
+            if (tried || !window.mathmon_is_mobile() || !canFull()) return
+            tried = true
+            goFull()
+        }, { capture: true })
+        document.addEventListener("fullscreenchange", refresh)
+        document.addEventListener("webkitfullscreenchange", refresh)
+        window.addEventListener("resize", refresh)
+        window.addEventListener("load", refresh)
+        refresh()
+    })()
+    </script>
 
     <canvas class="emscripten" id="canvas3d"
 width="{{cookiecutter.width}}px"

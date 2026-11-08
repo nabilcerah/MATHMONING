@@ -27,13 +27,20 @@ class Button:
         self.rect = pygame.Rect(rect or (0, 0, 0, 0))
 
 
-def game_rect(window_size):
-    """Where _present() draws the game inside the window (same maths, kept in sync)."""
+def game_scale(window_size, whole_steps=True):
+    """How much the 320x240 game is enlarged. Desktops use whole steps (x2, x3: perfectly crisp
+    pixels); phones use the exact fit, because rounding down there wastes a fifth of a tiny screen."""
     win_w, win_h = window_size
     scale = min(win_w / VIRTUAL_WIDTH, win_h / VIRTUAL_HEIGHT)
-    if scale >= 1:
+    if scale >= 1 and whole_steps:
         scale = int(scale)
-    scale = max(scale, 0.25)
+    return max(scale, 0.25)
+
+
+def game_rect(window_size, whole_steps=True):
+    """Where _present() draws the game inside the window (same maths, kept in sync)."""
+    win_w, win_h = window_size
+    scale = game_scale(window_size, whole_steps)
     w, h = int(VIRTUAL_WIDTH * scale), int(VIRTUAL_HEIGHT * scale)
     return pygame.Rect((win_w - w) // 2, (win_h - h) // 2, w, h)
 
@@ -66,7 +73,7 @@ class TouchControls:
     def _layout(self, size):
         self.size = size
         win_w, win_h = size
-        game = game_rect(size)
+        game = game_rect(size, whole_steps=not self.enabled)
         side = game.left
         buttons = []
         dpad_keys = ((pygame.K_UP, "UP"), (pygame.K_DOWN, "DN"), (pygame.K_LEFT, "<"), (pygame.K_RIGHT, ">"))

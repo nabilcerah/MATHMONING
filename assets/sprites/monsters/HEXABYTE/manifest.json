@@ -1,0 +1,80 @@
+{
+  "name": "HEXABYTE",
+  "source": "SCOON.jpg",
+  "poses": [
+    {
+      "pose": "idle1",
+      "file": "0.png",
+      "dx": -71,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -73,
+      "dy": -96
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -70,
+      "dy": -98
+    },
+    {
+      "pose": "walk1",
+      "file": "3.png",
+      "dx": -82,
+      "dy": -101
+    },
+    {
+      "pose": "walk2",
+      "file": "4.png",
+      "dx": -93,
+      "dy": -101
+    },
+    {
+      "pose": "walk3",
+      "file": "5.png",
+      "dx": -75,
+      "dy": -104
+    },
+    {
+      "pose": "attack1",
+      "file": "6.png",
+      "dx": -91,
+      "dy": -97
+    },
+    {
+      "pose": "attack2",
+      "file": "7.png",
+      "dx": -104,
+      "dy": -98
+    },
+    {
+      "pose": "attack3",
+      "file": "8.png",
+      "dx": -79,
+      "dy": -100
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 143,
+  "layout": "rows",
+  "animations": {
+    "idle": [
+      0,
+      1,
+      2
+    ],
+    "walk": [
+      3,
+      4,
+      5
+    ],
+    "attack": [
+      6,
+      7,
+      8
+    ]
+  }
+}

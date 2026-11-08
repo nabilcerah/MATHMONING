@@ -22,6 +22,11 @@ def _folder(name):
 
 POSE_INDEX = {"idle": 0, "idle2": 1, "idle3": 2, "windup": 3, "attack": 4, "special": 5,
               "burst": 6, "hurt": 7, "happy": 8}
+# "rows" sheets (idle x3 / walk x3 / attack x3) have no hurt or happy frames: those poses fall back
+# to idle frames and the battle screen adds placeholder effects (flash, shake, fade) on top.
+ROW_POSE_INDEX = {"idle": 0, "idle2": 1, "idle3": 2, "idle1": 0, "walk1": 3, "walk2": 4, "walk3": 5,
+                  "windup": 6, "attack1": 6, "attack": 7, "attack2": 7, "special": 8, "attack3": 8,
+                  "burst": 8, "hurt": 0, "happy": 1}
 
 _manifests = {}
 _raw = {}
@@ -68,9 +73,22 @@ def _tinted(surface, tint):
     return tinted
 
 
+def pose_index(name, pose):
+    if not isinstance(pose, str):
+        return int(pose)
+    table = ROW_POSE_INDEX if (manifest(name) or {}).get("layout") == "rows" else POSE_INDEX
+    return table.get(pose, 0)
+
+
+def animations(name):
+    """{"idle": [0, 1, 2], "walk": [...], "attack": [...]} for row sheets, else a best-effort map."""
+    info = manifest(name) or {}
+    return info.get("animations") or {"idle": [0, 1, 2], "walk": [0, 1, 2], "attack": [3, 4, 5]}
+
+
 def frame(name, pose, height, flip=False, tint=None):
     """Return (surface, (dx, dy)) where dx, dy offset the surface from the feet anchor."""
-    index = POSE_INDEX.get(pose, pose) if isinstance(pose, str) else int(pose)
+    index = pose_index(name, pose)
     key = (name, index, int(height), bool(flip), tuple(tint) if tint else None)
     cached = _cache.get(key)
     if cached:

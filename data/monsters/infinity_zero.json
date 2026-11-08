@@ -1,0 +1,215 @@
+{
+  "id": "infinity_zero",
+  "name": "Infinity Zero",
+  "sprite": "INFINITY_ZERO",
+  "level": 55,
+  "rarity": "mythical",
+  "element": "infinity",
+  "math_speciality": "combined",
+  "weakness": [
+    "combined"
+  ],
+  "resistance": [],
+  "boss": true,
+  "min_rank": 3,
+  "unlock": {
+    "defeated_monsters": 6
+  },
+  "base_stats": {
+    "hp": 520,
+    "attack": 42,
+    "defence": 32,
+    "speed": 20
+  },
+  "question_topics": [
+    "negative_numbers",
+    "fractions",
+    "sequences",
+    "equations"
+  ],
+  "description": "The serpent at the end of mathematics. It changes the rules as the battle goes on.",
+  "special_ability": "Three phases - Distortion, Paradox and Infinity - each rewrites the rules.",
+  "defence_style": "Phase shifts can't be skipped. Paradox raises a barrier only combined questions break.",
+  "color": [
+    230,
+    80,
+    200
+  ],
+  "behaviour": {
+    "aggression": 0.7,
+    "observe_first": false
+  },
+  "abilities": [
+    {
+      "id": "void_bite",
+      "name": "Void Bite",
+      "type": "attack",
+      "power": 1.0,
+      "description": "A bite from nowhere."
+    },
+    {
+      "id": "distortion_wave",
+      "name": "Distortion Wave",
+      "type": "charge",
+      "power": 1.8,
+      "cooldown": 3,
+      "phases": [
+        "distortion"
+      ],
+      "warning": "Space warps around the infinity sign!",
+      "description": "A wave of bent space."
+    },
+    {
+      "id": "paradox_lash",
+      "name": "Paradox Lash",
+      "type": "attack",
+      "power": 1.2,
+      "cooldown": 1,
+      "phases": [
+        "paradox",
+        "infinity"
+      ],
+      "description": "A strike that hits from two directions."
+    },
+    {
+      "id": "mirror_counter",
+      "name": "Mirror Counter",
+      "type": "counter",
+      "power": 1.1,
+      "cooldown": 1,
+      "phases": [
+        "paradox",
+        "infinity"
+      ],
+      "description": "Reflects your mistake back at you."
+    },
+    {
+      "id": "infinity_collapse",
+      "name": "Infinity Collapse",
+      "type": "multistage",
+      "cooldown": 4,
+      "phases": [
+        "infinity"
+      ],
+      "interrupt_topics": [
+        "combined"
+      ],
+      "description": "The finale: three stages, interrupt with combined questions.",
+      "stages": [
+        {
+          "name": "Gather the Void",
+          "text": "Infinity Zero opens a red void in its jaws!",
+          "power": 0.6
+        },
+        {
+          "name": "Endless Echo",
+          "text": "The void echoes forever - its power keeps adding up!",
+          "power": 0.7
+        },
+        {
+          "name": "Infinity Collapse",
+          "text": "",
+          "power": 1.0
+        }
+      ]
+    }
+  ],
+  "phases": [
+    {
+      "id": "distortion",
+      "name": "Distortion",
+      "hp_below": 1.0,
+      "question_level_offset": -1,
+      "question_topics": [
+        "negative_numbers",
+        "fractions",
+        "sequences",
+        "equations"
+      ],
+      "tint": [
+        170,
+        90,
+        255
+      ],
+      "intro": "Phase 1 - DISTORTION. Infinity Zero bends the numbers around you."
+    },
+    {
+      "id": "paradox",
+      "name": "Paradox",
+      "hp_below": 0.66,
+      "question_level_offset": 0,
+      "enable": [
+        "shield"
+      ],
+      "question_topics": [
+        "combined",
+        "equations",
+        "exponents"
+      ],
+      "attack_mult": 1.1,
+      "tint": [
+        255,
+        80,
+        120
+      ],
+      "intro": "Phase 2 - PARADOX! It splits in two directions and raises a barrier."
+    },
+    {
+      "id": "infinity",
+      "name": "Infinity",
+      "hp_below": 0.33,
+      "question_level_offset": 1,
+      "attacks_per_turn": 2,
+      "question_topics": [
+        "combined",
+        "mixed_operations",
+        "logic",
+        "fractions",
+        "angles"
+      ],
+      "tint": [
+        255,
+        220,
+        120
+      ],
+      "intro": "Phase 3 - INFINITY!! Everything you learned, all at once."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "shield",
+      "name": "Paradox Barrier",
+      "active": false,
+      "start_up": false,
+      "raise_on_phases": [
+        "paradox"
+      ],
+      "hp_ratio": 0.2,
+      "leak": 0.3,
+      "break_topics": [
+        "combined"
+      ],
+      "regen_on_wrong": 0.1,
+      "raise_cooldown": 99
+    },
+    {
+      "type": "rule_shift",
+      "rules": {
+        "distortion": {
+          "choices": 5,
+          "short": "5 OPTIONS",
+          "text": "Distortion - an extra decoy option appears in every question."
+        },
+        "paradox": {
+          "short": "COMBINED",
+          "text": "Paradox - questions combine two concepts, and wrong answers repair the barrier."
+        },
+        "infinity": {
+          "typed_only": true,
+          "short": "TYPE ONLY",
+          "text": "Infinity - no options! Type every number answer yourself. It attacks twice per turn."
+        }
+      }
+    }
+  ]
+}

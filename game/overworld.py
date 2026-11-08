@@ -11,7 +11,8 @@ import pygame
 
 from config import PALETTE, ROOT, VIRTUAL_WIDTH
 from game.actors import NPC, Avatar
-from game.creatures import creature_spec, draw_creature, encounter_for
+from game.creatures import creature_spec, draw_creature, encounter_for, wild_level
+from game.team import Team
 from game.sprites import frame_for
 from game.ui import heart, menu, meter, panel, text, wrap_lines, wrapped
 from game.world_map import TILE, load_map
@@ -70,8 +71,9 @@ class Roamer:
     NOTICE_RANGE = 52
     TOUCH_RANGE = 11
 
-    def __init__(self, spec, zone, world, rng, avoid=None):
+    def __init__(self, spec, zone, world, rng, avoid=None, level=1):
         self.spec, self.zone, self.world, self.rng = spec, zone, world, rng
+        self.level = level
         cells = zone["cells"]
         if avoid is not None:
             far = [c for c in cells if abs(c[0] - avoid[0]) + abs(c[1] - avoid[1]) >= 6]
@@ -154,6 +156,8 @@ class Overworld:
         self.cam_x, self.cam_y = self._camera_goal()
         self.age = 0
         self.encounter_spec = None
+        self.encounter_level = None
+        self._team = None
         self.duel_spec = None
         import datetime
         self.today = datetime.date.today().isoformat()  # shrines offer a fresh puzzle each day
@@ -180,10 +184,19 @@ class Overworld:
         self.flags.add(flag)
         if self.repository and self.player.player_id:
             self.repository.set_world_flag(self.player.player_id, flag)
+        if flag.startswith(("dex_friend:", "companion:")):
+            self._team = None
 
     def refresh_flags(self):
         if self.repository and self.player.player_id:
             self.flags = set(self.repository.world_flags(self.player.player_id))
+        self._team = None  # members may have levelled, healed or joined
+
+    @property
+    def team(self):
+        if getattr(self, "_team", None) is None and self.repository and self.player.player_id:
+            self._team = Team(self.repository, self.player, self.flags)
+        return getattr(self, "_team", None)
 
     AVATARS = ("ALEX", "LUNA")
 
@@ -235,9 +248,10 @@ class Overworld:
                     self._spawn_roamer(zone)
 
     def _spawn_roamer(self, zone, avoid=None):
+        level = wild_level(zone["area"], self.rng)
         if zone.get("species"):
             from game.creatures import WILD_BY_NAME
-            self.roamers.append(Roamer(WILD_BY_NAME[zone["species"]], zone, self.world, self.rng, avoid))
+            self.roamers.append(Roamer(WILD_BY_NAME[zone["species"]], zone, self.world, self.rng, avoid, level))
             return
         spec = encounter_for(zone["area"], self.rng)
         # Rare creatures (like CHRONOX) appear at most once on the map at a time.
@@ -249,7 +263,7 @@ class Overworld:
             from game.creatures import WILD
             common = [s for s in WILD if zone["area"] in s.habitat and s.rarity > 2] or [s for s in WILD if s.rarity > 2]
             spec = self.rng.choice(common)
-        self.roamers.append(Roamer(spec, zone, self.world, self.rng, avoid))
+        self.roamers.append(Roamer(spec, zone, self.world, self.rng, avoid, level))
 
     def _update_roamers(self):
         if self.age % 30 == 0:
@@ -267,6 +281,7 @@ class Overworld:
             self.roamers.remove(touched)
             self.respawns.append([self.rng.randint(*self.RESPAWN_FRAMES), touched.zone])
             self.encounter_spec = touched.spec
+            self.encounter_level = touched.level
             return "encounter"
         return None
 
@@ -472,11 +487,12 @@ class Overworld:
                                    kind="reward")
             return None
         if kind == "spring":
-            healed = self.player.max_hp - self.player.hp
-            self.player.hp = self.player.max_hp
-            if self.repository and self.player.player_id:
-                self.repository.save_player(self.player)
-            extra = f"Your companion recovers {healed} HP." if healed else "Your companion is already full of energy."
+            if self.team:
+                healed = self.team.heal_all(1.0)
+            else:
+                healed = self.player.max_hp - self.player.hp
+                self.player.hp = self.player.max_hp
+            extra = f"Your team recovers {healed} HP." if healed else "Your team is already full of energy."
             self.open_dialogue(title, list(entry.get("text", [])) + [extra])
             return None
         if kind == "boss_gate":
@@ -969,9 +985,11 @@ class Overworld:
         pygame.draw.rect(surface, PALETTE["ink"], (0, 0, VIRTUAL_WIDTH, VIEW_TOP))
         pygame.draw.line(surface, PALETTE["night"], (0, VIEW_TOP - 1), (VIRTUAL_WIDTH, VIEW_TOP - 1), 2)
         text(surface, self.area_name.upper(), (7, 5), 14, PALETTE["gold"])
-        text(surface, f"{self.player.name[:12]}  Lv {self.player.level}", (196, 3), 10, PALETTE["white"])
-        meter(surface, 196, 14, 82, 6, self.player.hp, self.player.max_hp, PALETTE["mint"], warn=True)
-        text(surface, f"{self.player.hp}/{self.player.max_hp}", (313, 13), 9, PALETTE["cream"], align="right")
+        leader = self.team.leader() if self.team else self.player
+        leader_name = self.team.name_of(leader) if self.team else self.player.name
+        text(surface, f"{leader_name[:12]}  Lv {leader.level}", (196, 3), 10, PALETTE["white"])
+        meter(surface, 196, 14, 82, 6, leader.hp, leader.max_hp, PALETTE["mint"], warn=True)
+        text(surface, f"{leader.hp}/{leader.max_hp}", (313, 13), 9, PALETTE["cream"], align="right")
 
 
         bottom = VIEW_TOP + VIEW_HEIGHT
@@ -982,9 +1000,9 @@ class Overworld:
             text(surface, footer, (160, bottom + 12), 9, PALETTE["cream"], center=True)
         elif prompt:
             text(surface, prompt, (160, bottom + 7), 11, PALETTE["gold"], center=True)
-            text(surface, "WASD: WALK    M: MATHDEX    N: MAP    B: PRACTICE    ESC: SAVE", (160, bottom + 18), 8, PALETTE["muted"], center=True)
+            text(surface, "WASD: WALK   M: MATHDEX   N: MAP   T: TRIALS   B: PRACTICE   ESC: SAVE", (160, bottom + 18), 8, PALETTE["muted"], center=True)
         else:
-            text(surface, "WASD: WALK   E: INTERACT   M: MATHDEX   N: MAP   B: PRACTICE   ESC: SAVE", (160, bottom + 7), 9,
+            text(surface, "WASD: WALK  E: INTERACT  M: DEX  N: MAP  T: TRIALS  B: PRACTICE  ESC: SAVE", (160, bottom + 7), 9,
                  PALETTE["cream"], center=True)
             text(surface, "Tall grass and crop rows hide wild MATHMON.", (160, bottom + 18), 9, PALETTE["muted"], center=True)
 

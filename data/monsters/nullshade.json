@@ -1,0 +1,75 @@
+{
+  "id": "nullshade",
+  "name": "Nullshade",
+  "sprite": "NULLSHADE",
+  "level": 8,
+  "rarity": "common",
+  "element": "void",
+  "math_speciality": "negative_numbers",
+  "weakness": [
+    "negative_numbers"
+  ],
+  "resistance": [
+    "addition"
+  ],
+  "base_stats": {
+    "hp": 115,
+    "attack": 15,
+    "defence": 8,
+    "speed": 14
+  },
+  "question_topics": [
+    "negative_numbers",
+    "subtraction",
+    "addition"
+  ],
+  "description": "A hooded shade from below zero. It feeds on mistakes.",
+  "special_ability": "Void Pulse: spends the energy it absorbed from wrong answers.",
+  "defence_style": "Absorbs wrong answers to heal and power up; punishes misses with Null Counter.",
+  "color": [
+    170,
+    110,
+    230
+  ],
+  "behaviour": {
+    "aggression": 0.5
+  },
+  "abilities": [
+    {
+      "id": "shadow_claw",
+      "name": "Shadow Claw",
+      "type": "attack",
+      "power": 1.0,
+      "description": "A chilling swipe."
+    },
+    {
+      "id": "null_counter",
+      "name": "Null Counter",
+      "type": "counter",
+      "power": 1.0,
+      "cooldown": 1,
+      "description": "Strikes back after a wrong answer."
+    },
+    {
+      "id": "void_pulse",
+      "name": "Void Pulse",
+      "type": "special",
+      "effect": "void_pulse",
+      "power": 1.2,
+      "cooldown": 2,
+      "description": "Releases every absorbed Void stack at once."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "absorb",
+      "max_stacks": 5,
+      "burst_at": 3,
+      "attack_per_stack": 0.12,
+      "heal_fraction": 0.04,
+      "drain_topics": [
+        "negative_numbers"
+      ]
+    }
+  ]
+}

@@ -14,6 +14,9 @@ needs pygame to load the results; this tool needs numpy and Pillow
 Pose order (left-to-right, top-to-bottom):
     monsters:   0-2 idle / walk, 3 wind-up, 4 attack, 5 special, 6 power burst, 7 hurt, 8 happy
     characters: 0 stand, 1-2 walk, 3 run, 4 wave, 5 cheer, 6 surprised, 7 hurt, 8 fist pump
+    "rows" sheets (the advanced battle monsters): row 1 idle x3, row 2 walk x3, row 3 attack x3.
+    Their manifest lists those three animations; there are no hurt/defeat frames, so the game
+    shows those with placeholder effects instead of inventing frames.
 """
 import json
 import sys
@@ -31,6 +34,8 @@ CHARACTER_OUTPUT = ROOT / "assets" / "sprites" / "characters"
 TARGET_IDLE_HEIGHT = 96  # stored resolution; the game scales down further
 POSES = ("idle", "idle2", "idle3", "windup", "attack", "special", "burst", "hurt", "happy")
 CHARACTER_POSES = ("stand", "walk1", "walk2", "run", "wave", "cheer", "surprised", "hurt", "fist")
+ROW_POSES = ("idle1", "idle2", "idle3", "walk1", "walk2", "walk3", "attack1", "attack2", "attack3")
+ROW_ANIMATIONS = {"idle": [0, 1, 2], "walk": [3, 4, 5], "attack": [6, 7, 8]}
 
 SHEETS = {
     "PYRON": ("PYRON.jpg", "checker"),
@@ -46,13 +51,30 @@ SHEETS = {
     "LUNA": ("LUNA.jpg", "light_checker"),
     "PROFESSOR_NUMERIS": ("PROFESSOR NUMERIS.jpg", "light_checker_solid"),  # white lab coat
     "REX": ("REX.jpg", "light_checker"),
+    # Advanced battle monsters (3x3 sheets laid out as idle / walk / attack rows).
+    "CRYSTALGON": ("CRYSTALGON.jpg", "grey_checker"),
+    "NULLSHADE": ("NULLSHADE.jpg", "grey_checker"),
+    "VOLTBYTE": ("VOLTBYTE.jpg", "grey_checker"),
+    "CHRONOWL": ("SOLAR OWL.jpg", "grey_checker"),
+    "INFERMATH": ("INFERMATH.jpg", "grey_checker"),
+    "EQUINOX": ("EQUINOX.jpg", "grey_checker"),
+    "MYCOMORPH": ("Octo-Spore.jpg", "grey_checker"),
+    "HEXABYTE": ("SCOON.jpg", "grey_checker"),
+    "GALAXION": ("GALAXION.jpg", "grey_checker"),
+    "ARITHMORD": ("ARITHMORD.jpg", "grey_checker"),
+    "SPHYNOX": ("SPHYNOX.jpg", "grey_checker"),
+    "INFINITY_ZERO": ("INFINITY ZERO.jpg", "grey_checker"),
 }
 CHARACTERS = {"ALEX", "LUNA", "PROFESSOR_NUMERIS", "REX"}
+ROW_LAYOUT = {"CRYSTALGON", "NULLSHADE", "VOLTBYTE", "CHRONOWL", "INFERMATH", "EQUINOX", "MYCOMORPH",
+              "HEXABYTE", "GALAXION", "ARITHMORD", "SPHYNOX", "INFINITY_ZERO"}
 
 
 def sheet_paths(name):
     if name in CHARACTERS:
         return CHARACTER_SOURCE, CHARACTER_OUTPUT, CHARACTER_POSES
+    if name in ROW_LAYOUT:
+        return SOURCE, OUTPUT, ROW_POSES
     return SOURCE, OUTPUT, POSES
 
 
@@ -104,6 +126,17 @@ def background_mask(cell, mode):
         grey = candidate & ~removed & (high < 222)
         labels, sizes = components(grey)
         removed |= np.isin(labels, regions_larger_than(sizes, 60))
+        return removed
+    if mode == "grey_checker":
+        # The advanced-monster sheets use a mid-grey checker (~75-135 and ~165-195). Black outlines
+        # (max < 64) stop the flood fill from leaking into dark creatures like NULLSHADE.
+        candidate = (saturation < 20) & (high >= 64) & (high <= 215)
+        removed = border_connected(candidate)
+        labels, sizes = components(candidate & ~removed)
+        for label in regions_larger_than(sizes, 40):
+            values = high[labels == label]
+            if np.mean(values < 148) > 0.2 and np.mean(values >= 150) > 0.2:
+                removed |= labels == label  # a gap holding both checker tones
         return removed
     if mode in ("light_checker", "light_checker_solid"):
         # A pale two-tone checker (~218 and ~242). Background touching the cell edge is always
@@ -162,7 +195,7 @@ def process(name, filename, mode):
     source, output, pose_names = sheet_paths(name)
     sheet = np.array(Image.open(source / filename).convert("RGBA"))
     h, w = sheet.shape[:2]
-    inset = 6 if mode == "checker" else 0  # skip the white grid lines between cells
+    inset = 6 if mode in ("checker", "grey_checker") else 0  # skip the grid lines between cells
     frames = []
     for index in range(9):
         row, col = divmod(index, 3)
@@ -180,6 +213,9 @@ def process(name, filename, mode):
     folder.mkdir(parents=True, exist_ok=True)
     manifest = {"name": name, "source": filename, "poses": [], "idle_height": TARGET_IDLE_HEIGHT,
                 "idle_width": round(idle.shape[1] * scale)}
+    if name in ROW_LAYOUT:
+        manifest["layout"] = "rows"
+        manifest["animations"] = ROW_ANIMATIONS
     for index, (pixels, fx, fy) in enumerate(frames):
         size = (max(1, round(pixels.shape[1] * scale)), max(1, round(pixels.shape[0] * scale)))
         image = Image.fromarray(pixels).resize(size, Image.LANCZOS)

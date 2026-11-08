@@ -1,0 +1,93 @@
+{
+  "id": "equinox",
+  "name": "Equinox",
+  "sprite": "EQUINOX",
+  "level": 28,
+  "rarity": "rare",
+  "element": "light",
+  "math_speciality": "equations",
+  "weakness": [
+    "equations"
+  ],
+  "resistance": [
+    "multiplication"
+  ],
+  "base_stats": {
+    "hp": 250,
+    "attack": 29,
+    "defence": 24,
+    "speed": 14
+  },
+  "question_topics": [
+    "equations",
+    "algebra",
+    "multiplication"
+  ],
+  "description": "A golden scarab that keeps everything in perfect balance.",
+  "special_ability": "Energy Shield: only an equation solved for its unknown can break it.",
+  "defence_style": "A strong Energy Shield that ONLY equations dent. Wrong answers repair it; it counters misses.",
+  "color": [
+    255,
+    210,
+    110
+  ],
+  "behaviour": {
+    "aggression": 0.4,
+    "defend_below_hp": 0.6
+  },
+  "abilities": [
+    {
+      "id": "balance_beam",
+      "name": "Balance Beam",
+      "type": "attack",
+      "power": 1.0,
+      "description": "A beam of light."
+    },
+    {
+      "id": "counterweight",
+      "name": "Counterweight",
+      "type": "counter",
+      "power": 1.0,
+      "cooldown": 1,
+      "description": "Tips the scales back after your mistake.",
+      "min_tier": "uncommon"
+    },
+    {
+      "id": "reform_shield",
+      "name": "Rebalance",
+      "type": "defend",
+      "effect": "raise_shield",
+      "cooldown": 4,
+      "description": "Restores its Energy Shield."
+    },
+    {
+      "id": "solar_scale",
+      "name": "Solar Scale",
+      "type": "charge",
+      "power": 1.8,
+      "cooldown": 4,
+      "min_tier": "epic",
+      "interrupt_topics": [
+        "equations"
+      ],
+      "warning": "Equinox tips the solar scale - balance the equation!",
+      "description": "A charged sunbeam."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "shield",
+      "name": "Energy Shield",
+      "hp_ratio": 0.35,
+      "leak": 0.15,
+      "break_mult": 1.6,
+      "break_topics": [
+        "equations"
+      ],
+      "only_break_topics": true,
+      "regen_on_wrong": 0.1,
+      "raise_cooldown": 3,
+      "stun_on_break": 1
+    }
+  ]
+}

@@ -115,6 +115,46 @@ class PlayerRepository:
             db.execute("DELETE FROM world_flags WHERE player_id=? AND substr(flag, 1, ?)=?",
                        (player_id, len(prefix), prefix))
 
+    def team_members(self, player_id):
+        with self.database.connect() as db:
+            rows = db.execute("SELECT species, level, exp, hp, max_hp FROM team_members WHERE player_id=? "
+                              "ORDER BY rowid", (player_id,)).fetchall()
+            return [dict(row) for row in rows]
+
+    def save_member(self, player_id, member):
+        with self.database.connect() as db:
+            db.execute("""INSERT INTO team_members(player_id, species, level, exp, hp, max_hp) VALUES (?, ?, ?, ?, ?, ?)
+                          ON CONFLICT(player_id, species) DO UPDATE SET level=excluded.level, exp=excluded.exp,
+                          hp=excluded.hp, max_hp=excluded.max_hp""",
+                       (player_id, member.species, member.level, member.exp, member.hp, member.max_hp))
+
+    # ------------------------------------------------------------ advanced battles
+    def trainer_progress(self, player_id):
+        with self.database.connect() as db:
+            row = db.execute("SELECT xp, level FROM trainer_progress WHERE player_id=?", (player_id,)).fetchone()
+            return dict(row) if row else {"xp": 0, "level": 1}
+
+    def save_trainer_progress(self, player_id, xp, level):
+        with self.database.connect() as db:
+            db.execute("""INSERT INTO trainer_progress(player_id, xp, level) VALUES (?, ?, ?)
+                          ON CONFLICT(player_id) DO UPDATE SET xp=excluded.xp, level=excluded.level""",
+                       (player_id, int(xp), int(level)))
+
+    def monster_records(self, player_id):
+        with self.database.connect() as db:
+            rows = db.execute("SELECT monster_id, rank, wins, losses, best_turns FROM monster_records WHERE player_id=?",
+                              (player_id,)).fetchall()
+            return {row["monster_id"]: dict(row) for row in rows}
+
+    def save_monster_record(self, player_id, record):
+        with self.database.connect() as db:
+            db.execute("""INSERT INTO monster_records(player_id, monster_id, rank, wins, losses, best_turns)
+                          VALUES (?, ?, ?, ?, ?, ?)
+                          ON CONFLICT(player_id, monster_id) DO UPDATE SET rank=excluded.rank, wins=excluded.wins,
+                          losses=excluded.losses, best_turns=excluded.best_turns""",
+                       (player_id, record["monster_id"], record["rank"], record["wins"], record["losses"],
+                        record.get("best_turns", 0)))
+
     def arena_stats(self, player_id):
         with self.database.connect() as db:
             row = db.execute("SELECT rating, wins, losses, streak, best_streak FROM arena_stats WHERE player_id=?",

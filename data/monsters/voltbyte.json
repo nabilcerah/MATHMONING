@@ -1,0 +1,88 @@
+{
+  "id": "voltbyte",
+  "name": "Voltbyte",
+  "sprite": "VOLTBYTE",
+  "level": 5,
+  "rarity": "common",
+  "element": "electric",
+  "math_speciality": "multiplication",
+  "weakness": [
+    "multiplication",
+    "division"
+  ],
+  "resistance": [
+    "subtraction"
+  ],
+  "base_stats": {
+    "hp": 90,
+    "attack": 14,
+    "defence": 7,
+    "speed": 22
+  },
+  "question_topics": [
+    "multiplication",
+    "division",
+    "addition"
+  ],
+  "description": "A robotic wolf that moves in multiples. It strikes fast and charges lightning in stages.",
+  "special_ability": "Thunder Sequence: charge, afterimages, then a high-speed strike. Interrupt any stage!",
+  "defence_style": "No shield - it relies on speed (an extra Quick Strike every other round).",
+  "color": [
+    110,
+    190,
+    255
+  ],
+  "behaviour": {
+    "aggression": 0.8
+  },
+  "abilities": [
+    {
+      "id": "spark_bite",
+      "name": "Spark Bite",
+      "type": "attack",
+      "power": 1.0,
+      "description": "A quick electric bite."
+    },
+    {
+      "id": "thunder_sequence",
+      "name": "Thunder Sequence",
+      "type": "multistage",
+      "cooldown": 4,
+      "min_tier": "uncommon",
+      "description": "Three stages - interrupt it with multiplication or division.",
+      "stages": [
+        {
+          "name": "Charge Electricity",
+          "text": "Voltbyte charges electricity through its circuits!",
+          "power": 0.6
+        },
+        {
+          "name": "Electric Afterimages",
+          "text": "Voltbyte splits into crackling afterimages - it is about to strike!",
+          "power": 0.6
+        },
+        {
+          "name": "High-Speed Strike",
+          "text": "",
+          "power": 0.9
+        }
+      ]
+    },
+    {
+      "id": "static_charge",
+      "name": "Static Charge",
+      "type": "charge",
+      "power": 1.9,
+      "cooldown": 4,
+      "warning": "Voltbyte's fur crackles with static!",
+      "description": "A charged pounce."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "fast_strikes",
+      "every": 2,
+      "power": 0.45
+    }
+  ]
+}

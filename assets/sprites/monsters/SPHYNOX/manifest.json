@@ -1,0 +1,80 @@
+{
+  "name": "SPHYNOX",
+  "source": "SPHYNOX.jpg",
+  "poses": [
+    {
+      "pose": "idle1",
+      "file": "0.png",
+      "dx": -59,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -58,
+      "dy": -95
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -62,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "3.png",
+      "dx": -68,
+      "dy": -89
+    },
+    {
+      "pose": "walk2",
+      "file": "4.png",
+      "dx": -71,
+      "dy": -88
+    },
+    {
+      "pose": "walk3",
+      "file": "5.png",
+      "dx": -76,
+      "dy": -88
+    },
+    {
+      "pose": "attack1",
+      "file": "6.png",
+      "dx": -64,
+      "dy": -89
+    },
+    {
+      "pose": "attack2",
+      "file": "7.png",
+      "dx": -77,
+      "dy": -89
+    },
+    {
+      "pose": "attack3",
+      "file": "8.png",
+      "dx": -86,
+      "dy": -97
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 119,
+  "layout": "rows",
+  "animations": {
+    "idle": [
+      0,
+      1,
+      2
+    ],
+    "walk": [
+      3,
+      4,
+      5
+    ],
+    "attack": [
+      6,
+      7,
+      8
+    ]
+  }
+}

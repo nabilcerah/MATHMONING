@@ -1,0 +1,72 @@
+{
+  "id": "hexabyte",
+  "name": "Hexabyte",
+  "sprite": "HEXABYTE",
+  "level": 38,
+  "rarity": "epic",
+  "element": "poison",
+  "math_speciality": "exponents",
+  "weakness": [
+    "exponents"
+  ],
+  "resistance": [
+    "multiplication"
+  ],
+  "base_stats": {
+    "hp": 300,
+    "attack": 33,
+    "defence": 26,
+    "speed": 18
+  },
+  "question_topics": [
+    "exponents",
+    "multiplication",
+    "sequences"
+  ],
+  "description": "A crystal scorpion whose venom doubles... and doubles... and doubles.",
+  "special_ability": "Exponential Growth: its power is 1.3^n and n rises every round. Exponent answers reset n to 0.",
+  "defence_style": "No shield - it races you. Stop the growth with exponent answers before it explodes.",
+  "color": [
+    190,
+    90,
+    230
+  ],
+  "behaviour": {
+    "aggression": 0.6
+  },
+  "abilities": [
+    {
+      "id": "power_sting",
+      "name": "Power Sting",
+      "type": "attack",
+      "power": 1.0,
+      "description": "An exponential sting."
+    },
+    {
+      "id": "exponential_venom",
+      "name": "Exponential Venom",
+      "type": "charge",
+      "power": 1.8,
+      "cooldown": 4,
+      "min_tier": "rare",
+      "interrupt_topics": [
+        "exponents"
+      ],
+      "warning": "Hexabyte's tail glows - venom is multiplying!",
+      "description": "A charged venom blast."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "growth",
+      "name": "Power",
+      "mode": "exponential",
+      "base": 1.3,
+      "max_stacks": 6,
+      "reset_topics": [
+        "exponents"
+      ],
+      "reduce_on_correct": 0
+    }
+  ]
+}

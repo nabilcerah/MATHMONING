@@ -40,6 +40,7 @@ class ArenaScreen:
         self.closed = False
         self.summary = ""
         self.frame = 0
+        self.shake = 0  # update() runs every frame, including in the lobby before any round
 
     @staticmethod
     def _personalise(profile, friend):
@@ -128,8 +129,11 @@ class ArenaScreen:
                 self.repository.set_world_flag(pid, "arena:champion")
                 self.flags.add("arena:champion")
                 rewards.append("CHAMPION TITLE")
-        leveled = self.player.add_exp(exp) if exp else False
-        self.repository.save_player(self.player)
+        from game.team import Team
+        team = Team(self.repository, self.player)
+        member = team.leader()  # arena EXP goes to whoever leads your team
+        leveled = member.add_exp(exp) if exp else False
+        team.save(member)
         new_rank = rank_for(stats["rating"])
         self.result = {"won": won, "change": change, "old_rating": old_rating, "rating": stats["rating"],
                        "rank_up": new_rank != old_rank and stats["rating"] > old_rating, "rank": new_rank,

@@ -1,0 +1,80 @@
+{
+  "name": "INFERMATH",
+  "source": "INFERMATH.jpg",
+  "poses": [
+    {
+      "pose": "idle1",
+      "file": "0.png",
+      "dx": -52,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -53,
+      "dy": -99
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -62,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "3.png",
+      "dx": -81,
+      "dy": -102
+    },
+    {
+      "pose": "walk2",
+      "file": "4.png",
+      "dx": -75,
+      "dy": -101
+    },
+    {
+      "pose": "walk3",
+      "file": "5.png",
+      "dx": -86,
+      "dy": -102
+    },
+    {
+      "pose": "attack1",
+      "file": "6.png",
+      "dx": -77,
+      "dy": -102
+    },
+    {
+      "pose": "attack2",
+      "file": "7.png",
+      "dx": -71,
+      "dy": -102
+    },
+    {
+      "pose": "attack3",
+      "file": "8.png",
+      "dx": -102,
+      "dy": -101
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 103,
+  "layout": "rows",
+  "animations": {
+    "idle": [
+      0,
+      1,
+      2
+    ],
+    "walk": [
+      3,
+      4,
+      5
+    ],
+    "attack": [
+      6,
+      7,
+      8
+    ]
+  }
+}

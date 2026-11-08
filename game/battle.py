@@ -4,7 +4,9 @@ import random
 import pygame
 
 from config import PALETTE, VIRTUAL_WIDTH
-from game.creatures import ENEMIES, STARTERS, WILD_BY_NAME, bond_topic, creature_spec, draw_creature, leader_spec
+from game.creatures import (ENEMIES, STARTERS, STRONG_GUARD, STRONG_HIT, WEAK_GUARD, WEAK_HIT, WILD_BY_NAME,
+                            bond_topic, creature_spec, draw_creature, leveled_stats, matchup)
+from game.team import Team
 from game.ui import heart, menu, meter, panel, text, wrapped
 from mathematics.question_generator import QuestionGenerator, topic_label
 from mathematics.solution_steps import steps_for
@@ -13,7 +15,7 @@ from mathematics.puzzles import evaluate_expression
 
 
 class Battle:
-    ACTIONS = ("ATTACK", "SKILLS", "ITEMS", "AI MENTOR", "FLEE")
+    ACTIONS = ("ATTACK", "SKILLS", "ITEMS", "TEAM", "AI MENTOR", "FLEE")
     ITEMS = ("Health Potion", "EXP Booster", "Learning Crystal")
     BOSS_TOPICS = QuestionGenerator.TOPICS  # NUMEREX tests every skill in turn
     TOPIC_FOR_SKILL = {
@@ -46,7 +48,8 @@ class Battle:
     BOND_EXP = 10
     FRIEND_BONUS_STEP, FRIEND_BONUS_CAP = 0.1, 3
 
-    def __init__(self, player, repository, orchestrator, llm_provider, enemy=None, rng=None):
+    def __init__(self, player, repository, orchestrator, llm_provider, enemy=None, rng=None, enemy_level=None,
+                 team=None):
         self.player = player
         self.repository = repository
         self.orchestrator = orchestrator
@@ -55,9 +58,13 @@ class Battle:
         self.spec = enemy or self.rng.choice(ENEMIES[:3])
         self.is_boss = self.spec.element == "BOSS"
         self.boss_round = 0
-        self.enemy_hp = self.spec.hp
-        self.enemy_max_hp = self.spec.hp
+        # Wild MATHMON have levels (their area decides the range); the boss and rivals use base stats.
+        self.enemy_level = enemy_level
+        max_hp, attack = leveled_stats(self.spec, enemy_level) if enemy_level else (self.spec.hp, self.spec.attack)
+        self.enemy_hp = self.enemy_max_hp = max_hp
+        self.enemy_attack = attack
         self.player_spec = creature_spec(player.creature, player.level)
+        self._team_arg = team
         self.state = "menu"
         self.selected = 0
         self.sub_selected = 0
@@ -98,7 +105,20 @@ class Battle:
         flags = repository.world_flags(player.player_id) if hasattr(repository, "world_flags") else set()
         self.friends = {flag.split(":", 1)[1] for flag in flags if flag.startswith("dex_friend:")}
         self.flags = set(flags)
+        # The team: each member has its own level/EXP/HP. "fighter" is whoever is battling now.
+        self.team = self._team_arg or Team(repository, player, self.flags)
+        self.fighter = self.team.leader()
+        if self.fighter.hp <= 0:
+            # A leader that fainted earlier sits this one out; if everyone is resting, the ranger helps.
+            healthy = self.team.healthy()
+            if not healthy:
+                self.team.heal_all(0.5)
+                healthy = self.team.healthy()
+            self.fighter = healthy[0]
         self.player_spec = self._leader()
+        self.player_hp_shown = float(self.fighter.hp)
+        self.forced_switch = False
+        self.team_selected = 0
         self.bond = None
         self.walkthrough = None   # "solve it together" after the last try is used up
         self.solve_future = None
@@ -137,7 +157,7 @@ class Battle:
             if self.timer <= 0:
                 self._enemy_turn()
         self.enemy_hp_shown = self._ease(self.enemy_hp_shown, self.enemy_hp)
-        self.player_hp_shown = self._ease(self.player_hp_shown, self.player.hp)
+        self.player_hp_shown = self._ease(self.player_hp_shown, self.fighter.hp)
         for name in ("enemy_flash", "player_flash", "enemy_shake", "player_shake", "answer_shake",
                      "combo_pulse", "screen_flash"):
             value = getattr(self, name)
@@ -168,7 +188,9 @@ class Battle:
     def handle_event(self, event):
         if event.type != pygame.KEYDOWN:
             return
-        if self.state == "walkthrough":
+        if self.state == "team":
+            self._team_key(event)
+        elif self.state == "walkthrough":
             self._walkthrough_key(event)
         elif self.state == "ko_offer":
             if event.key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
@@ -206,7 +228,7 @@ class Battle:
 
     def actions(self):
         if self.can_befriend:
-            return ("ATTACK", "CAPTURE", "SKILLS", "ITEMS", "AI MENTOR", "FLEE")
+            return ("ATTACK", "CAPTURE", "SKILLS", "ITEMS", "TEAM", "AI MENTOR", "FLEE")
         return self.ACTIONS
 
     @property
@@ -236,13 +258,18 @@ class Battle:
         elif action == "CAPTURE":
             self._start_bond()
         elif action == "SKILLS":
-            if self.player.level < 2:
+            if self.fighter.level < 2:
                 self.feedback = "Your creature is learning its first moves. Skills unlock at Level 2."
             else:
                 self.state, self.sub_selected = "skills", 0
         elif action == "ITEMS":
             self._inventory = None
             self.state, self.sub_selected = "items", 0
+        elif action == "TEAM":
+            if len(self.team.members) < 2:
+                self.feedback = "Your team is just you two for now. Capture more MATHMON to switch in battle!"
+            else:
+                self.state, self.team_selected, self.forced_switch = "team", 0, False
         elif action == "AI MENTOR":
             self.state = "mentor"
             if self.question:
@@ -336,8 +363,10 @@ class Battle:
         self.friends.add(name)
         if hasattr(self.repository, "set_world_flag"):
             self.repository.set_world_flag(self.player.player_id, f"dex_friend:{name}")
+        if name in WILD_BY_NAME:
+            self.team.add(name, self.enemy_level or self.fighter.level)
         evolution = self._grant_exp(self.BOND_EXP + self.next_victory_bonus)
-        self.repository.save_player(self.player)
+        self.team.save(self.fighter)
         self.bond = None
         self.outcome, self.state = "befriended", "over"
         self.screen_flash = 8
@@ -409,7 +438,7 @@ class Battle:
         self.walkthrough = None
         self.wrong_count = 0
         self.answer = ""
-        base = question.base_damage + self.player.level + self.player_spec.attack // 2
+        base = question.base_damage + self.fighter.level + self.player_spec.attack // 2
         damage = max(2, round(base * self.WALK_DAMAGE))
         self.enemy_hp = max(0, self.enemy_hp - damage)
         self.enemy_flash, self.enemy_shake = 12, 8
@@ -479,8 +508,10 @@ class Battle:
         self.best_combo = max(self.best_combo, self.combo)
         self.combo_pulse = 24
         friends = self.friend_bonus(self.question.topic)
-        multiplier = self.damage_multiplier * combo_bonus * friends * (self.CRITICAL_MULTIPLIER if critical else 1)
-        base = self.question.base_damage + self.player.level + self.player_spec.attack // 2
+        edge = self.matchup
+        type_bonus = STRONG_HIT if edge == "strong" else WEAK_HIT if edge == "weak" else 1.0
+        multiplier = self.damage_multiplier * combo_bonus * friends * type_bonus * (self.CRITICAL_MULTIPLIER if critical else 1)
+        base = self.question.base_damage + self.fighter.level + self.player_spec.attack // 2
         damage = max(4, round(base * multiplier))
         self.enemy_hp = max(0, self.enemy_hp - damage)
         self.enemy_flash, self.enemy_shake = 14, 20 if critical else 12
@@ -504,9 +535,13 @@ class Battle:
             tags.append(f"Combo x{combo_bonus:.1f}!")
         if friends > 1:
             tags.append(f"Team +{round((friends - 1) * 100)}%!")
+        if edge == "strong":
+            tags.append("Super effective!")
+        elif edge == "weak":
+            tags.append("Not very effective...")
         prefix = " ".join(tags) + " " if tags else ""
         self.feedback = f"Correct! {prefix}{self.player_spec.name} lands {damage} damage.{self.level_message}"
-        self.repository.save_player(self.player)
+        self.team.save(self.fighter)
         self.answer = ""
         if self.bond_cooldown:
             self.bond_cooldown -= 1
@@ -527,8 +562,8 @@ class Battle:
         bonus = 20 if self.is_boss else 8
         total = bonus + self.next_victory_bonus
         evolution = self._grant_exp(total)
-        self.player.hp = min(self.player.max_hp, self.player.hp + 4)
-        self.repository.save_player(self.player)
+        self.fighter.hp = min(self.fighter.max_hp, self.fighter.hp + 4)
+        self.team.save(self.fighter)
         self.outcome, self.state = "won", "over"
         self._pose("player", "happy", -1)
         booster = f" (+{self.next_victory_bonus} from your booster)" if self.next_victory_bonus else ""
@@ -538,37 +573,82 @@ class Battle:
         self.feedback = f"{self.spec.name} is defeated! +{total} EXP{booster}.{evolution}{flair} Your creature rests and recovers 4 HP."
 
     def _leader(self):
-        return leader_spec(self.player, getattr(self, "flags", set()))
+        return self.team.spec_of(self.fighter)
 
     def _grant_exp(self, amount):
         old_form = self.player_spec.name
-        leveled = self.player.add_exp(amount)
+        leveled = self.fighter.add_exp(amount)
         self.player_spec = self._leader()
         if self.player_spec.name != old_form:
             return f" EVOLUTION! {old_form} became {self.player_spec.name}!"
-        return f" LEVEL UP! Lv {self.player.level}!" if leveled else ""
+        return f" LEVEL UP! Lv {self.fighter.level}!" if leveled else ""
 
     def _queue_enemy_turn(self):
         self.state = "resolving"
         self.timer = self.ENEMY_TURN_DELAY
 
+    def _team_key(self, event):
+        members = self.team.members
+        if event.key == pygame.K_ESCAPE and not self.forced_switch:
+            self.state = "menu"
+        elif event.key in (pygame.K_UP, pygame.K_w):
+            self.team_selected = (self.team_selected - 1) % len(members)
+        elif event.key in (pygame.K_DOWN, pygame.K_s):
+            self.team_selected = (self.team_selected + 1) % len(members)
+        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+            self._switch_to(members[self.team_selected])
+
+    def _switch_to(self, member):
+        if member is self.fighter:
+            self.feedback = f"{self.player_spec.name} is already battling."
+            return
+        if member.hp <= 0:
+            self.feedback = f"{self.team.name_of(member)} needs to rest first."
+            return
+        forced = self.forced_switch
+        self.fighter = member
+        self.player_spec = self._leader()
+        self.player_hp_shown = float(member.hp)
+        self.combo = 0  # a fresh monster starts a fresh streak
+        self.forced_switch = False
+        self._pose("player", "happy", 20)
+        edge = {"strong": f" It has the edge over {self.spec.name}!", "weak": f" Careful: {self.spec.name} is its nemesis!"}
+        self.feedback = f"Go, {self.player_spec.name}!" + edge.get(self.matchup, "")
+        if forced:
+            self.state = "menu"  # stepping in after a faint doesn't cost a turn
+        else:
+            self._queue_enemy_turn()  # switching on purpose uses your turn
+
+    @property
+    def matchup(self):
+        """Your fighter versus the enemy: 'strong', 'weak' or 'neutral'."""
+        return matchup(self.player_spec, self.spec)
+
     def _enemy_turn(self):
-        damage = self.rng.randint(max(1, self.spec.attack - 2), self.spec.attack)
-        self.player.hp = max(0, self.player.hp - damage)
+        damage = self.rng.randint(max(1, self.enemy_attack - 2), self.enemy_attack)
+        guard = STRONG_GUARD if self.matchup == "strong" else WEAK_GUARD if self.matchup == "weak" else 1.0
+        damage = max(1, round(damage * guard))
+        self.fighter.hp = max(0, self.fighter.hp - damage)
         self.player_flash, self.player_shake = 14, 12
         self._popup(f"-{damage}", 62, 62, PALETTE["coral"])
         self._pose("enemy", "attack", 26)
         self._pose("player", "hurt", 24)
-        self.repository.save_player(self.player)
+        self.team.save(self.fighter)
         self.feedback += f" {self.spec.name} answers with {damage} damage."
         self.state = "menu"
-        if self.player.hp == 0:
-            self.player.hp = max(1, self.player.max_hp // 2)
-            self.repository.save_player(self.player)
+        if self.fighter.hp == 0:
+            if self.team.healthy(exclude=self.fighter):
+                # Another team member steps in: pick who goes next.
+                self.forced_switch = True
+                self.state, self.team_selected = "team", 0
+                self.feedback = f"{self.player_spec.name} is too tired to go on! Choose who battles next."
+                return
+            self.team.heal_all(0.5)
             self.outcome, self.state = "defeated", "over"
             self._pose("player", "hurt", -1)
             self._pose("enemy", "happy", -1)
-            self.feedback = "Your creature needs a rest. The ranger restores half its HP; your learning progress is saved."
+            self.feedback = ("Your whole team needs a rest. The ranger restores half their HP; "
+                             "your learning progress is saved.")
 
     def inventory(self):
         if self._inventory is None:
@@ -606,14 +686,14 @@ class Battle:
                 self.repository.add_recommendation(self.player.player_id, "Use a hint, then explain the steps in your own words.")
             return
         if item == "Health Potion":
-            if self.player.hp >= self.player.max_hp:
+            if self.fighter.hp >= self.fighter.max_hp:
                 self.feedback = "HP is already full. Save the potion for later."
                 return
             if not self.repository.use_item(self.player.player_id, item):
                 self.feedback = "No Health Potions left."
                 return
-            healed = min(14, self.player.max_hp - self.player.hp)
-            self.player.hp += healed
+            healed = min(14, self.fighter.max_hp - self.fighter.hp)
+            self.fighter.hp += healed
             self._popup(f"+{healed}", 62, 62, PALETTE["mint"])
             self._pose("player", "special", 30)
             self.feedback = f"A Health Potion restores {healed} HP."
@@ -623,7 +703,7 @@ class Battle:
                 return
             self.next_victory_bonus += 10
             self.feedback = "The EXP Booster will add +10 EXP after this battle."
-        self.repository.save_player(self.player)
+        self.team.save(self.fighter)
         self._queue_enemy_turn()
 
     # -------------------------------------------------------------------- draw
@@ -685,7 +765,11 @@ class Battle:
             self._heart(surface, int(ex) - 4, 8 - (frame // 10) % 3, True)
         panel(surface, (8, 8, 143, 43), PALETTE["night"], PALETTE["gold"] if self.is_boss else None)
         text(surface, self.spec.name, (15, 12), 13, PALETTE["white"])
-        text(surface, self.spec.element, (15, 25), 9, PALETTE["muted"])
+        level_text = f"  Lv {self.enemy_level}" if self.enemy_level else ""
+        text(surface, self.spec.element + level_text, (15, 25), 9, PALETTE["muted"])
+        badge = {"strong": ("YOU: STRONG", PALETTE["mint"]), "weak": ("YOU: WEAK", PALETTE["coral"])}.get(self.matchup)
+        if badge:
+            text(surface, badge[0], (143, 12), 8, badge[1], align="right")
         text(surface, f"{self.enemy_hp}/{self.enemy_max_hp}", (139, 25), 9, PALETTE["muted"], align="right")
         meter(surface, 15, 39, 124, 6, self.enemy_hp_shown, self.enemy_max_hp, PALETTE["coral"])
 
@@ -694,10 +778,10 @@ class Battle:
         draw_creature(surface, self.player_spec, (px, 120), 52, self._frame_pose(self.player_pose[0], frame),
                       tint=PALETTE["coral"] if self.player_flash % 4 >= 2 else None)
         panel(surface, (143, 71, 168, 46), PALETTE["night"])
-        text(surface, f"{self.player_spec.name}  Lv {self.player.level}", (151, 75), 12, PALETTE["white"])
-        text(surface, f"{self.player.hp}/{self.player.max_hp}", (298, 84), 9, PALETTE["cream"], align="right")
-        meter(surface, 151, 93, 147, 7, self.player_hp_shown, self.player.max_hp, PALETTE["mint"], "HP", warn=True)
-        meter(surface, 151, 108, 147, 5, self.player.exp, self.player.next_level_exp, PALETTE["sky"], "EXP")
+        text(surface, f"{self.player_spec.name}  Lv {self.fighter.level}", (151, 75), 12, PALETTE["white"])
+        text(surface, f"{self.fighter.hp}/{self.fighter.max_hp}", (298, 84), 9, PALETTE["cream"], align="right")
+        meter(surface, 151, 93, 147, 7, self.player_hp_shown, self.fighter.max_hp, PALETTE["mint"], "HP", warn=True)
+        meter(surface, 151, 108, 147, 5, self.fighter.exp, self.fighter.next_level_exp, PALETTE["sky"], "EXP")
 
         self._draw_combo_badge(surface, frame)
         for popup in self.popups:
@@ -716,7 +800,21 @@ class Battle:
             self._draw_footer(surface, frame)
             return
         panel(surface, (7, 128, 193, 83), PALETTE["night"])
-        if self.state == "question" and self.question:
+        if self.state == "team":
+            member = self.team.members[self.team_selected]
+            spec = self.team.spec_of(member)
+            edge = matchup(spec, self.spec)
+            text(surface, "CHOOSE WHO BATTLES" if self.forced_switch else "SWITCH MONSTER", (14, 134), 10, PALETTE["gold"])
+            text(surface, f"{spec.name}  Lv {member.level}", (14, 148), 13, PALETTE["white"])
+            meter(surface, 14, 166, 120, 6, member.hp, member.max_hp, PALETTE["mint"], None, warn=True)
+            text(surface, f"{member.hp}/{member.max_hp} HP", (140, 165), 9, PALETTE["cream"])
+            verdict = {"strong": (f"Strong vs {self.spec.name}: deals x1.5, takes less.", PALETTE["mint"]),
+                       "weak": (f"{self.spec.name} is its nemesis! Deals x0.6.", PALETTE["coral"])}.get(
+                edge, (f"An even match against {self.spec.name}.", PALETTE["muted"]))
+            wrapped(surface, verdict[0], (14, 178, 180, 22), 9, verdict[1], 10, 2)
+            if not self.forced_switch:
+                text(surface, "Switching uses your turn.", (14, 200), 8, PALETTE["muted"])
+        elif self.state == "question" and self.question:
             if self.bond:
                 header = f"CAPTURE CHALLENGE  •  {topic_label(self.question.topic)}  {self.bond['round'] + 1}/{self.BOND_ROUNDS}"
                 text(surface, header, (14, 134), 10, PALETTE["mint"])
@@ -744,10 +842,24 @@ class Battle:
 
         if self.state == "menu":
             actions = self.actions()
-            disabled = (actions.index("SKILLS"),) if self.player.level < 2 else ()
+            disabled = (actions.index("SKILLS"),) if self.fighter.level < 2 else ()
             highlight = (actions.index("CAPTURE"),) if "CAPTURE" in actions else ()
             menu(surface, (207, 128, 106, 83), actions, min(self.selected, len(actions) - 1), 10, frame,
-                 disabled, 15 if len(actions) <= 5 else 12, highlight)
+                 disabled, 15 if len(actions) <= 5 else 12 if len(actions) == 6 else 11, highlight)
+        elif self.state == "team":
+            labels, unusable = [], []
+            for index, member in enumerate(self.team.members):
+                spec = self.team.spec_of(member)
+                labels.append(f"{spec.name[:9]} {member.level}")  # the current fighter shows greyed out
+                if member.hp <= 0 or member is self.fighter:
+                    unusable.append(index)
+            highlight = tuple(i for i, m in enumerate(self.team.members)
+                              if matchup(self.team.spec_of(m), self.spec) == "strong" and i not in unusable)
+            rows = labels[max(0, self.team_selected - 5):][:6]
+            offset = max(0, self.team_selected - 5)
+            menu(surface, (207, 128, 106, 83), rows, self.team_selected - offset, 9, frame,
+                 tuple(i - offset for i in unusable if i >= offset), 12,
+                 tuple(i - offset for i in highlight if i >= offset))
         elif self.state == "skills":
             menu(surface, (207, 128, 106, 83), list(self._skills()), self.sub_selected, 9, frame)
         elif self.state == "items":

@@ -1,0 +1,87 @@
+{
+  "id": "crystalgon",
+  "name": "Crystalgon",
+  "sprite": "CRYSTALGON",
+  "level": 15,
+  "rarity": "uncommon",
+  "element": "crystal",
+  "math_speciality": "geometry",
+  "weakness": [
+    "geometry",
+    "angles"
+  ],
+  "resistance": [
+    "physical",
+    "subtraction"
+  ],
+  "base_stats": {
+    "hp": 180,
+    "attack": 25,
+    "defence": 20,
+    "speed": 12
+  },
+  "question_topics": [
+    "geometry",
+    "angles",
+    "multiplication"
+  ],
+  "description": "A golem of perfect crystal facets. Every angle of its body is exact.",
+  "special_ability": "Prism Blast: focuses light through its core - interrupt it with geometry!",
+  "defence_style": "Crystal Shield with its own HP. Geometry and angle answers crack it.",
+  "color": [
+    170,
+    110,
+    255
+  ],
+  "behaviour": {
+    "aggression": 0.5,
+    "defend_below_hp": 0.6
+  },
+  "abilities": [
+    {
+      "id": "crystal_punch",
+      "name": "Crystal Punch",
+      "type": "attack",
+      "power": 1.0,
+      "description": "A heavy faceted fist."
+    },
+    {
+      "id": "prism_blast",
+      "name": "Prism Blast",
+      "type": "charge",
+      "power": 2.0,
+      "cooldown": 3,
+      "interrupt_topics": [
+        "geometry",
+        "angles"
+      ],
+      "warning": "Crystalgon focuses light into its core!",
+      "description": "A beam of focused light."
+    },
+    {
+      "id": "reform_shield",
+      "name": "Reform Shield",
+      "type": "defend",
+      "effect": "raise_shield",
+      "cooldown": 4,
+      "description": "Grows a new Crystal Shield."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "shield",
+      "name": "Crystal Shield",
+      "hp_ratio": 0.3,
+      "leak": 0.2,
+      "break_mult": 1.5,
+      "other_mult": 0.6,
+      "break_topics": [
+        "geometry",
+        "angles"
+      ],
+      "regen_on_wrong": 0.12,
+      "raise_cooldown": 3,
+      "stun_on_break": 1
+    }
+  ]
+}

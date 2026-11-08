@@ -16,6 +16,8 @@ from game.mathdex import MathDex
 from game.worldmap_screen import WorldMapScreen
 from game.puzzle_screen import PuzzleScreen
 from game.arena import ArenaScreen
+from game.monster_battle import MonsterBattleScreen
+from game.trials_screen import TrialsScreen
 from game.overworld import Overworld
 from game.player import Player
 from game import ui
@@ -54,6 +56,8 @@ class GameManager:
         self.puzzle = None
         self.puzzle_id = None
         self.arena = None
+        self.trials = None
+        self.monster_battle = None
         self.state = "menu"
         self.menu_selected = 0
         self.starter_selected = 0
@@ -147,6 +151,26 @@ class GameManager:
                 self.world.refresh_flags()
                 self._refresh_boss_gate()
                 self.world.set_message(summary or "Come back to the Arena any time!", 220)
+        elif self.state == "trials" and self.trials:
+            self.trials.handle_key(event.key)
+            if self.trials.closed:
+                challenge, self.trials = self.trials.challenge, None
+                if challenge:
+                    self.repository.save_player(self.player)
+                    self.monster_battle = MonsterBattleScreen(self.repository, self.player, challenge[0], challenge[1],
+                                                              self.rng, self.world.team)
+                    self.state = "mbattle"
+                else:
+                    self.state = "overworld"
+                    self.world.set_message("The Trials hall is open whenever you press T.", 150)
+        elif self.state == "mbattle" and self.monster_battle:
+            self.monster_battle.handle_key(event.key, event.unicode)
+            if self.monster_battle.closed:
+                self.monster_battle = None
+                self.saved_record = self.repository.load_player()
+                self.world.refresh_flags()  # team HP/EXP changed
+                self.trials = TrialsScreen(self.repository, self.player, self.world.team)
+                self.state = "trials"
         elif self.state == "puzzle" and self.puzzle:
             self.puzzle.handle_key(event.key, event.unicode)
             if self.puzzle.closed:
@@ -233,7 +257,8 @@ class GameManager:
     def _refresh_boss_gate(self):
         if self.world and self.player:
             profile = self.repository.get_learning_profile(self.player.player_id)
-            self.world.boss_ready = GameMasterAgent().boss_ready(profile, self.player.level)
+            level = self.world.team.max_level if self.world.team else self.player.level
+            self.world.boss_ready = GameMasterAgent().boss_ready(profile, level)
 
     def _overworld_key(self, event):
         if event.key == pygame.K_ESCAPE and not self.world.dialogue:
@@ -242,7 +267,12 @@ class GameManager:
             self.state, self.battle = "menu", None
             return
         if event.key == pygame.K_b and not self.world.dialogue:
-            self._start_battle(self._wild())
+            self._start_battle(self._wild(), self._wild_level())
+            return
+        if event.key == pygame.K_t and not self.world.dialogue:
+            self.repository.save_player(self.player)
+            self.trials = TrialsScreen(self.repository, self.player, self.world.team)
+            self.state = "trials"
             return
         if event.key == pygame.K_n and not self.world.dialogue:
             self.map_screen = WorldMapScreen(self.world)
@@ -270,7 +300,7 @@ class GameManager:
             # Trainers like Rex send out their own MATHMON; practice battles pick a local wild one.
             rival = WILD_BY_NAME.get(self.world.duel_spec or "")
             self.world.duel_spec = None
-            self._start_battle(rival or self._wild())
+            self._start_battle(rival or self._wild(), None if rival else self._wild_level())
             if rival:
                 self.battle.is_trainer = True
                 self.battle.feedback = f"Your rival sends out {rival.name}! Show what you've learned."
@@ -325,8 +355,14 @@ class GameManager:
         exp += puzzle.tier * 5
         if puzzle.revealed:
             exp, item = exp // 2, None  # the shrine helped: still progress, smaller reward
-        leveled = self.player.add_exp(exp)
-        self.repository.save_player(self.player)
+        team = self.world.team
+        member = team.leader() if team else self.player
+        leveled = member.add_exp(exp)
+        if team:
+            team.save(member)
+        else:
+            self.repository.save_player(self.player)
+        self.world.refresh_flags()
         if item:
             self.repository.add_item(self.player.player_id, item, 1)
         self.world.set_flag(f"shrine:{shrine_id}:{self.world.today}")
@@ -340,6 +376,10 @@ class GameManager:
         """A wild creature from the current area's habitat (meadow creatures outside tall-grass zones)."""
         return encounter_for(self.world.area_id if self.world else "meadow", self.rng)
 
+    def _wild_level(self):
+        from game.creatures import wild_level
+        return wild_level(self.world.area_id if self.world else "meadow", self.rng)
+
     @staticmethod
     def _held_direction():
         keys = pygame.key.get_pressed()
@@ -347,10 +387,11 @@ class GameManager:
         dy = (keys[pygame.K_DOWN] or keys[pygame.K_s]) - (keys[pygame.K_UP] or keys[pygame.K_w])
         return int(dx), int(dy)
 
-    def _start_battle(self, enemy=None):
+    def _start_battle(self, enemy=None, level=None):
         self._last_battle_boss = bool(enemy is not None and enemy.element == "BOSS")
         self.repository.save_player(self.player)
-        self.battle = Battle(self.player, self.repository, self.orchestrator, self.llm, enemy, self.rng)
+        self.battle = Battle(self.player, self.repository, self.orchestrator, self.llm, enemy, self.rng, level,
+                             self.world.team if self.world else None)
         self.state = "battle"
 
     def _update(self):
@@ -378,6 +419,10 @@ class GameManager:
             self.puzzle.update()
         if self.state == "arena" and self.arena:
             self.arena.update()
+        if self.state == "trials" and self.trials:
+            self.trials.update()
+        if self.state == "mbattle" and self.monster_battle:
+            self.monster_battle.update()
         if self.state == "overworld" and self.world:
             event = self.world.update(*self._held_direction())
             self.save_timer = getattr(self, "save_timer", 0) + 1
@@ -387,7 +432,8 @@ class GameManager:
             if event == "encounter":
                 # A roamer you touched brings its own species; a surprise from the grass picks one.
                 spec, self.world.encounter_spec = self.world.encounter_spec, None
-                self._start_battle(spec or self._wild())
+                level, self.world.encounter_level = self.world.encounter_level, None
+                self._start_battle(spec or self._wild(), level or self._wild_level())
         if self.state != self._last_state:
             # Starting a battle and leaving the title get a short fade-in from black.
             self.fade = self.FADE_FRAMES if self._last_state is not None else 0
@@ -425,6 +471,10 @@ class GameManager:
             self.puzzle.draw(self.canvas, self.frame)
         elif self.state == "arena" and self.arena:
             self.arena.draw(self.canvas, self.frame)
+        elif self.state == "trials" and self.trials:
+            self.trials.draw(self.canvas, self.frame)
+        elif self.state == "mbattle" and self.monster_battle:
+            self.monster_battle.draw(self.canvas, self.frame)
         elif self.state == "battle" and self.battle:
             self.battle.draw(self.canvas, self.frame)
         elif self.state == "profile":

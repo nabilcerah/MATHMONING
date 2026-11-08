@@ -66,11 +66,28 @@ class Database:
                     flag TEXT NOT NULL,
                     PRIMARY KEY(player_id, flag)
                 );
+                CREATE TABLE IF NOT EXISTS team_members (
+                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
+                    species TEXT NOT NULL, level INTEGER NOT NULL DEFAULT 1, exp INTEGER NOT NULL DEFAULT 0,
+                    hp INTEGER NOT NULL, max_hp INTEGER NOT NULL,
+                    PRIMARY KEY(player_id, species)
+                );
                 CREATE TABLE IF NOT EXISTS arena_stats (
                     player_id INTEGER PRIMARY KEY REFERENCES players(player_id) ON DELETE CASCADE,
                     rating INTEGER NOT NULL DEFAULT 1000, wins INTEGER NOT NULL DEFAULT 0,
                     losses INTEGER NOT NULL DEFAULT 0, streak INTEGER NOT NULL DEFAULT 0,
                     best_streak INTEGER NOT NULL DEFAULT 0
+                );
+                CREATE TABLE IF NOT EXISTS trainer_progress (
+                    player_id INTEGER PRIMARY KEY REFERENCES players(player_id) ON DELETE CASCADE,
+                    xp INTEGER NOT NULL DEFAULT 0, level INTEGER NOT NULL DEFAULT 1
+                );
+                CREATE TABLE IF NOT EXISTS monster_records (
+                    player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE CASCADE,
+                    monster_id TEXT NOT NULL, rank INTEGER NOT NULL DEFAULT 0,
+                    wins INTEGER NOT NULL DEFAULT 0, losses INTEGER NOT NULL DEFAULT 0,
+                    best_turns INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY(player_id, monster_id)
                 );
                 CREATE TABLE IF NOT EXISTS recommendations (
                     recommendation_id INTEGER PRIMARY KEY AUTOINCREMENT,

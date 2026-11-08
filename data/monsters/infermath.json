@@ -1,0 +1,75 @@
+{
+  "id": "infermath",
+  "name": "Infermath",
+  "sprite": "INFERMATH",
+  "level": 24,
+  "rarity": "rare",
+  "element": "fire",
+  "math_speciality": "algebra",
+  "weakness": [
+    "algebra",
+    "equations"
+  ],
+  "resistance": [
+    "addition"
+  ],
+  "base_stats": {
+    "hp": 230,
+    "attack": 30,
+    "defence": 18,
+    "speed": 15
+  },
+  "question_topics": [
+    "algebra",
+    "equations",
+    "negative_numbers"
+  ],
+  "description": "A lava dragon. Its fire is an equation that grows hotter every turn.",
+  "special_ability": "Inferno Equation: a charged firestorm. Solve for x to interrupt it.",
+  "defence_style": "No shield - its Heat climbs every round, so it wins long fights. Interrupting halves the Heat.",
+  "color": [
+    255,
+    120,
+    60
+  ],
+  "behaviour": {
+    "aggression": 0.7
+  },
+  "abilities": [
+    {
+      "id": "ember_claw",
+      "name": "Ember Claw",
+      "type": "attack",
+      "power": 1.0,
+      "description": "Burning claws."
+    },
+    {
+      "id": "inferno_equation",
+      "name": "Inferno Equation",
+      "type": "charge",
+      "power": 2.0,
+      "cooldown": 3,
+      "interrupt_topics": [
+        "algebra",
+        "equations"
+      ],
+      "warning": "Infermath's flames gather into a blazing equation!",
+      "description": "A firestorm charged over a turn."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "growth",
+      "name": "Heat",
+      "mode": "linear",
+      "step": 0.15,
+      "max_stacks": 6,
+      "applies_to": [
+        "ember_claw",
+        "inferno_equation"
+      ],
+      "reduce_on_correct": 0,
+      "halve_on_interrupt": true
+    }
+  ]
+}

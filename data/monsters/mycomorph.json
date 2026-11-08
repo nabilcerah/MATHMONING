@@ -1,0 +1,71 @@
+{
+  "id": "mycomorph",
+  "name": "Mycomorph",
+  "sprite": "MYCOMORPH",
+  "level": 12,
+  "rarity": "uncommon",
+  "element": "spore",
+  "math_speciality": "fractions",
+  "weakness": [
+    "fractions"
+  ],
+  "resistance": [
+    "multiplication"
+  ],
+  "base_stats": {
+    "hp": 150,
+    "attack": 17,
+    "defence": 12,
+    "speed": 9
+  },
+  "question_topics": [
+    "fractions",
+    "percentages",
+    "division"
+  ],
+  "description": "A spore-octopus that breaks itself into fractional pieces.",
+  "special_ability": "Spore Split: divides into fraction spores - only the right fraction finds the real one.",
+  "defence_style": "Hides inside its spores; reforms when they are all popped.",
+  "color": [
+    150,
+    230,
+    120
+  ],
+  "behaviour": {
+    "aggression": 0.5
+  },
+  "abilities": [
+    {
+      "id": "spore_cloud",
+      "name": "Spore Cloud",
+      "type": "attack",
+      "power": 1.0,
+      "description": "A puff of spores."
+    },
+    {
+      "id": "toxic_bloom",
+      "name": "Toxic Bloom",
+      "type": "charge",
+      "power": 1.8,
+      "cooldown": 4,
+      "min_tier": "uncommon",
+      "interrupt_topics": [
+        "fractions"
+      ],
+      "warning": "Mycomorph's head glows green - a toxic bloom is coming!",
+      "description": "A charged blast of spores."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "split",
+      "at_hp": 0.5,
+      "minions": 3,
+      "minion_hp_ratio": 0.08,
+      "minion_power": 0.3,
+      "recoil": 0.08,
+      "times": 1,
+      "extra_split_rank": 5
+    }
+  ]
+}

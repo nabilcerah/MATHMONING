@@ -41,11 +41,14 @@ STARTERS = {
 
 EVOLUTIONS = {
     "PYRON": CreatureSpec("PYRONYX", "FIRE", 48, 11, (255, 218, 105), (173, 63, 78), ("Solar Addition", "Multiplication Nova"),
-                          99, "addition", sprite="PYRON", size=1.18),
+                          99, "addition", sprite="PYRON", size=1.18,
+                          blurb="PYRON's evolved form. Its flame burns brighter with every correct answer."),
     "AQUABIT": CreatureSpec("AQUACREST", "WATER", 52, 10, (171, 241, 232), (45, 118, 167), ("Tidal Subtraction", "Division Surge"),
-                            99, "subtraction", sprite="AQUABIT", size=1.18),
+                            99, "subtraction", sprite="AQUABIT", size=1.18,
+                            blurb="AQUABIT's evolved form. Its shell shines with every problem it has solved."),
     "GEOMAX": CreatureSpec("GEOMAXIMUS", "EARTH", 57, 9, (229, 209, 139), (93, 123, 74), ("Subtraction Shield", "Multiplication Boulder"),
-                           99, "multiplication", sprite="GEOMAX", size=1.18),
+                           99, "multiplication", sprite="GEOMAX", size=1.18,
+                           blurb="GEOMAX's evolved form. A towering golem built from layers of practice."),
 }
 
 # Saves made before the new art used these starter ids.
@@ -119,6 +122,66 @@ def leader_spec(player, flags):
     if name in WILD_BY_NAME and f"dex_friend:{name}" in flags:
         return WILD_BY_NAME[name]
     return creature_spec(player.creature, player.level)
+
+
+# --------------------------------------------------------------------------- levels and nemeses
+# Wild level ranges per area: deeper and stranger places hold stronger MATHMON.
+WILD_LEVELS = {"meadow": (1, 4), "grove": (3, 6), "falls": (4, 7), "ridge": (5, 8),
+               "glimmer": (10, 13), "shardgrove": (11, 14), "starfall": (14, 16)}
+
+# Each lineage's nemesis: the species it is weak against. Evolved forms keep their base's nemesis.
+NEMESIS = {
+    "PYRON": "AQUABIT",      # water douses fire
+    "AQUABIT": "VOLTIX",     # sparks crackle through water
+    "VOLTIX": "GEOMAX",      # stone grounds electricity
+    "GEOMAX": "DIVOWL",      # roots split stone
+    "DIVOWL": "PYRON",       # fire scorches leaves
+    "FRACTELLA": "GEOMAX",   # stone shatters crystal
+    "CHRONOX": "FRACTELLA",  # crystal refracts time
+    "PRISMVOLT": "GEMELLA",  # the crystal triangle
+    "GEMELLA": "OPALOWL",
+    "OPALOWL": "PRISMVOLT",
+    "GRAPHION": "CHRONOX",   # space versus time
+    "NUMEREX": "GRAPHION",   # the secret comet is the Arithmetic Beast's undoing
+}
+STRONG_HIT, WEAK_HIT = 1.5, 0.6          # damage you deal when strong / weak
+STRONG_GUARD, WEAK_GUARD = 0.7, 1.4      # damage you take when strong / weak
+
+
+def lineage(spec_or_name):
+    """Evolved forms share their starter's identity: PYRONYX -> PYRON."""
+    name = getattr(spec_or_name, "name", spec_or_name)
+    for base, evolved in EVOLUTIONS.items():
+        if evolved.name == name:
+            return base
+    return canonical_name(name)
+
+
+def matchup(you, foe):
+    """'strong' if you are the foe's nemesis, 'weak' if the foe is yours, else 'neutral'."""
+    you, foe = lineage(you), lineage(foe)
+    if NEMESIS.get(foe) == you:
+        return "strong"
+    if NEMESIS.get(you) == foe:
+        return "weak"
+    return "neutral"
+
+
+def strong_against(name):
+    """Species whose nemesis is ``name`` (the ones it beats)."""
+    base = lineage(name)
+    return [species for species, nemesis in NEMESIS.items() if nemesis == base]
+
+
+def wild_level(area_id, rng):
+    low, high = WILD_LEVELS.get(area_id, (1, 3))
+    return rng.randint(low, high)
+
+
+def leveled_stats(spec, level):
+    """(max HP, attack) for a wild or team MATHMON at ``level``."""
+    level = max(1, int(level or 1))
+    return spec.hp + (level - 1) * 4, spec.attack + (level - 1) // 2
 
 
 def encounter_for(area_id, rng):

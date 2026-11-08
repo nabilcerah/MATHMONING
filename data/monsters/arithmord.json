@@ -1,0 +1,67 @@
+{
+  "id": "arithmord",
+  "name": "Arithmord",
+  "sprite": "ARITHMORD",
+  "level": 30,
+  "rarity": "rare",
+  "element": "chaos",
+  "math_speciality": "mixed_operations",
+  "weakness": [
+    "mixed_operations"
+  ],
+  "resistance": [
+    "addition"
+  ],
+  "base_stats": {
+    "hp": 270,
+    "attack": 32,
+    "defence": 22,
+    "speed": 16
+  },
+  "question_topics": [
+    "mixed_operations",
+    "multiplication",
+    "division"
+  ],
+  "description": "A tusked beast that fights with every operation at once.",
+  "special_ability": "Operation Combo: chains + - x / attacks into one expression - its value is the damage.",
+  "defence_style": "No shield. Predict its combos (order of operations!) to block them completely.",
+  "color": [
+    230,
+    80,
+    70
+  ],
+  "behaviour": {
+    "aggression": 0.7
+  },
+  "abilities": [
+    {
+      "id": "plus_slash",
+      "name": "Plus Slash",
+      "type": "attack",
+      "power": 0.9,
+      "description": "An adding slash."
+    },
+    {
+      "id": "times_crush",
+      "name": "Times Crush",
+      "type": "attack",
+      "power": 1.2,
+      "cooldown": 1,
+      "description": "A multiplying stomp."
+    },
+    {
+      "id": "operation_combo",
+      "name": "Operation Combo",
+      "type": "special",
+      "effect": "combo_expression",
+      "cooldown": 2,
+      "description": "A chain of operations - predict the value to block."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "operation_combo"
+    }
+  ]
+}

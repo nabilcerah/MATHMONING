@@ -1,0 +1,75 @@
+{
+  "id": "chronowl",
+  "name": "Chronowl",
+  "sprite": "CHRONOWL",
+  "level": 18,
+  "rarity": "uncommon",
+  "element": "time",
+  "math_speciality": "sequences",
+  "weakness": [
+    "sequences"
+  ],
+  "resistance": [
+    "subtraction"
+  ],
+  "base_stats": {
+    "hp": 175,
+    "attack": 24,
+    "defence": 15,
+    "speed": 20
+  },
+  "question_topics": [
+    "sequences",
+    "addition",
+    "multiplication"
+  ],
+  "description": "A solar owl that sees the next number of every pattern - including yours.",
+  "special_ability": "Time Lock: a sequence question with a generous time window for a Rewind Strike.",
+  "defence_style": "Predicts repeated attacks (same topic twice = half damage). Its own attacks follow a pattern.",
+  "color": [
+    255,
+    200,
+    90
+  ],
+  "behaviour": {
+    "aggression": 0.6
+  },
+  "abilities": [
+    {
+      "id": "talon_strike",
+      "name": "Talon Strike",
+      "type": "attack",
+      "power": 0.9,
+      "description": "Swift talons."
+    },
+    {
+      "id": "solar_flare",
+      "name": "Solar Flare",
+      "type": "attack",
+      "power": 1.5,
+      "cooldown": 1,
+      "description": "A burst of sunfire - the end of its pattern."
+    },
+    {
+      "id": "time_lock",
+      "name": "Time Lock",
+      "type": "special",
+      "effect": "time_lock",
+      "cooldown": 3,
+      "description": "Freezes time for a sequence challenge."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "timeline",
+      "pattern": [
+        "talon_strike",
+        "talon_strike",
+        "solar_flare"
+      ],
+      "time_topic": "sequences",
+      "rewind_mult": 1.5,
+      "foreseen_mult": 0.5
+    }
+  ]
+}

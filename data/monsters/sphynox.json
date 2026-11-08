@@ -1,0 +1,83 @@
+{
+  "id": "sphynox",
+  "name": "Sphynox",
+  "sprite": "SPHYNOX",
+  "level": 42,
+  "rarity": "epic",
+  "element": "spirit",
+  "math_speciality": "logic",
+  "weakness": [
+    "logic"
+  ],
+  "resistance": [
+    "sequences"
+  ],
+  "base_stats": {
+    "hp": 320,
+    "attack": 34,
+    "defence": 28,
+    "speed": 17
+  },
+  "question_topics": [
+    "logic",
+    "percentages",
+    "large_numbers"
+  ],
+  "description": "A nine-tailed spirit fox that guards its riddles behind barriers.",
+  "special_ability": "Puzzle Barrier: a wall of locks only logic puzzles can open.",
+  "defence_style": "Fully protected while the barrier stands. Solve puzzles to open every lock, then strike.",
+  "color": [
+    210,
+    230,
+    255
+  ],
+  "behaviour": {
+    "aggression": 0.5
+  },
+  "abilities": [
+    {
+      "id": "riddle_flash",
+      "name": "Riddle Flash",
+      "type": "attack",
+      "power": 1.0,
+      "description": "A flash of foxfire."
+    },
+    {
+      "id": "sphinx_counter",
+      "name": "Sphinx Counter",
+      "type": "counter",
+      "power": 1.1,
+      "cooldown": 1,
+      "description": "Punishes careless logic."
+    },
+    {
+      "id": "puzzle_barrier",
+      "name": "Puzzle Barrier",
+      "type": "defend",
+      "effect": "puzzle_barrier",
+      "cooldown": 3,
+      "description": "Raises a new barrier of locks."
+    },
+    {
+      "id": "nine_tail_nova",
+      "name": "Nine-Tail Nova",
+      "type": "charge",
+      "power": 2.0,
+      "cooldown": 4,
+      "min_tier": "epic",
+      "interrupt_topics": [
+        "logic"
+      ],
+      "warning": "All nine tails glow - reason your way out!",
+      "description": "A charged burst from all nine tails."
+    }
+  ],
+  "mechanics": [
+    {
+      "type": "barrier",
+      "locks": 2,
+      "raise_cooldown": 4,
+      "topic": "logic"
+    }
+  ]
+}

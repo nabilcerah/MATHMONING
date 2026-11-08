@@ -1,0 +1,80 @@
+{
+  "name": "CRYSTALGON",
+  "source": "CRYSTALGON.jpg",
+  "poses": [
+    {
+      "pose": "idle1",
+      "file": "0.png",
+      "dx": -63,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -61,
+      "dy": -96
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -74,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "3.png",
+      "dx": -64,
+      "dy": -104
+    },
+    {
+      "pose": "walk2",
+      "file": "4.png",
+      "dx": -60,
+      "dy": -105
+    },
+    {
+      "pose": "walk3",
+      "file": "5.png",
+      "dx": -68,
+      "dy": -104
+    },
+    {
+      "pose": "attack1",
+      "file": "6.png",
+      "dx": -69,
+      "dy": -99
+    },
+    {
+      "pose": "attack2",
+      "file": "7.png",
+      "dx": -46,
+      "dy": -97
+    },
+    {
+      "pose": "attack3",
+      "file": "8.png",
+      "dx": -80,
+      "dy": -98
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 127,
+  "layout": "rows",
+  "animations": {
+    "idle": [
+      0,
+      1,
+      2
+    ],
+    "walk": [
+      3,
+      4,
+      5
+    ],
+    "attack": [
+      6,
+      7,
+      8
+    ]
+  }
+}

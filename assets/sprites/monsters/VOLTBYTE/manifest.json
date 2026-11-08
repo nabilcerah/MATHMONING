@@ -1,0 +1,80 @@
+{
+  "name": "VOLTBYTE",
+  "source": "VOLTBYTE.jpg",
+  "poses": [
+    {
+      "pose": "idle1",
+      "file": "0.png",
+      "dx": -77,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -76,
+      "dy": -96
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -77,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "3.png",
+      "dx": -83,
+      "dy": -95
+    },
+    {
+      "pose": "walk2",
+      "file": "4.png",
+      "dx": -87,
+      "dy": -95
+    },
+    {
+      "pose": "walk3",
+      "file": "5.png",
+      "dx": -85,
+      "dy": -99
+    },
+    {
+      "pose": "attack1",
+      "file": "6.png",
+      "dx": -82,
+      "dy": -94
+    },
+    {
+      "pose": "attack2",
+      "file": "7.png",
+      "dx": -94,
+      "dy": -98
+    },
+    {
+      "pose": "attack3",
+      "file": "8.png",
+      "dx": -89,
+      "dy": -102
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 154,
+  "layout": "rows",
+  "animations": {
+    "idle": [
+      0,
+      1,
+      2
+    ],
+    "walk": [
+      3,
+      4,
+      5
+    ],
+    "attack": [
+      6,
+      7,
+      8
+    ]
+  }
+}

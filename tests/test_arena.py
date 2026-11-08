@@ -142,6 +142,13 @@ class ArenaMatchTests(unittest.TestCase):
         self.assertEqual(self.arena.state, "result")
         self.assertTrue(self.arena.result["forfeit"])
 
+    def test_lobby_updates_every_frame_before_any_match(self):
+        # The game calls update() every frame, even while you browse the ladder.
+        for frame in range(30):
+            self.arena.update()
+            self.arena.draw(self.surface, frame)
+        self.assertEqual(self.arena.state, "lobby")
+
     def test_every_screen_draws(self):
         self.arena.draw(self.surface, 0)
         for index in range(len(self.arena.rivals)):

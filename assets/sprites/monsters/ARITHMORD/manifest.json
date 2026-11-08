@@ -1,0 +1,80 @@
+{
+  "name": "ARITHMORD",
+  "source": "ARITHMORD.jpg",
+  "poses": [
+    {
+      "pose": "idle1",
+      "file": "0.png",
+      "dx": -49,
+      "dy": -96
+    },
+    {
+      "pose": "idle2",
+      "file": "1.png",
+      "dx": -49,
+      "dy": -96
+    },
+    {
+      "pose": "idle3",
+      "file": "2.png",
+      "dx": -51,
+      "dy": -99
+    },
+    {
+      "pose": "walk1",
+      "file": "3.png",
+      "dx": -51,
+      "dy": -97
+    },
+    {
+      "pose": "walk2",
+      "file": "4.png",
+      "dx": -58,
+      "dy": -97
+    },
+    {
+      "pose": "walk3",
+      "file": "5.png",
+      "dx": -58,
+      "dy": -97
+    },
+    {
+      "pose": "attack1",
+      "file": "6.png",
+      "dx": -67,
+      "dy": -80
+    },
+    {
+      "pose": "attack2",
+      "file": "7.png",
+      "dx": -83,
+      "dy": -95
+    },
+    {
+      "pose": "attack3",
+      "file": "8.png",
+      "dx": -75,
+      "dy": -89
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 99,
+  "layout": "rows",
+  "animations": {
+    "idle": [
+      0,
+      1,
+      2
+    ],
+    "walk": [
+      3,
+      4,
+      5
+    ],
+    "attack": [
+      6,
+      7,
+      8
+    ]
+  }
+}

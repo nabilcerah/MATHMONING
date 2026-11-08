@@ -4,3 +4,6 @@ __pycache__/
 .env
 saves/*.sqlite3
 saves/*.sqlite3-*
+build/
+
+.vercel

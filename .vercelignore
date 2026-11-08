@@ -1,0 +1,10 @@
+# Files Vercel doesn't need to build the web version (keeps uploads small and private).
+.venv/
+.env
+.env.*
+saves/
+build/
+tests/
+assets/monsterassets/
+assets/Characters/
+**/__pycache__/

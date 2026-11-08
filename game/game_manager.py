@@ -1,4 +1,5 @@
 """Pygame loop and top-level state transitions for MATHMON."""
+import asyncio
 import random
 import sys
 
@@ -7,7 +8,7 @@ import pygame
 from ai.game_master import GameMasterAgent
 from ai.llm_provider import LLMProvider
 from ai.orchestrator import AgentOrchestrator
-from config import FPS, PALETTE, TITLE, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, WINDOW_SCALE
+from config import DATABASE_PATH, FPS, PALETTE, TITLE, VIRTUAL_HEIGHT, VIRTUAL_WIDTH, WEB, WINDOW_SCALE
 from database.database import Database
 from database.player_repository import PlayerRepository
 from game.battle import Battle
@@ -20,7 +21,8 @@ from game.monster_battle import MonsterBattleScreen
 from game.trials_screen import TrialsScreen
 from game.overworld import Overworld
 from game.player import Player
-from game import ui
+from game import ui, web_storage
+from game.touch_controls import TouchControls
 from game.ui import menu, meter, panel, text, wrapped
 
 
@@ -34,8 +36,13 @@ class GameManager:
         pygame.init()
         pygame.display.set_caption(TITLE)
         self.fullscreen = False
-        self.window = pygame.display.set_mode((VIRTUAL_WIDTH * WINDOW_SCALE, VIRTUAL_HEIGHT * WINDOW_SCALE),
-                                              pygame.RESIZABLE)
+        if WEB:
+            # In the browser the canvas fills the page; the game letterboxes itself inside it.
+            self.window = pygame.display.set_mode(self._browser_size() or (1280, 720))
+        else:
+            self.window = pygame.display.set_mode((VIRTUAL_WIDTH * WINDOW_SCALE, VIRTUAL_HEIGHT * WINDOW_SCALE),
+                                                  pygame.RESIZABLE)
+        self.touch = TouchControls()
         self.canvas = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT))
         ui.set_text_layer(self.canvas)
         self.menu_hint = "A little practice can unlock a mighty adventure."
@@ -43,7 +50,10 @@ class GameManager:
         self.fade = 0
         self._last_state = None
         self.clock = pygame.time.Clock()
+        if WEB and database_path is None:
+            web_storage.restore(DATABASE_PATH)  # bring back the save kept in browser storage
         self.database = Database(database_path)
+        self.persister = web_storage.Persister(self.database.path)
         self.repository = PlayerRepository(self.database)
         self.orchestrator = AgentOrchestrator(self.repository)
         self.llm = LLMProvider()
@@ -72,14 +82,26 @@ class GameManager:
         pygame.key.set_repeat(220, 105)
 
     def run(self):
+        asyncio.run(self.run_async())
+
+    async def run_async(self):
+        """The game loop. It yields to the event loop every frame so it can run in a browser (pygbag)."""
         while self.running:
             self.frame += 1
             for event in pygame.event.get():
+                if self.touch.handle(event, self.window.get_size()):
+                    continue  # a touch on the on-screen controls; it posts the matching key event
                 self._handle_event(event)
+            self.touch.update()
+            if WEB and self.frame % 15 == 0:
+                self._fit_browser_window()
             self._update()
             self._draw()
             self._present()
+            if WEB and self.frame % 300 == 0:
+                self.persister.sync()
             self.clock.tick(FPS)
+            await asyncio.sleep(0)
         self._shutdown()
 
     def _handle_event(self, event):
@@ -381,11 +403,32 @@ class GameManager:
         return wild_level(self.world.area_id if self.world else "meadow", self.rng)
 
     @staticmethod
-    def _held_direction():
+    def _browser_size():
+        """The browser window in device pixels (capped so big screens stay fast)."""
+        try:
+            import platform
+            win = platform.window
+            css_w, css_h = int(win.innerWidth), int(win.innerHeight)
+            ratio = min(2.0, float(win.devicePixelRatio or 1))
+        except Exception:
+            return None
+        if css_w <= 0 or css_h <= 0:
+            return None
+        ratio = min(ratio, 1920 / max(css_w, css_h))
+        return max(1, int(css_w * ratio)), max(1, int(css_h * ratio))
+
+    def _fit_browser_window(self):
+        """Follow the browser window: rotate the phone or resize the tab and the game re-fits."""
+        size = self._browser_size()
+        if size and size != self.window.get_size():
+            self.window = pygame.display.set_mode(size)
+
+    def _held_direction(self):
         keys = pygame.key.get_pressed()
         dx = (keys[pygame.K_RIGHT] or keys[pygame.K_d]) - (keys[pygame.K_LEFT] or keys[pygame.K_a])
         dy = (keys[pygame.K_DOWN] or keys[pygame.K_s]) - (keys[pygame.K_UP] or keys[pygame.K_w])
-        return int(dx), int(dy)
+        touch = self.touch.held_direction() if hasattr(self, "touch") else (0, 0)
+        return max(-1, min(1, int(dx) + touch[0])), max(-1, min(1, int(dy) + touch[1]))
 
     def _start_battle(self, enemy=None, level=None):
         self._last_battle_boss = bool(enemy is not None and enemy.element == "BOSS")
@@ -434,6 +477,8 @@ class GameManager:
                 spec, self.world.encounter_spec = self.world.encounter_spec, None
                 level, self.world.encounter_level = self.world.encounter_level, None
                 self._start_battle(spec or self._wild(), level or self._wild_level())
+        if self.state != self._last_state and WEB:
+            self.persister.sync()  # changing screens is a good moment to keep the browser save fresh
         if self.state != self._last_state:
             # Starting a battle and leaving the title get a short fade-in from black.
             self.fade = self.FADE_FRAMES if self._last_state is not None else 0
@@ -652,6 +697,9 @@ class GameManager:
         scale = max(scale, 0.25)
         size = (int(VIRTUAL_WIDTH * scale), int(VIRTUAL_HEIGHT * scale))
         offset = ((win_w - size[0]) // 2, (win_h - size[1]) // 2)
+        if self.touch.enabled and win_h > win_w:
+            # Portrait phone: game at the top (under the shortcut row), controls underneath.
+            offset = (offset[0], min(offset[1], self.touch.top_reserved(win_w, win_h)))
         if offset != (0, 0):
             self.window.fill((0, 0, 0))
         self.window.blit(pygame.transform.scale(self.canvas, size), offset)
@@ -662,6 +710,7 @@ class GameManager:
             shade = pygame.Surface(size)
             shade.set_alpha(int(255 * self.fade / self.FADE_FRAMES))
             self.window.blit(shade, offset)
+        self.touch.draw(self.window, self.state)
         pygame.display.flip()
 
     def _draw_scanlines(self, size, offset):
@@ -677,5 +726,8 @@ class GameManager:
         if self.player:
             self.repository.save_player(self.player)
         self.llm.close()
+        if WEB:
+            self.persister.sync()  # a browser tab has nothing to exit to; just keep the save
+            return
         pygame.quit()
         sys.exit(0)

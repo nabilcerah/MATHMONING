@@ -1,27 +1,47 @@
 """Optional asynchronous Anthropic provider with offline-safe fallback."""
 import os
 import re
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future
 
-from dotenv import load_dotenv
-from config import ROOT
+from config import ROOT, WEB
+
+
+def _done(value):
+    """An already-finished future: no thread needed (the browser build has no threads)."""
+    future = Future()
+    future.set_result(value)
+    return future
 
 
 class LLMProvider:
     def __init__(self):
-        load_dotenv(ROOT / ".env")
+        self._executor = None
+        if WEB:
+            # Never ship an API key inside a public web page; the offline tutor is used instead.
+            self.api_key, self.model = "", ""
+            return
+        try:
+            from dotenv import load_dotenv
+            load_dotenv(ROOT / ".env")
+        except ImportError:
+            pass
         self.api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
         self.model = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
-        self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="mathmon-tutor")
 
     @property
     def available(self):
         return bool(self.api_key)
 
+    @property
+    def executor(self):
+        if self._executor is None:
+            from concurrent.futures import ThreadPoolExecutor
+            self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="mathmon-tutor")
+        return self._executor
+
     def explain_async(self, question, submitted, offline_fallback):
         if not self.available:
-            future = self.executor.submit(lambda: offline_fallback)
-            return future
+            return _done(offline_fallback)
         return self.executor.submit(self._request, question, submitted, offline_fallback)
 
     def _request(self, question, submitted, fallback):
@@ -45,7 +65,7 @@ class LLMProvider:
         Resolves to a list of short steps; falls back to ``offline_steps`` without a key or on error.
         """
         if not self.available:
-            return self.executor.submit(lambda: offline_steps)
+            return _done(offline_steps)
         return self.executor.submit(self._solve, question, offline_steps)
 
     def _solve(self, question, fallback):
@@ -72,4 +92,5 @@ class LLMProvider:
             return fallback
 
     def close(self):
-        self.executor.shutdown(wait=False, cancel_futures=True)
+        if self._executor is not None:
+            self._executor.shutdown(wait=False, cancel_futures=True)

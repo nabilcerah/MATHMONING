@@ -4,6 +4,9 @@ from pathlib import Path
 import sys
 
 FROZEN = getattr(sys, "frozen", False)
+# True when running in a web browser (pygbag / WebAssembly). Saves then live in browser storage,
+# the AI mentor's network calls are off, and touch controls are available.
+WEB = sys.platform == "emscripten"
 
 
 def resolve_paths(frozen, executable, source_file, local_data=None):

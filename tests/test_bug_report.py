@@ -521,3 +521,77 @@ class SoundSettingsTests(GameCase):
         game._draw_settings()
         game._settings_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE, unicode="", mod=0))
         self.assertEqual(game.state, "menu")
+
+
+class SaveProfileTests(unittest.TestCase):
+    """3:07 report: one player can keep several save profiles; a new one never deletes the old ones."""
+
+    def setUp(self):
+        from game.game_manager import GameManager
+        self.folder = tempfile.TemporaryDirectory()
+        self.path = self.folder.name + "/profiles.sqlite3"
+        self.game = GameManager(database_path=self.path)
+
+    def tearDown(self):
+        self.game.llm.close()
+        self.folder.cleanup()
+
+    def new_profile(self, name, starter=0):
+        game = self.game
+        game.player_name, game.starter_selected = name, starter
+        game._create_new_player()
+        finish_story(game)
+        return game.player.player_id
+
+    def test_new_profiles_keep_the_old_ones_and_continue_lets_you_choose(self):
+        from states.profile_select_state import ProfileScreen
+        game = self.game
+        first = self.new_profile("Ana", 0)
+        game.repository.add_coins(first, 123)
+        game.save_all()
+        second = self.new_profile("Ben", 2)
+        names = [p["name"] for p in game.repository.list_profiles()]
+        self.assertEqual(set(names), {"Ana", "Ben"})             # Ana's journey was not deleted
+        self.assertEqual(game.repository.coins(first), game.repository.coins(second) + 123)
+        # Back on the title screen: CONTINUE opens the profile list.
+        game.state = "menu"
+        game.menu_selected = game.MENU_CHOICES.index("CONTINUE")
+        game._menu_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="\r", mod=0))
+        screen = game.states.overlay
+        self.assertIsInstance(screen, ProfileScreen)
+        screen.draw(pygame.Surface((320, 240)), 1)
+        screen.selected = next(i for i, p in enumerate(screen.profiles) if p["name"] == "Ana")
+        screen.handle_key(pygame.K_RETURN)
+        game.states._pop_closed()
+        self.assertEqual(game.player.player_id, first)
+        self.assertEqual(game.player.name, "Ana")
+        self.assertEqual(game.repository.load_player().name, "Ana")   # now the most recently played
+
+    def test_deleting_a_profile_needs_two_presses_and_removes_only_that_one(self):
+        from states.profile_select_state import ProfileScreen
+        game = self.game
+        keep = self.new_profile("Keep")
+        gone = self.new_profile("Gone")
+        screen = ProfileScreen(game)
+        screen.selected = next(i for i, p in enumerate(screen.profiles) if p["player_id"] == gone)
+        screen.handle_key(pygame.K_x)
+        self.assertEqual(len(game.repository.list_profiles()), 2)    # first press only asks
+        self.assertIn("again", screen.notice)
+        screen.handle_key(pygame.K_x)
+        self.assertEqual([p["player_id"] for p in game.repository.list_profiles()], [keep])
+        self.assertEqual(game.repository.load_party(gone).party, [])
+        self.assertTrue(game.repository.load_party(keep).party)
+
+    def test_there_is_a_limit_of_six_profiles(self):
+        from states.profile_select_state import MAX_PROFILES, ProfileScreen
+        game = self.game
+        for i in range(MAX_PROFILES):
+            self.new_profile(f"P{i}")
+        game.state = "menu"
+        game.menu_selected = game.MENU_CHOICES.index("NEW GAME")
+        game._menu_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="\r", mod=0))
+        self.assertEqual(game.state, "menu")
+        self.assertIn("delete", game.menu_hint)
+        screen = ProfileScreen(game)
+        screen.handle_key(pygame.K_n)
+        self.assertFalse(screen.closed)

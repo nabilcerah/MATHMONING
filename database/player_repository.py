@@ -14,6 +14,10 @@ from monsters.monster_party import MonsterParty
 GDD_VERSION = 1
 
 
+# "Last played" with milliseconds, so profiles saved in the same second still sort correctly.
+NOW = "strftime('%Y-%m-%d %H:%M:%f', 'now')"
+
+
 class PlayerRepository:
     def __init__(self, database):
         self.database = database
@@ -30,12 +34,11 @@ class PlayerRepository:
                             row["current_region"] if "current_region" in keys else "number_forest")
 
     def create_player(self, name, creature, max_hp=None, starter_level=1):
-        """A brand-new trainer with ``creature`` as their starter (one save slot, as before)."""
+        """A brand-new trainer (a new save PROFILE) with ``creature`` as their starter. Older profiles are kept."""
         species_id = canonical_species(creature)
         starter = monster_factory.create(species_id, starter_level)
         cfg = rules()
         with self.database.connect() as db:
-            db.execute("DELETE FROM players")
             cursor = db.execute("""INSERT INTO players(name, creature, level, hp, max_hp, currency, gdd_version)
                                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
                                 (name.strip()[:24] or "Rookie", species_id, starter.level, starter.hp,
@@ -49,15 +52,51 @@ class PlayerRepository:
             self._bump_capture(db, player_id, species_id, captured=1, seen=1)
         return player_id
 
-    def load_player(self):
+    def load_player(self, player_id=None):
+        """A profile by id, or the most recently played one."""
         with self.database.connect() as db:
-            return self._record(db.execute("SELECT * FROM players ORDER BY player_id DESC LIMIT 1").fetchone())
+            if player_id is not None:
+                row = db.execute("SELECT * FROM players WHERE player_id=?", (player_id,)).fetchone()
+            else:
+                row = db.execute("SELECT * FROM players ORDER BY updated_at DESC, player_id DESC LIMIT 1").fetchone()
+            return self._record(row)
+
+    # ================================================================== save profiles
+    def list_profiles(self):
+        """Every save profile, most recently played first: id, name, starter, level, world, last played."""
+        with self.database.connect() as db:
+            rows = db.execute("SELECT * FROM players ORDER BY updated_at DESC, player_id DESC").fetchall()
+            out = []
+            for row in rows:
+                lead = db.execute("""SELECT m.species_id, m.level FROM party p JOIN monsters m
+                                     ON m.monster_instance_id = p.monster_instance_id
+                                     WHERE p.player_id=? ORDER BY p.party_position LIMIT 1""",
+                                  (row["player_id"],)).fetchone()
+                out.append({"player_id": row["player_id"], "name": row["name"], "creature": row["creature"],
+                            "level": lead["level"] if lead else row["level"],
+                            "lead": lead["species_id"] if lead else row["creature"],
+                            "world": row["world"], "updated_at": row["updated_at"]})
+            return out
+
+    def touch_player(self, player_id):
+        """Mark a profile as just played (it moves to the top of the list)."""
+        with self.database.connect() as db:
+            db.execute(f"UPDATE players SET updated_at={NOW} WHERE player_id=?", (player_id,))
+
+    def delete_profile(self, player_id):
+        """Remove one profile and everything that belongs to it (every table is keyed by player_id)."""
+        with self.database.connect() as db:
+            tables = [row["name"] for row in db.execute("SELECT name, sql FROM sqlite_master WHERE type='table'")
+                      if row["sql"] and "player_id" in row["sql"] and row["name"] != "players"]
+            for table in tables:
+                db.execute(f"DELETE FROM {table} WHERE player_id=?", (player_id,))
+            db.execute("DELETE FROM players WHERE player_id=?", (player_id,))
 
     def save_player(self, player):
         """Position, map and the lead monster's summary (shown on the title screen)."""
         with self.database.connect() as db:
-            db.execute("""UPDATE players SET level=?, hp=?, max_hp=?, exp=?, x=?, y=?, world=?,
-                         updated_at=CURRENT_TIMESTAMP WHERE player_id=?""",
+            db.execute(f"""UPDATE players SET level=?, hp=?, max_hp=?, exp=?, x=?, y=?, world=?,
+                         updated_at={NOW} WHERE player_id=?""",
                        (player.level, player.hp, player.max_hp, player.exp, player.x, player.y,
                         getattr(player, "world", "number_forest"), player.player_id))
 

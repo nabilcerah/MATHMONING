@@ -14,6 +14,7 @@
   },
   "focus": {"max": 3, "gain_on_correct_normal": 1, "start": 0},
   "shield": {"incoming_multiplier": 0.5},
+  "heal_guard": {"incoming_multiplier": 0.5},
   "debuff": {"attack_multiplier": 0.8},
   "escape": {"base": 50, "per_speed": 3, "min": 20, "max": 90},
   "capture": {"base": 20, "hp_weight": 50, "knowledge_bonus": 15, "min": 5, "max": 90, "menu_at_hp": 0.5},

@@ -172,18 +172,22 @@ def key_out(image, box=None, tolerance=40):
 
 def exteriors():
     mcr = key_out(Image.open(BG / "Mathmon Recovery Center (MCR).jpeg"))
-    small = mcr.resize((64, round(64 * mcr.height / mcr.width)), Image.LANCZOS)
-    # At 64 px the roof's red cross blurs into a red-and-white disc (it read like a ball logo):
-    # repaint it as a crisp first-aid cross - a white tile with a thick red plus.
+    # 64 x 48: as tall as the Mathmart, so it fills its 3 x 3 plot (at its natural 64 x 34 the top tile of
+    # the plot was an invisible wall over bare grass, and the building looked smaller than its neighbours).
+    small = mcr.resize((64, 48), Image.LANCZOS)
+    # At this size the roof's red cross blurs into a red-and-white disc (it read like a ball logo):
+    # repaint it as a crisp first-aid cross - a white tile with a thick red plus. The emblem sits in the
+    # white gable under the roof peak, at about (49%, 28%) of the building.
     px = small.load()
-    for y in range(5, 13):
-        for x in range(28, 36):
+    cx, cy = round(small.width * 0.49), round(small.height * 0.28)
+    for y in range(cy - 4, cy + 4):
+        for x in range(cx - 4, cx + 4):
             px[x, y] = (250, 250, 250, 255)
-    for y in range(6, 12):
-        for x in range(31, 33):
+    for y in range(cy - 3, cy + 3):
+        for x in range(cx - 1, cx + 1):
             px[x, y] = (214, 48, 49, 255)
-    for y in range(8, 10):
-        for x in range(29, 35):
+    for y in range(cy - 1, cy + 1):
+        for x in range(cx - 3, cx + 3):
             px[x, y] = (214, 48, 49, 255)
     small.save(BG / "recovery_center_exterior.png")
     mart = key_out(Image.open(BG / "Mathmart.jpeg"), box=(28, 28, 316, 318), tolerance=30)

@@ -247,11 +247,15 @@ class GameManager:
         elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
             choice = self.MENU_CHOICES[self.menu_selected]
             if choice == "NEW GAME":
-                self.state = "confirm_new" if self.saved_record else "name"
-                self.player_name = ""
+                # A new save PROFILE: older journeys are kept (3:07 report).
+                from states.profile_select_state import MAX_PROFILES
+                if len(self.repository.list_profiles()) >= MAX_PROFILES:
+                    self.menu_hint = f"{MAX_PROFILES} profiles already. Open CONTINUE and delete one (X)."
+                else:
+                    self.state, self.player_name = "name", ""
             elif choice == "CONTINUE":
                 if self.saved_record:
-                    self._continue_game()
+                    self.open_profiles()
                 else:
                     self.menu_hint = "No saved journey yet. Choose NEW GAME to begin."
             elif choice == "SETTINGS":
@@ -324,17 +328,35 @@ class GameManager:
         for flag in self.opening_flags | {"game:started"}:
             self.repository.set_world_flag(player_id, flag)
         self.opening_flags = set()
-        record = self.repository.load_player()
+        self.repository.touch_player(player_id)
+        record = self.repository.load_player(player_id)     # this new profile (older ones are kept)
         self._load(record)
         self.quests.start_auto_quests()
         self._enter_world()
         self.world.set_message(f"{STARTERS[species_id].name} joins your journey!", 200)
 
-    def _continue_game(self):
-        record = self.repository.load_player()
+    def open_profiles(self):
+        """CONTINUE: choose which save profile to play (or start / delete one)."""
+        from states.profile_select_state import ProfileScreen
+        self.states.push(ProfileScreen(self), self._profile_chosen)
+
+    def _profile_chosen(self, screen):
+        self.saved_record = self.repository.load_player()
+        choice = screen.result
+        if not choice:
+            return
+        action, player_id = choice
+        if action == "new":
+            self.state, self.player_name = "name", ""
+        else:
+            self._continue_game(player_id)
+
+    def _continue_game(self, player_id=None):
+        record = self.repository.load_player(player_id)
         if not record:
             self.player_name, self.state = "", "name"
             return
+        self.repository.touch_player(record.player_id)      # it is now the most recently played profile
         self._load(record)
         self.quests.start_auto_quests()
         self._enter_world()
@@ -1031,7 +1053,7 @@ class GameManager:
         choices = list(self.MENU_CHOICES)
         disabled = ()
         if self.saved_record:
-            choices[1] = f"CONTINUE  ({self.saved_record.name[:8]}, Lv {self.saved_record.level})"
+            choices[1] = f"CONTINUE  ({self.saved_record.name[:8]}...)"
         else:
             disabled = (1,)
         menu(self.canvas, (29, 113, 136, 70), choices, self.menu_selected, 10, self.frame, disabled)

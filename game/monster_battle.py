@@ -288,7 +288,8 @@ class MonsterBattleScreen:
                 healed = engine.heal_player(round(engine.player.max_hp * POTION_HEAL))
                 self._popup(f"+{healed}", PLAYER_AT[0], PLAYER_AT[1] - 48, PALETTE["mint"])
                 engine.log.append(("item", f"A Math Potion restores {healed} HP."))
-                self.message = f"A Math Potion restores {healed} HP. {engine.name} takes its turn..."
+                self.message = (f"A Math Potion restores {healed} HP and you brace yourself - {engine.name}'s next "
+                                "hit is halved!")
                 self._monster_turn()
         elif action == "LOG":
             self.show_log = True

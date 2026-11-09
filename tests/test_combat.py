@@ -249,3 +249,65 @@ class MathmartItemTests(unittest.TestCase):
         self.assertEqual(c.inventory.count("Advanced Mathball"), 0)
         roll = next(e for e in c.log if e["kind"] == "capture_roll")
         self.assertEqual(roll["chance"], capture_manager.capture_chance(1 / c.enemy.max_hp, True, 15))
+
+
+class HealGuardTests(unittest.TestCase):
+    """3:07 report: healing in battle reduces the enemy's next attack."""
+
+    def enemy_hit(self, guarded, seed):
+        import random as _random
+        from combat.battle_manager import BattleManager, DictInventory
+        from monsters.monster_factory import create as _create
+        from monsters.monster_party import MonsterParty
+        battle = BattleManager(MonsterParty([_create("FRACTELLA", 8)]), _create("GEOMAX", 8), "wild", None,
+                               DictInventory({"Math Potion": 2}), _random.Random(seed))
+        battle.active.hp = battle.active.max_hp // 2
+        if guarded:
+            battle.use_item("Math Potion")
+        else:
+            battle.awaiting = "enemy"
+        before = battle.active.hp
+        events = battle.enemy_turn()
+        attack = next((e for e in events if e.get("kind") == "attack"), None)
+        return (before - battle.active.hp) if attack else None, events
+
+    def test_a_potion_halves_the_next_enemy_hit(self):
+        for seed in range(20):
+            plain, _ = self.enemy_hit(False, seed)
+            braced, events = self.enemy_hit(True, seed)
+            if plain and braced is not None:
+                self.assertLessEqual(braced, plain // 2 + 1)
+                self.assertTrue(any("braced" in e.get("text", "") for e in events))
+                return
+        self.fail("the enemy never attacked")
+
+    def test_the_brace_lasts_one_hit(self):
+        from combat.battle_manager import BattleManager, DictInventory
+        from monsters.monster_factory import create as _create
+        from monsters.monster_party import MonsterParty
+        battle = BattleManager(MonsterParty([_create("FRACTELLA", 8)]), _create("GEOMAX", 8), "wild", None,
+                               DictInventory({"Math Potion": 1}), random.Random(3))
+        battle.active.hp = 10
+        events = battle.use_item("Math Potion")
+        self.assertTrue(battle.heal_guard)
+        self.assertIn("braces", events[0]["text"])
+
+
+class TrialHealGuardTests(unittest.TestCase):
+    def test_a_math_potion_halves_the_monsters_next_hit(self):
+        from battle_engine.engine import BattleEngine, PlayerCombatant
+        def hit(guarded):
+            player = PlayerCombatant.from_level("Hero", 14, 400, 400, trainer_level=10)
+            engine = BattleEngine("voltbyte", 14, player, random.Random(5))
+            engine.begin()
+            engine.stats.crit_chance = 0
+            engine.player.hp = 200
+            if guarded:
+                engine.heal_player(10)
+            before = engine.player.hp
+            events = engine.monster_attack(None, 20)
+            return before - engine.player.hp, events
+        plain, _ = hit(False)
+        braced, events = hit(True)
+        self.assertLessEqual(braced, plain // 2 + 1)
+        self.assertIn("braced", events[0].text)

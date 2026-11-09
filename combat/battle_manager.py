@@ -62,6 +62,7 @@ class BattleManager:
         self.attack_boost = self.defence_boost = 1.0    # Mathmart boosts, for the rest of this battle
         self.capture_item = None
         self.enemy_slowed = 1.0
+        self.heal_guard = False    # healing makes your monster brace: the next enemy hit is softened
         self.topic_streaks = {}    # id(monster) -> correct answers in its passive topic this battle
         self.rhythm = 0            # consecutive first-try answers (CHRONOX passive)
         self.rewards = {"exp": [], "coins": 0, "captured": None, "placed": None}
@@ -268,6 +269,10 @@ class BattleManager:
             extra *= rules()["shield"]["incoming_multiplier"]
             self.player_shield = False
             notes.append("Your shield halved it.")
+        if self.heal_guard:
+            extra *= rules()["heal_guard"]["incoming_multiplier"]
+            self.heal_guard = False
+            notes.append(f"{target.name} braced while healing - damage halved!")
         result = damage_calculator.calculate(move.power, self.enemy.attack, target.defence, 1.0, 50, element, extra)
         target.hp = max(0, target.hp - result.amount)
         verdict = elemental_system.message(move.element, target.element)
@@ -326,10 +331,13 @@ class BattleManager:
         effect = info["effect"]
         if effect == "heal":
             healed = target.heal(round(target.max_hp * info["amount"]))
-            event = self._event("item", f"{item}: {target.name} recovered {healed} HP.", item=item, amount=healed)
+            self.heal_guard = True
+            event = self._event("item", f"{item}: {target.name} recovered {healed} HP and braces itself - the next "
+                                        "enemy attack is halved!", item=item, amount=healed)
         elif effect == "revive":
             target.revive(info["amount"])
-            event = self._event("item", f"{item}: {target.name} is back on its feet!", item=item)
+            self.heal_guard = True
+            event = self._event("item", f"{item}: {target.name} is back on its feet and braces itself!", item=item)
         elif effect == "boost_attack":
             self.attack_boost = float(info["amount"])
             event = self._event("item", f"{item}: your monsters hit {round((self.attack_boost - 1) * 100)}% harder "

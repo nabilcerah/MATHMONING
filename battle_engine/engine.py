@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from battle_engine import mechanics as mechanic_registry
 from battle_engine.balance import BALANCE
 from battle_engine.damage import Hit, MonsterHit, resolve_monster_hit, resolve_player_hit
+
+HEAL_GUARD = 0.5    # after a potion the monster's next hit deals half damage (3:07 report)
 from battle_engine.events import AnswerResult, Event, QuestionRequest
 from battle_engine.monster_ai import AIState, Decision, MonsterAI
 from battle_engine.monster_data import MonsterDef, build_stats, get, tier_allows
@@ -85,6 +87,7 @@ class BattleEngine:
         self.cooldowns = {ability.id: 0 for ability in self.defn.abilities}
         self.stunned = 0
         self.guard = 0
+        self.player_guard = False   # set by a potion: the monster's next hit on you is halved
         self.pending = None
         self.outcome = None
         self.combo = 0
@@ -388,6 +391,7 @@ class BattleEngine:
     def heal_player(self, amount):
         healed = min(amount, self.player.max_hp - self.player.hp)
         self.player.hp += healed
+        self.player_guard = True        # healing = bracing: the next monster hit is halved
         return healed
 
     # ================================================================== monster turn
@@ -484,8 +488,13 @@ class BattleEngine:
             if mechanic.active:
                 mechanic.modify_monster_hit(hit, ability)
         resolve_monster_hit(hit, self.player.max_hp, settings, self.balance["crit"]["multiplier"])
+        braced = ""
+        if self.player_guard and hit.amount:
+            hit.amount = max(1, round(hit.amount * HEAL_GUARD))
+            self.player_guard = False
+            braced = " You braced while healing: damage halved!"
         self.player.hp = max(0, self.player.hp - hit.amount)
-        bonus = "".join(f" {label_} x{value:.2f}." for label_, value in hit.extras if abs(value - 1) > 0.01)
+        bonus = "".join(f" {label_} x{value:.2f}." for label_, value in hit.extras if abs(value - 1) > 0.01) + braced
         crit = " Critical!" if hit.critical else ""
         name = label or (ability.name if ability else "attack")
         return [Event("monster_hit", f"{self.name} uses {name}: {hit.amount} damage.{crit}{bonus}",

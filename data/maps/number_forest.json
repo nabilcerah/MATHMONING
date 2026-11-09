@@ -1007,6 +1007,20 @@
    "door": true,
    "text": [
     "The Recovery Center doors whoosh open."
+   ],
+   "solid": [
+    [
+     16,
+     62
+    ],
+    [
+     16,
+     63
+    ],
+    [
+     16,
+     64
+    ]
    ]
   },
   {
@@ -1539,7 +1553,7 @@
     3,
     3
    ],
-   "_note": "the blue house becomes the MCR (clear_with paints grass over the old house first)",
+   "_note": "the blue house becomes the MCR: 64 x 48 px, as tall as the Mathmart (clear_with paints grass over the old house first; the door's 'solid' cells cover the building's right edge)",
    "clear_with": [
     18,
     66

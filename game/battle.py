@@ -17,6 +17,7 @@ from game.ui import menu, meter, panel, text, wrapped
 from mathematics import curriculum
 from monsters import elemental_system
 from monsters.monster_data import items as item_data
+from monsters.monster_data import rules
 
 ACTIONS = ("FIGHT", "MONSTER", "BAG", "RUN")
 from monsters.monster_data import items as _item_data
@@ -61,6 +62,8 @@ class BattleScreen:
         self.sub_selected = 0
         self.panel = None              # QuestionPanel while a question is open
         self.panel_kind = None         # "move" or "capture"
+        self.bag_filter = None         # "capture" when CAPTURE opened the bag on the Mathballs
+        self.capture_told = False      # the "it's weak, CAPTURE it!" tip shows once per battle
         self.pending_item = None
         self.answers = []
         self.closed = False
@@ -98,7 +101,28 @@ class BattleScreen:
         return self.active.moves()
 
     def battle_items(self):
-        return [item for item in BATTLE_ITEMS if self.bag.count(item) > 0]
+        items = [item for item in BATTLE_ITEMS if self.bag.count(item) > 0]
+        if getattr(self, "bag_filter", None) == "capture":
+            items = [item for item in items if item_data()[item]["effect"] == "capture"]
+        return items
+
+    # ------------------------------------------------------------------ the action menu
+    def menu_spacing(self):
+        return 12 if len(self.actions()) > 4 else 14
+
+    def menu_rect(self):
+        # Five actions (CAPTURE shown): a slimmer FOCUS bar above makes room for the extra row.
+        return (207, 146, 106, 68) if len(self.actions()) > 4 else MENU_RECT
+
+    def capture_offered(self):
+        """A weakened wild MathMon shows CAPTURE right in the menu, so players know they can catch it."""
+        enemy = self.enemy
+        if self.battle.kind != "wild" or enemy.spec.boss or enemy.fainted:
+            return False
+        return enemy.hp <= enemy.max_hp * float(rules()["capture"].get("menu_at_hp", 0.5))
+
+    def actions(self):
+        return ACTIONS[:3] + ("CAPTURE",) + ACTIONS[3:] if self.capture_offered() else ACTIONS
 
     # ================================================================== event queue
     def _queue(self, events):
@@ -175,6 +199,10 @@ class BattleScreen:
         else:
             self.state = "menu"
             self.message = f"What will {self.active.name} do?"
+            if self.capture_offered() and not self.capture_told:
+                self.capture_told = True
+                self.message = f"{self.enemy.name} is weak! Choose CAPTURE to try to catch it!"
+                self.selected = self.actions().index("CAPTURE")
 
     def _report_battle(self):
         try:
@@ -236,22 +264,36 @@ class BattleScreen:
             self._list_key(key, confirm)
 
     def _menu_key(self, key, confirm):
+        actions = self.actions()
+        self.selected = min(self.selected, len(actions) - 1)
         if key in (pygame.K_UP, pygame.K_w, pygame.K_LEFT, pygame.K_a):
-            self.selected = (self.selected - 1) % len(ACTIONS)
+            self.selected = (self.selected - 1) % len(actions)
         elif key in (pygame.K_DOWN, pygame.K_s, pygame.K_RIGHT, pygame.K_d):
-            self.selected = (self.selected + 1) % len(ACTIONS)
-        elif pygame.K_1 <= key <= pygame.K_4:
+            self.selected = (self.selected + 1) % len(actions)
+        elif pygame.K_1 <= key <= pygame.K_1 + len(actions) - 1:
             self.selected = key - pygame.K_1
-            self.choose_action(ACTIONS[self.selected])
+            self.choose_action(actions[self.selected])
         elif confirm:
-            self.choose_action(ACTIONS[self.selected])
+            self.choose_action(actions[self.selected])
 
     def choose_action(self, action):
         if action == "FIGHT":
             self.state, self.sub_selected = "moves", 0
         elif action == "MONSTER":
             self.state, self.sub_selected = "party", 0
+        elif action == "CAPTURE":
+            reason = self.battle.capture_block_reason()
+            if reason:
+                self.message = reason
+                return
+            balls = [item for item in BATTLE_ITEMS if self.bag.count(item) > 0
+                     and item_data()[item]["effect"] == "capture"]
+            if len(balls) == 1:
+                self.choose_item(balls[0])
+            else:                                      # several kinds: pick which Mathball
+                self.bag_filter, self.state, self.sub_selected = "capture", "bag", 0
         elif action == "BAG":
+            self.bag_filter = None
             if not self.battle_items():
                 self.message = "Your bag has nothing to use in battle. Visit the shop!"
                 return
@@ -275,6 +317,8 @@ class BattleScreen:
             if self.state == "party" and self.battle.awaiting == "switch":
                 return   # a fainted monster must be replaced
             self.state = "bag" if self.state == "target" else "menu"
+            if self.state == "menu":
+                self.bag_filter = None
             return
         if not choices:
             return
@@ -302,10 +346,11 @@ class BattleScreen:
         if self.state in ("events", "over"):
             self.handle_key(pygame.K_RETURN)
         elif self.state == "menu":
-            index = ui.menu_index(MENU_RECT, len(ACTIONS), pos, 14)
+            actions = self.actions()
+            index = ui.menu_index(self.menu_rect(), len(actions), pos, self.menu_spacing())
             if index is not None:
                 self.selected = index
-                self.choose_action(ACTIONS[index])
+                self.choose_action(actions[index])
         elif self.state in ("moves", "party", "bag", "target"):
             index = ui.row_index(LIST_RECT[1] + 18, 14, len(self._list_choices()), pos, 7, 200)
             if index is not None:
@@ -418,7 +463,7 @@ class BattleScreen:
             self._draw_bottom(surface, frame)
         footer = {"question": "TYPE  ENTER: ANSWER  H: HINT  ESC: BACK (before answering)",
                   "events": "ENTER: NEXT", "over": "ENTER: CONTINUE"}.get(
-            self.state, "ARROWS/1-4: CHOOSE   ENTER: SELECT   ESC: BACK")
+            self.state, "ARROWS/NUMBERS: CHOOSE   ENTER: SELECT   ESC: BACK")
         text(surface, footer, (160, 228), 9, PALETTE["cream"], center=True)
 
     # Battle scenery per world: (sky, ground, trees/rocks/towers).
@@ -524,11 +569,14 @@ class BattleScreen:
         if self.state == "events" and frame % 40 < 26:
             pygame.draw.polygon(surface, PALETTE["gold"], [(width - 6, 202), (width, 202), (width - 3, 206)])
         if self.state == "menu":
-            labels = list(ACTIONS)
-            disabled = () if self.battle.can_run else (3,)
-            panel(surface, (207, 128, 106, 20), PALETTE["night"])
-            text(surface, f"FOCUS {self.battle.focus}/3", (214, 132), 9, PALETTE["gold"])
-            menu(surface, MENU_RECT, labels, self.selected, 11, frame, disabled, 14)
+            labels = list(self.actions())
+            disabled = () if self.battle.can_run else (labels.index("RUN"),)
+            highlight = (labels.index("CAPTURE"),) if "CAPTURE" in labels and frame % 40 < 28 else ()
+            slim = len(labels) > 4
+            panel(surface, (207, 128, 106, 16 if slim else 20), PALETTE["night"])
+            text(surface, f"FOCUS {self.battle.focus}/3", (214, 131 if slim else 132), 9, PALETTE["gold"])
+            menu(surface, self.menu_rect(), labels, self.selected, 11, frame, disabled, self.menu_spacing(),
+                 highlight)
         elif self.state == "over":
             pass
 

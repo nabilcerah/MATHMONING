@@ -1,5 +1,5 @@
 {
- "_comment": "MATHMON RECOVERY CENTER (MCR) interior. Background art: assets/backgrounds/village_recovery_interior.png (from 'Interior Mathmon Recovery Center (MCR).jpeg'); collision from tools/process_building_art.py. The nurse and the information desk are part of the painting, so their interactables are painted.",
+ "_comment": "MATHMON RECOVERY CENTER (MCR) interior. Background art: assets/backgrounds/village_recovery_interior.png (from 'Interior Mathmon Recovery Center (MCR).jpeg'); collision from tools/process_building_art.py. The nurse and the information desk are part of the painting, so their interactables are painted. Drawn at half size (15 x 9 tiles) so the painted nurse matches the characters' size.",
  "id": "village_recovery",
  "name": "Mathmon Recovery Center",
  "interior": true,
@@ -8,12 +8,12 @@
  "baked_features": true,
  "collision_file": "village_recovery_collision.txt",
  "player_spawn": [
-  14,
-  16
+  7,
+  7
  ],
  "safe_spot": [
-  14,
-  10
+  7,
+  5
  ],
  "exit_map": "number_forest",
  "areas": [
@@ -23,12 +23,12 @@
    "rect": [
     0,
     0,
-    30,
-    18
+    15,
+    9
    ],
    "travel": [
-    14,
-    16
+    7,
+    7
    ]
   }
  ],
@@ -38,8 +38,8 @@
    "id": "exit_recovery",
    "kind": "portal",
    "pos": [
-    14,
-    17
+    7,
+    8
    ],
    "name": "door",
    "verb": "Leave",
@@ -59,8 +59,8 @@
    "id": "nurse_desk",
    "kind": "clinic",
    "pos": [
-    14,
-    7
+    7,
+    3
    ],
    "name": "Nurse Hana",
    "verb": "Talk to",
@@ -74,8 +74,8 @@
    "id": "info_desk",
    "kind": "sign",
    "pos": [
-    7,
-    5
+    3,
+    2
    ],
    "name": "information desk",
    "verb": "Ask at",

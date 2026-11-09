@@ -858,7 +858,7 @@ class GameManager:
         """GDD 4.1 / 22: Game Over -> Recovery. Nothing is ever deleted; you wake at the nearest safe spot."""
         self.party.heal_all(rules()["defeat"]["recover_fraction"])
         if self.player.world in ("number_forest", "village_shop", "village_sanctuary", "village_recovery", "village_lab"):
-            self.player.world, (self.player.x, self.player.y) = "village_recovery", (14, 10)
+            self.player.world, (self.player.x, self.player.y) = "village_recovery", (7, 5)
         else:
             self.player.x, self.player.y = self.world.world.safe_spot
         self.save_all()

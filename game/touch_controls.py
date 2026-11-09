@@ -107,7 +107,8 @@ class TouchControls:
                 buttons.append(Button(label, key, uni, (x0 + col * (unit + gap), int(win_h * 0.03) + row * (unit + gap),
                                                         unit, unit), color=(110, 177, 206)))
             big = int(unit * 1.35)
-            y_ab = int(win_h * 0.03) + 3 * (unit + gap) + gap
+            rows = -(-len(SHORTCUTS) // 3)          # 10 shortcuts need 4 rows (W used to sit under B)
+            y_ab = int(win_h * 0.03) + rows * (unit + gap) + gap
             buttons.append(Button("A", pygame.K_RETURN, "\r", (x0 + row_w - big, y_ab, big, big), big=True))
             buttons.append(Button("B", pygame.K_ESCAPE, "", (x0, y_ab + big // 3, big, big), big=True,
                                   color=(235, 112, 92)))

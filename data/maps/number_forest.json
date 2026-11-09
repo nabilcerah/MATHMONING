@@ -971,8 +971,8 @@
    "painted": true,
    "destination": "village_recovery",
    "arrive": [
-    14,
-    16
+    7,
+    7
    ],
    "door": true,
    "text": [
@@ -1399,7 +1399,11 @@
     3,
     3
    ],
-   "_note": "the blue house becomes the MCR"
+   "_note": "the blue house becomes the MCR (clear_with paints grass over the old house first)",
+   "clear_with": [
+    18,
+    66
+   ]
   }
  ]
 }

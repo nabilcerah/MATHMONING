@@ -38,8 +38,30 @@ def painted_background(world, name=None, alpha=False):
         scale = world.background_scale
         if scale != 1:
             image = pygame.transform.scale(image, (image.get_width() * scale, image.get_height() * scale))
+        _clear_replaced_buildings(world, name, image)
         _backgrounds[key] = image
     return _backgrounds[key]
+
+
+def _clear_replaced_buildings(world, name, image):
+    """A decor building that replaces a painted house ("clear_with": a plain grass cell) first
+    paints grass over the old house - otherwise the old roof shows above the new building."""
+    for decor in world.data.get("decor", []):
+        source = decor.get("clear_with")
+        if not source:
+            continue
+        x0, y0, w, h = (v * TILE for v in decor["rect"])
+        pad = 3                                    # the old house's outline and shadow reach a few px out
+        area = pygame.Rect(x0 - pad, y0 - pad, w + 2 * pad, h + 2 * pad)
+        if name == world.background:
+            tile = image.subsurface((source[0] * TILE, source[1] * TILE, TILE, TILE)).copy()
+            image.set_clip(area)
+            for y in range(area.y, area.bottom, TILE):
+                for x in range(area.x, area.right, TILE):
+                    image.blit(tile, (x, y))
+            image.set_clip(None)
+        elif name == getattr(world, "canopy", None):
+            image.fill((0, 0, 0, 0), area)
 
 
 class Dialogue:

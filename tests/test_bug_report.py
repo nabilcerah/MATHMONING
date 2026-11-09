@@ -170,9 +170,9 @@ class MapCrossingTests(GameCase):
 class RecoveryCenterTests(GameCase):
     def enter_center(self):
         game = self.game
-        game._travel_to_map("village_recovery", (14, 16))
+        game._travel_to_map("village_recovery", (7, 7))
         world = game.world
-        world.avatar.x, world.avatar.y = world.world.cell_to_feet((14, 8))
+        world.avatar.x, world.avatar.y = world.world.cell_to_feet((7, 4))
         world.avatar.facing = (0, -1)
         world.update()
         self.assertEqual(world.target_id(), "nurse_desk")
@@ -186,16 +186,19 @@ class RecoveryCenterTests(GameCase):
         sanctuary = load_map("village_sanctuary")
         self.assertFalse([e for e in sanctuary.data["interactables"] if e["kind"] == "spring"])
 
-    def test_right_answers_heal_and_advance_the_chamber(self):
+    def test_one_mathmon_goes_in_the_capsule_and_right_answers_heal_it(self):
         game = self.game
         lead = game.party.lead
         lead.hp = 0
         game.party.add(create("GEOMAX", 5))
-        game.party.party[1].hp = 10
+        geomax = game.party.party[1]
+        geomax.hp = 10
         game.save_party()
         clinic = self.enter_center()
         self.assertEqual(type(clinic).__name__, "ClinicScreen")
-        clinic.handle_key(pygame.K_RETURN)
+        self.assertEqual(clinic.state, "choose")             # the player picks who goes in the capsule
+        clinic.handle_key(pygame.K_RETURN)                    # the fainted lead is pre-selected
+        self.assertIs(clinic.patient, lead)
         stages = []
         for _ in range(3):
             self.assertEqual(clinic.state, "question")
@@ -206,11 +209,28 @@ class RecoveryCenterTests(GameCase):
                 clinic.handle_key(pygame.K_RETURN)
         self.assertEqual(clinic.state, "done")
         self.assertEqual(stages[-1], 8)
-        self.assertTrue(all(m.hp == m.max_hp for m in game.party.party))
+        self.assertEqual(lead.hp, lead.max_hp)
+        self.assertEqual(geomax.hp, 10)                       # only the patient is healed
         self.assertEqual(game.repository.load_party(game.player.player_id).party[0].hp, lead.max_hp)
-        self.assertGreaterEqual(game.repository.history_summary(game.player.player_id)["attempted"], 3)
         surface = pygame.Surface((320, 240))
         clinic.draw(surface, 1)
+        clinic.handle_key(pygame.K_RETURN)                    # discharge -> choose the next one
+        self.assertEqual(clinic.state, "choose")
+        self.assertEqual(clinic.selected, 1)
+        clinic.draw(surface, 2)
+        clinic.handle_key(pygame.K_RETURN)
+        self.assertIs(clinic.patient, geomax)
+        self.assertGreaterEqual(game.repository.history_summary(game.player.player_id)["attempted"], 3)
+
+    def test_healthy_mathmon_cannot_go_in_the_capsule(self):
+        game = self.game
+        game.party.add(create("GEOMAX", 5))
+        game.party.party[1].hp = 3
+        clinic = self.enter_center()
+        clinic.selected = 0                                   # the lead is healthy
+        clinic.handle_key(pygame.K_RETURN)
+        self.assertEqual(clinic.state, "choose")
+        self.assertIn("already healthy", clinic.message)
 
     def test_wrong_answers_still_help_a_little_and_never_punish(self):
         game = self.game
@@ -227,7 +247,7 @@ class RecoveryCenterTests(GameCase):
 
     def test_a_healthy_team_needs_no_check_up(self):
         clinic = self.enter_center()
-        self.assertEqual(clinic.state, "done")
+        self.assertEqual(clinic.state, "all_done")
 
     def test_world_camps_have_recovery_stations(self):
         for map_id in ("algebra_cavern", "geometry_kingdom", "chronos_dimension"):
@@ -267,3 +287,44 @@ class MathmartTests(GameCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CaptureMenuTests(GameCase):
+    """Bug report: players did not know they could catch a wild MathMon (the Mathballs hid in the bag)."""
+
+    def battle_with(self, hp_fraction, kind="wild", species="VOLTIX"):
+        game = self.game
+        enemy = create(species, 2)
+        enemy.hp = max(1, int(enemy.max_hp * hp_fraction))
+        game._start_battle(enemy, kind)
+        battle = game.battle
+        for _ in range(50):
+            if battle.state == "menu":
+                break
+            battle.handle_key(pygame.K_RETURN)
+        self.assertEqual(battle.state, "menu")
+        return battle
+
+    def test_capture_appears_in_the_menu_when_the_wild_mathmon_is_weak(self):
+        battle = self.battle_with(1.0)
+        self.assertNotIn("CAPTURE", battle.actions())
+        battle.enemy.hp = int(battle.enemy.max_hp * 0.3)
+        battle._after_events()
+        self.assertIn("CAPTURE", battle.actions())
+        self.assertIn("CAPTURE", battle.message)             # it tells the player
+        self.assertEqual(battle.actions()[battle.selected], "CAPTURE")
+        battle.draw(pygame.Surface((320, 240)), 1)
+        battle.handle_key(pygame.K_RETURN)
+        self.assertEqual(battle.state, "question")            # straight into the binding challenge
+        self.assertEqual(battle.panel_kind, "capture")
+
+    def test_no_capture_for_trainers_and_without_mathballs(self):
+        battle = self.battle_with(0.2, kind="trainer")
+        self.assertNotIn("CAPTURE", battle.actions())
+        battle = self.battle_with(0.2)
+        for name in list(battle.battle_items()):
+            while battle.bag.count(name):
+                battle.bag.take(name)
+        battle.choose_action("CAPTURE")
+        self.assertEqual(battle.state, "menu")
+        self.assertIn("Mathball", battle.message)

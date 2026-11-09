@@ -37,25 +37,16 @@ MART_COLLISION = """
 ###########
 """
 MCR_COLLISION = """
-##############################
-##############################
-##############################
-##############################
-##############################
-##############################
-##......##############........
-##......##############........
-##............................
-##............................
-##....................####....
-####..................####....
-####..................####..##
-####..................####..##
-####..................####..##
-####..........................
-#.............................
-##############################
-"""
+###############
+###############
+##.#########...
+....#######....
+...............
+##.........##..
+##.........##.#
+#..........##.#
+###############
+"""   # 15 x 9 tiles: the painting at HALF size, so the painted nurse is as tall as the player
 
 
 def grid(text):
@@ -85,10 +76,11 @@ def interiors():
     (MAPS / "village_shop_collision.txt").write_text("\n".join(rows) + "\n", encoding="utf-8")
 
     mcr = Image.open(BG / "Interior Mathmon Recovery Center (MCR).jpeg").convert("RGB")
-    mcr = mcr.resize((480, 296), Image.NEAREST).crop((0, 4, 480, 292))   # 30 x 18 tiles
+    # Half size (15 x 9 tiles): at full size the painted nurse was ~3x taller than the characters.
+    mcr = mcr.resize((480, 296), Image.NEAREST).crop((0, 4, 480, 292)).resize((240, 144), Image.LANCZOS)
     mcr.save(BG / "village_recovery_interior.png", optimize=True)
     rows = grid(MCR_COLLISION)
-    connected(rows, (14, 16))
+    connected(rows, (7, 7))
     (MAPS / "village_recovery_collision.txt").write_text("\n".join(rows) + "\n", encoding="utf-8")
 
 
@@ -107,9 +99,8 @@ NURSE_MOODS = {"welcome": 0, "idea": 1, "pen": 2, "listen": 3, "happy": 4, "thin
 
 def frames():
     CLINIC.mkdir(parents=True, exist_ok=True)
-    sheet = Image.open(BG / "How Mathmon Recover in MCR.jpeg").convert("RGB")
-    for i, box in enumerate(CHAMBER_CELLS):
-        sheet.crop(box).resize((90, 140), Image.LANCZOS).save(CLINIC / f"chamber_{i}.png", optimize=True)
+    # The recovery capsule is drawn in code with the player's own MathMon inside (states/clinic_state.py);
+    # the old capsule sheet showed a person, so its frames are no longer cut out.
     nurse = Image.open(ROOT / "assets" / "Characters" / "Nurse.jpeg").convert("RGB")
     for i, box in enumerate(NURSE_CELLS):
         nurse.crop(box).resize((88, 78), Image.LANCZOS).save(CLINIC / f"nurse_{i}.png", optimize=True)
@@ -149,7 +140,7 @@ def key_out(image, box=None, tolerance=40):
 
 def exteriors():
     mcr = key_out(Image.open(BG / "Mathmon Recovery Center (MCR).jpeg"))
-    mcr.resize((54, round(54 * mcr.height / mcr.width)), Image.LANCZOS).save(BG / "recovery_center_exterior.png")
+    mcr.resize((64, round(64 * mcr.height / mcr.width)), Image.LANCZOS).save(BG / "recovery_center_exterior.png")
     mart = key_out(Image.open(BG / "Mathmart.jpeg"), box=(28, 28, 316, 318), tolerance=30)
     mart.resize((52, round(52 * mart.height / mart.width)), Image.LANCZOS).save(BG / "mathmart_exterior.png")
 

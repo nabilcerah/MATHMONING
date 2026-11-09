@@ -16,7 +16,7 @@
   "shield": {"incoming_multiplier": 0.5},
   "debuff": {"attack_multiplier": 0.8},
   "escape": {"base": 50, "per_speed": 3, "min": 20, "max": 90},
-  "capture": {"base": 20, "hp_weight": 50, "knowledge_bonus": 15, "min": 5, "max": 90},
+  "capture": {"base": 20, "hp_weight": 50, "knowledge_bonus": 15, "min": 5, "max": 90, "menu_at_hp": 0.5},
   "exp": {
     "level_base": 60, "level_step": 20, "max_level": 20,
     "battle_base": 20, "battle_per_level": 5,

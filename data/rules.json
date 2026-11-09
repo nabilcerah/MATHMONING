@@ -33,5 +33,5 @@
               "bands": [[0, "Foundation"], [40, "Developing"], [70, "Proficient"], [85, "Mastered"]]},
   "defeat": {"recover_fraction": 1.0},
   "clinic": {"questions": 3, "heal_correct": 0.34, "heal_wrong": 0.1},
-  "starting_items": {"Math Potion": 3, "Basic Mathball": 5, "Energy Potion": 1}
+  "starting_items": {"Math Potion": 3, "Numeris Core": 5, "Energy Potion": 1}
 }

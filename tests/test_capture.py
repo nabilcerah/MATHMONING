@@ -18,7 +18,7 @@ class CaptureTests(unittest.TestCase):
 
     def make(self, enemy="VOLTIX", party=None, storage=(), capsules=3, seed=1):
         party = MonsterParty(party or [create("FRACTELLA", 5)], list(storage))
-        return BattleManager(party, create(enemy, 3), "wild", None, DictInventory({"Basic Mathball": capsules}),
+        return BattleManager(party, create(enemy, 3), "wild", None, DictInventory({"Numeris Core": capsules}),
                              random.Random(seed))
 
     def test_success_adds_to_party_and_failure_consumes_the_capsule(self):
@@ -29,7 +29,7 @@ class CaptureTests(unittest.TestCase):
             topic = b.begin_capture()
             self.assertEqual(topic, "multiplication")     # VOLTIX's affinity
             events = b.resolve_capture(True)
-            self.assertEqual(b.inventory.count("Basic Mathball"), 2)
+            self.assertEqual(b.inventory.count("Numeris Core"), 2)
             if b.outcome == "captured":
                 results["captured"] += 1
                 self.assertIn(b.enemy, b.party.party)
@@ -37,7 +37,7 @@ class CaptureTests(unittest.TestCase):
                 self.assertEqual(b.rewards["placed"], "party")
             else:
                 results["failed"] += 1
-                self.assertEqual(events[-1]["text"], "The monster escaped the Mathball!")
+                self.assertEqual(events[-1]["text"], "The monster escaped the Numeris Core!")
                 self.assertEqual(b.awaiting, "enemy")
         self.assertGreater(results["captured"], results["failed"])
         self.assertGreater(results["failed"], 0)
@@ -57,14 +57,14 @@ class CaptureTests(unittest.TestCase):
         with self.assertRaises(BattleError):
             full.begin_capture()
         empty = self.make(capsules=0)
-        self.assertIn("no Mathballs", empty.capture_block_reason())
+        self.assertIn("no Numeris Cores", empty.capture_block_reason())
         party = MonsterParty([create("FRACTELLA", 5)])
-        boss = BattleManager(party, create("NUMEREX_BOSS", 10), "boss", None, DictInventory({"Basic Mathball": 5}))
+        boss = BattleManager(party, create("NUMEREX_BOSS", 10), "boss", None, DictInventory({"Numeris Core": 5}))
         self.assertFalse(boss.can_capture)
         with self.assertRaises(BattleError):
             boss.begin_capture()
         trainer = BattleManager(MonsterParty([create("FRACTELLA", 5)]), create("VOLTIX", 3), "trainer", None,
-                                DictInventory({"Basic Mathball": 5}))
+                                DictInventory({"Numeris Core": 5}))
         self.assertIn("wild", trainer.capture_block_reason())
 
 

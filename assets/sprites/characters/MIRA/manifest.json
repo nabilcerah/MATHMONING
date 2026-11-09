@@ -1,0 +1,62 @@
+{
+  "name": "MIRA",
+  "source": "Random NPC/MIRA.jpg",
+  "poses": [
+    {
+      "pose": "stand",
+      "file": "0.png",
+      "dx": -25,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "1.png",
+      "dx": -15,
+      "dy": -96
+    },
+    {
+      "pose": "walk2",
+      "file": "2.png",
+      "dx": -27,
+      "dy": -96
+    },
+    {
+      "pose": "run",
+      "file": "3.png",
+      "dx": -25,
+      "dy": -98
+    },
+    {
+      "pose": "wave",
+      "file": "4.png",
+      "dx": -21,
+      "dy": -98
+    },
+    {
+      "pose": "cheer",
+      "file": "5.png",
+      "dx": -48,
+      "dy": -104
+    },
+    {
+      "pose": "surprised",
+      "file": "6.png",
+      "dx": -26,
+      "dy": -98
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -25,
+      "dy": -100
+    },
+    {
+      "pose": "fist",
+      "file": "8.png",
+      "dx": -25,
+      "dy": -102
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 51
+}

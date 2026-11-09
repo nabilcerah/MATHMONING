@@ -84,7 +84,7 @@ class BattleManager:
         return allowed and not (self.party.party_full and self.party.storage_full)
 
     def capture_items(self):
-        """Mathballs in the bag (Basic, Advanced, ...): any item whose effect is capture."""
+        """Numeris Cores in the bag (Basic, Advanced, ...): any item whose effect is capture."""
         return [name for name, info in item_data().items() if info["effect"] == "capture" and self.inventory.count(name)]
 
     def capture_count(self):
@@ -331,7 +331,7 @@ class BattleManager:
         self._require("action")
         info = item_data().get(item, {})
         if info.get("effect") == "capture":
-            raise BattleError("Use begin_capture() for Mathballs.")
+            raise BattleError("Use begin_capture() for Numeris Cores.")
         target = self.party.party[target_index] if target_index is not None else self.active
         ok, reason = self.item_usable(item, target)
         if not ok:
@@ -383,14 +383,14 @@ class BattleManager:
 
     def resolve_capture(self, correct):
         self._require("capture_question")
-        item = self.capture_item or "Basic Mathball"
+        item = self.capture_item or "Numeris Core"
         self.inventory.take(item)
         bonus = float(item_data().get(item, {}).get("bonus", 0))
         result = capture_manager.attempt(self.enemy, correct, self.rng, bonus)
         events = [self._event("capture_roll", f"Capture chance {round(result.chance)}%...",
                               chance=result.chance, success=result.success)]
         if not result.success:
-            events.append(self._event("capture_fail", "The monster escaped the Mathball!"))
+            events.append(self._event("capture_fail", "The monster escaped the Numeris Core!"))
             self.awaiting = "enemy"
             return events
         self.enemy.hp = max(1, self.enemy.hp)

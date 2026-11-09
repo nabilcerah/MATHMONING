@@ -1,0 +1,62 @@
+{
+  "name": "TOBI",
+  "source": "Random NPC/TOBI.jpg",
+  "poses": [
+    {
+      "pose": "stand",
+      "file": "0.png",
+      "dx": -27,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "1.png",
+      "dx": -30,
+      "dy": -99
+    },
+    {
+      "pose": "walk2",
+      "file": "2.png",
+      "dx": -32,
+      "dy": -101
+    },
+    {
+      "pose": "run",
+      "file": "3.png",
+      "dx": -27,
+      "dy": -100
+    },
+    {
+      "pose": "wave",
+      "file": "4.png",
+      "dx": -43,
+      "dy": -106
+    },
+    {
+      "pose": "cheer",
+      "file": "5.png",
+      "dx": -55,
+      "dy": -101
+    },
+    {
+      "pose": "surprised",
+      "file": "6.png",
+      "dx": -51,
+      "dy": -101
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -41,
+      "dy": -100
+    },
+    {
+      "pose": "fist",
+      "file": "8.png",
+      "dx": -31,
+      "dy": -106
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 54
+}

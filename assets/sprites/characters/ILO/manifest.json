@@ -1,0 +1,62 @@
+{
+  "name": "ILO",
+  "source": "Random NPC/SAGE ILO.jpg",
+  "poses": [
+    {
+      "pose": "stand",
+      "file": "0.png",
+      "dx": -35,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "1.png",
+      "dx": -27,
+      "dy": -96
+    },
+    {
+      "pose": "walk2",
+      "file": "2.png",
+      "dx": -44,
+      "dy": -96
+    },
+    {
+      "pose": "run",
+      "file": "3.png",
+      "dx": -37,
+      "dy": -96
+    },
+    {
+      "pose": "wave",
+      "file": "4.png",
+      "dx": -38,
+      "dy": -100
+    },
+    {
+      "pose": "cheer",
+      "file": "5.png",
+      "dx": -48,
+      "dy": -100
+    },
+    {
+      "pose": "surprised",
+      "file": "6.png",
+      "dx": -30,
+      "dy": -91
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -50,
+      "dy": -93
+    },
+    {
+      "pose": "fist",
+      "file": "8.png",
+      "dx": -44,
+      "dy": -104
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 71
+}

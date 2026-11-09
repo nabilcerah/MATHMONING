@@ -52,6 +52,8 @@ SHEETS = {
     "PROFESSOR_NUMERIS": ("PROFESSOR NUMERIS.jpg", "light_checker_solid"),  # white lab coat
     "REX": ("REX.jpg", "light_checker"),
     "BRAM": ("bram.jpg.jpeg", "grey_checker"),      # the builder: a 5 x 3 sheet, see GRIDS
+    # The capture device (9 Nov): idle, glow, rings, ready, open, pull, capture, sealed, success.
+    "NUMERIS_CORE": ("NUMERIS CORE.jpg", "checker"),
     "NURSE_HANA": ("NURSE HANA.jpg", "light_checker_solid"),          # white coat
     "FARAH": ("RECEPTIONIST FARAH.jpg", "checker"),
     "AINA": ("Random NPC/AINA.jpg", "checker"),
@@ -59,6 +61,19 @@ SHEETS = {
     "HAKIM": ("Random NPC/HAKIM.jpg", "checker"),
     "SHAZLAN": ("Random NPC/UNCLE SHAZLAN.jpg", "checker"),
     "FISHERMAN": ("Random NPC/Fisherman.jpeg", "checker"),
+    # The 9 Nov art drop: every villager and story character gets their own sheet.
+    "VEXA": ("Random NPC/DR. VEXA.jpg", "checker"),
+    "HYPOT": ("Random NPC/SIR HYPOT.jpg", "checker"),
+    "TICK": ("Random NPC/KEEPER TICK.jpg", "checker"),
+    "MERCHANT": ("Random NPC/WANDERING MERCHANT.jpg", "grey_checker"),
+    "TAMSIN": ("Random NPC/TAMSIN.jpg", "checker"),
+    "TOBI": ("Random NPC/TOBI.jpg", "checker"),
+    "ILO": ("Random NPC/SAGE ILO.jpg", "checker"),
+    "PENNY": ("Random NPC/PENNY.jpg", "grey_checker"),
+    "MIRA": ("Random NPC/MIRA.jpg", "checker"),
+    "ABACUS": ("Random NPC/OLD ABACUS.jpg", "checker"),
+    "STRANGER": ("Random NPC/HOODED STRANGER.jpg", "checker"),
+    "VERA": ("Random NPC/VERA TALLOW.jpg", "light_checker"),
     # Advanced battle monsters (3x3 sheets laid out as idle / walk / attack rows).
     "CRYSTALGON": ("CRYSTALGON.jpg", "grey_checker"),
     "NULLSHADE": ("NULLSHADE.jpg", "grey_checker"),
@@ -74,9 +89,11 @@ SHEETS = {
     "INFINITY_ZERO": ("INFINITY ZERO.jpg", "grey_checker"),
 }
 CHARACTERS = {"ALEX", "LUNA", "PROFESSOR_NUMERIS", "REX", "BRAM", "NURSE_HANA", "FARAH", "AINA", "ZAKI", "HAKIM",
-              "SHAZLAN", "FISHERMAN"}
+              "SHAZLAN", "FISHERMAN", "VEXA", "HYPOT", "TICK", "MERCHANT", "TAMSIN", "TOBI", "ILO", "PENNY", "MIRA", "ABACUS", "STRANGER", "VERA"}
 # Villager sheets: row 1 idle, row 2 walking, row 3 gestures (wave first).
 _VILLAGER = [(0, 0), (0, 1), (2, 1), (1, 1), (0, 2), (2, 2), (1, 0), (2, 0), (1, 2)]
+# Sheets drawn as poses and gestures: stand, two idle variations for steps, then gestures.
+_GESTURES = [(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 2), (2, 1), (0, 2), (1, 2)]
 # Sheets that are not 3 x 3: (columns, rows, the (column, row) cell for each of the 9 poses).
 GRIDS = {
     # stand, walk1, walk2, run, wave (talking: hammer raised), cheer, surprised, hurt, fist
@@ -88,12 +105,31 @@ GRIDS = {
     "AINA": (3, 3, _VILLAGER), "ZAKI": (3, 3, _VILLAGER), "HAKIM": (3, 3, _VILLAGER), "SHAZLAN": (3, 3, _VILLAGER),
     # The fisherman's sheet is his fishing cycle, kept in reading order (stand, cast, ..., the catch).
     "FISHERMAN": (3, 3, [(0, 0), (1, 0), (0, 0), (2, 0), (2, 2), (1, 2), (0, 1), (1, 1), (2, 1)]),
+    # Gesture sheets (no walking row): idle variations double as steps; (1, 1) is the talking pose.
+    "VEXA": (3, 3, _GESTURES),
+    "HYPOT": (3, 3, _GESTURES),
+    "TICK": (3, 3, _GESTURES),
+    "MERCHANT": (3, 3, _GESTURES),
+    "TAMSIN": (3, 3, _GESTURES),
+    "TOBI": (3, 3, _GESTURES),
+    "ILO": (3, 3, _GESTURES),
+    "PENNY": (3, 3, _GESTURES),
+    "MIRA": (3, 3, _GESTURES),
+    "ABACUS": (3, 3, _GESTURES),
+    "STRANGER": (3, 3, _GESTURES),
+    "VERA": (3, 3, _GESTURES),
 }
 ROW_LAYOUT = {"CRYSTALGON", "NULLSHADE", "VOLTBYTE", "CHRONOWL", "INFERMATH", "EQUINOX", "MYCOMORPH",
               "HEXABYTE", "GALAXION", "ARITHMORD", "SPHYNOX", "INFINITY_ZERO"}
 
 
+ITEMS = {"NUMERIS_CORE"}       # item art: sprites/items/<name>
+ITEM_POSES = ("idle", "glow", "rings", "ready", "open", "pull", "capture", "sealed", "success")
+
+
 def sheet_paths(name):
+    if name in ITEMS:
+        return CHARACTER_SOURCE, CHARACTER_OUTPUT.parent / "items", ITEM_POSES
     if name in CHARACTERS:
         return CHARACTER_SOURCE, CHARACTER_OUTPUT, CHARACTER_POSES
     if name in ROW_LAYOUT:
@@ -214,11 +250,30 @@ def bbox(alpha):
     return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
 
 
+# The 9 Nov sheets: grid lines up to ~8 px away from the exact thirds, in roomy cells.
+WIDE_INSET = {name: 12 for name in ("VEXA", "HYPOT", "TICK", "MERCHANT", "TAMSIN", "TOBI", "ILO", "PENNY", "MIRA",
+                                    "ABACUS", "STRANGER", "VERA")}
+
+
+def drop_grid_lines(frame):
+    """Remove leftover sheet grid lines: long, very thin horizontal strips (a staff or a cane is never
+    that flat, so props survive)."""
+    alpha = frame[..., 3] > 0
+    labels, _ = components(alpha)
+    for label in range(1, labels.max() + 1):
+        ys, xs = np.nonzero(labels == label)
+        height, width = ys.max() - ys.min() + 1, xs.max() - xs.min() + 1
+        if height <= 4 and width >= 30:
+            frame[labels == label, 3] = 0
+    return frame
+
+
 def process(name, filename, mode):
     source, output, pose_names = sheet_paths(name)
     sheet = np.array(Image.open(source / filename).convert("RGBA"))
     h, w = sheet.shape[:2]
     inset = 6 if mode in ("checker", "grey_checker") else 0  # skip the grid lines between cells
+    inset = WIDE_INSET.get(name, inset)                       # sheets whose grid lines sit off the thirds
     frames = []
     columns, rows, cells = GRIDS.get(name, (3, 3, [(i % 3, i // 3) for i in range(9)]))
     for index in range(9):
@@ -226,6 +281,8 @@ def process(name, filename, mode):
         x0, x1 = col * w // columns + inset, (col + 1) * w // columns - inset
         y0, y1 = row * h // rows + inset, (row + 1) * h // rows - inset
         cleaned = clean_frame(sheet[y0:y1, x0:x1], mode)
+        if cleaned is not None:
+            cleaned = drop_grid_lines(cleaned)
         if cleaned is None:
             raise SystemExit(f"{name}: pose {index} came out empty")
         bx0, by0, bx1, by1 = bbox(cleaned[..., 3])

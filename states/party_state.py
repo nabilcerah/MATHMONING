@@ -1,6 +1,6 @@
 """PARTY screen (GDD 4.1, 26): three party slots with HP, level, EXP and mastery; ENTER makes the
 chosen monster the lead (it battles first). Up to three companions walk behind you on the map:
-F toggles whether the chosen one walks with you or rests in its Mathball. From the trainer menu."""
+F toggles whether the chosen one walks with you or rests in its Numeris Core. From the trainer menu."""
 import pygame
 
 from config import PALETTE
@@ -41,7 +41,7 @@ class PartyScreen(Screen):
         flag = world.stay_flag(monster)
         if self.following(monster):
             world.set_flag(flag)
-            self.notice = f"{monster.name} rests in its Mathball."
+            self.notice = f"{monster.name} rests in its Numeris Core."
         else:
             world.clear_flag(flag)
             self.notice = f"{monster.name} walks with you!"

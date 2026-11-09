@@ -816,7 +816,7 @@ class GameManager:
 
     # ------------------------------------------------------------------ puzzle shrines (bonus)
     PUZZLE_REWARDS = {"sequence": (12, "Math Potion"), "balance": (15, "Energy Potion"),
-                      "target": (20, "Basic Mathball"), "magic": (25, "Greater Potion"), "starchart": (30, None)}
+                      "target": (20, "Numeris Core"), "magic": (25, "Greater Potion"), "starchart": (30, None)}
 
     def _open_puzzle(self, shrine_id):
         entry = self.world.objects[shrine_id]

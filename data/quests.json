@@ -200,7 +200,7 @@
         "exp": 60,
         "coins": 120,
         "items": {
-          "Basic Mathball": 3
+          "Numeris Core": 3
         }
       }
     },
@@ -345,7 +345,7 @@
         "exp": 180,
         "coins": 150,
         "items": {
-          "Basic Mathball": 3
+          "Numeris Core": 3
         }
       }
     },
@@ -485,7 +485,7 @@
         "exp": 100,
         "coins": 120,
         "items": {
-          "Advanced Mathball": 1
+          "Advanced Numeris Core": 1
         },
         "flags": [
           "quest_done:missing_mathmon"

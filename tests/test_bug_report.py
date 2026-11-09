@@ -263,7 +263,7 @@ class MathmartTests(GameCase):
         game = self.game
         shop = game.open_screen("shop")
         names = [name for name, _ in shop.items()]
-        self.assertEqual(names, ["Math Potion", "Energy Potion", "Full Restore", "Basic Mathball", "Advanced Mathball",
+        self.assertEqual(names, ["Math Potion", "Energy Potion", "Full Restore", "Numeris Core", "Advanced Numeris Core",
                                  "Attack Boost", "Defence Boost", "Revive Crystal", "Knowledge Tome", "EXP Star"])
         coins = game.repository.coins(game.player.player_id)
         shop.activate(names.index("EXP Star"))
@@ -290,7 +290,7 @@ if __name__ == "__main__":
 
 
 class CaptureMenuTests(GameCase):
-    """Bug report: players did not know they could catch a wild MathMon (the Mathballs hid in the bag)."""
+    """Bug report: players did not know they could catch a wild MathMon (the Numeris Cores hid in the bag)."""
 
     def battle_with(self, hp_fraction, kind="wild", species="VOLTIX"):
         game = self.game
@@ -327,7 +327,7 @@ class CaptureMenuTests(GameCase):
                 battle.bag.take(name)
         battle.choose_action("CAPTURE")
         self.assertEqual(battle.state, "menu")
-        self.assertIn("Mathball", battle.message)
+        self.assertIn("Numeris Core", battle.message)
 
 
 class Bug9NovTests(GameCase):
@@ -346,7 +346,7 @@ class Bug9NovTests(GameCase):
         self.assertGreater(world.avatar.x - spots[2][0], world.avatar.x - spots[0][0])   # in a line behind
         party = game.open_screen("party")
         party.selected = 1
-        party.handle_key(pygame.K_f)                          # GEOMAX rests in its Mathball
+        party.handle_key(pygame.K_f)                          # GEOMAX rests in its Numeris Core
         self.assertEqual([m.name for m in world.followers()], [game.party.party[0].name, "DIVOWL"])
         self.assertIn("rests", party.notice)
         party.draw(pygame.Surface((320, 240)), 1)
@@ -809,3 +809,53 @@ class StoneAndSkillTests(GameCase):
             game.world.set_flag(flag)
         game.quests._save("fading_numera", "completed", {})
         self.assertEqual(game.world.tracker.next_destination()[1], "Travel to the Algebra Cavern.")
+
+
+class ArtDropTests(unittest.TestCase):
+    """9 Nov art drop: every character has its own sprite sheet; the capture device is the NUMERIS CORE."""
+
+    ACTIVE = ("number_forest", "crystal_realm", "village_shop", "village_sanctuary", "village_lab", "algebra_cavern",
+              "geometry_kingdom", "chronos_dimension", "village_recovery")
+    AVATARS = {"characters/ALEX", "characters/LUNA"}
+
+    def test_every_npc_has_its_own_sheet(self):
+        from game import monster_sprites
+        owners = {}
+        for map_id in self.ACTIVE:
+            for npc in load_map(map_id).data.get("npcs", []):
+                sheet = npc.get("sheet")
+                self.assertTrue(sheet, f"{map_id}: {npc['id']} has no sprite sheet")
+                self.assertTrue(monster_sprites.available(sheet), sheet)
+                self.assertNotIn(sheet, self.AVATARS, f"{npc['id']} borrows the player's avatar")
+                owners.setdefault(sheet, set()).add(npc.get("name"))
+        shared = {sheet: names for sheet, names in owners.items() if len(names) > 1}
+        self.assertEqual(shared, {}, "two different characters share one sheet")
+
+    def test_story_speakers_have_portraits(self):
+        import json
+        characters = json.loads((ROOT / "data" / "story" / "characters.json").read_text(encoding="utf-8"))["characters"]
+        for key in ("ilo", "tobi", "vexa", "hypot", "tick", "mira", "stranger", "vera", "abacus"):
+            self.assertTrue(characters[key]["portrait"], key)
+            self.assertNotEqual(characters[key]["portrait"], "characters/LUNA", key)
+
+    def test_mathballs_are_now_numeris_cores_and_old_saves_convert(self):
+        from database.database import Database
+        from database.player_repository import PlayerRepository
+        from monsters.monster_data import items
+        self.assertIn("Numeris Core", items())
+        self.assertIn("Advanced Numeris Core", items())
+        self.assertFalse([name for name in items() if "Mathball" in name])
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = folder.name + "/old.sqlite3"
+        repo = PlayerRepository(Database(path))
+        pid = repo.create_player("Old", "PYRON")
+        with repo.database.connect() as db:                       # a save from before the rename
+            db.execute("INSERT INTO inventory(player_id, item, quantity) VALUES (?, 'Basic Mathball', 4)", (pid,))
+        repo = PlayerRepository(Database(path))                    # opening the save converts it
+        self.assertGreaterEqual(repo.item_count(pid, "Numeris Core"), 4)
+        self.assertEqual(repo.item_count(pid, "Basic Mathball"), 0)
+
+    def test_the_capture_animation_uses_the_numeris_core(self):
+        from game import monster_sprites
+        self.assertTrue(monster_sprites.available("items/NUMERIS_CORE"))

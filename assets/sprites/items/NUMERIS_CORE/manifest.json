@@ -1,0 +1,62 @@
+{
+  "name": "NUMERIS_CORE",
+  "source": "NUMERIS CORE.jpg",
+  "poses": [
+    {
+      "pose": "idle",
+      "file": "0.png",
+      "dx": -41,
+      "dy": -96
+    },
+    {
+      "pose": "glow",
+      "file": "1.png",
+      "dx": -40,
+      "dy": -97
+    },
+    {
+      "pose": "rings",
+      "file": "2.png",
+      "dx": -45,
+      "dy": -96
+    },
+    {
+      "pose": "ready",
+      "file": "3.png",
+      "dx": -41,
+      "dy": -100
+    },
+    {
+      "pose": "open",
+      "file": "4.png",
+      "dx": -39,
+      "dy": -90
+    },
+    {
+      "pose": "pull",
+      "file": "5.png",
+      "dx": -42,
+      "dy": -91
+    },
+    {
+      "pose": "capture",
+      "file": "6.png",
+      "dx": -43,
+      "dy": -110
+    },
+    {
+      "pose": "sealed",
+      "file": "7.png",
+      "dx": -36,
+      "dy": -91
+    },
+    {
+      "pose": "success",
+      "file": "8.png",
+      "dx": -41,
+      "dy": -108
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 81
+}

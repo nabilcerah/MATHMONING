@@ -107,7 +107,7 @@ def battle_reward(engine, rank, record, trainer, balance=None):
             reward.items["Math Potion"] = reward.items.get("Math Potion", 0) + 2
             reward.lines.append("BOSS REWARD: a Energy Potion and two Math Potions!")
         if reward.first_clear and engine.tier.rank >= 4:
-            reward.items["Basic Mathball"] = reward.items.get("Basic Mathball", 0) + 1
+            reward.items["Numeris Core"] = reward.items.get("Numeris Core", 0) + 1
     else:
         record["losses"] += 1
         reward.trainer_xp = 4 * correct  # trying still teaches something

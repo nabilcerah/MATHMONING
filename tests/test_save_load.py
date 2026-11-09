@@ -33,7 +33,7 @@ class SaveLoadTests(Base):
         self.assertEqual([m.species_id for m in party.party], ["NUMEREX"])
         self.assertEqual(party.party[0].level, 1)
         self.assertEqual(self.repository.coins(self.player_id), 300)
-        self.assertEqual(self.repository.inventory(self.player_id)["Basic Mathball"], 5)
+        self.assertEqual(self.repository.inventory(self.player_id)["Numeris Core"], 5)
         self.assertEqual(self.repository.capture_records(self.player_id)["NUMEREX"]["captured"], 1)
 
     def test_party_and_storage_survive_a_restart(self):
@@ -86,16 +86,16 @@ class SaveLoadTests(Base):
 
     def test_shop_is_transactional(self):
         shop = Shop(self.repository, self.player_id)
-        ok, _ = shop.buy("Basic Mathball")
+        ok, _ = shop.buy("Numeris Core")
         self.assertTrue(ok)
         self.assertEqual(self.repository.coins(self.player_id), 200)
         for _ in range(2):
-            shop.buy("Basic Mathball")
-        ok, message = shop.buy("Basic Mathball")
+            shop.buy("Numeris Core")
+        ok, message = shop.buy("Numeris Core")
         self.assertFalse(ok)                                  # 0 coins left: nothing changes
         self.assertIn("Not enough", message)
         self.assertEqual(self.repository.coins(self.player_id), 0)
-        self.assertEqual(self.repository.inventory(self.player_id)["Basic Mathball"], 8)
+        self.assertEqual(self.repository.inventory(self.player_id)["Numeris Core"], 8)
         self.assertFalse(shop.buy("Evolution Crystal")[0])   # quest items are never sold
 
     def test_failed_transactions_roll_back(self):
@@ -142,11 +142,11 @@ class ItemRenameMigrationTests(unittest.TestCase):
                 db.execute("INSERT INTO inventory(player_id, item, quantity) VALUES (?, 'Math Capsule', 2)", (pid,))
             bag = PlayerRepository(Database(path)).inventory(pid)
             self.assertEqual(bag["Math Potion"], 3 + 4)
-            self.assertEqual(bag["Basic Mathball"], 5 + 2)
+            self.assertEqual(bag["Numeris Core"], 5 + 2)
             self.assertNotIn("Health Potion", bag)
 
     def test_mathmart_sells_the_requested_list_at_the_requested_prices(self):
-        expected = {"Math Potion": 50, "Energy Potion": 40, "Full Restore": 150, "Basic Mathball": 100,
-                    "Advanced Mathball": 250, "Attack Boost": 120, "Defence Boost": 120, "Revive Crystal": 200,
+        expected = {"Math Potion": 50, "Energy Potion": 40, "Full Restore": 150, "Numeris Core": 100,
+                    "Advanced Numeris Core": 250, "Attack Boost": 120, "Defence Boost": 120, "Revive Crystal": 200,
                     "Knowledge Tome": 200, "EXP Star": 300}
         self.assertEqual({name: info["price"] for name, info in Shop.stock()}, expected)

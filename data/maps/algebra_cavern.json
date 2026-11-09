@@ -266,7 +266,7 @@
    ],
    "name": "chest",
    "verb": "Open",
-   "item": "Basic Mathball",
+   "item": "Numeris Core",
    "count": 3,
    "title": "TREASURE CHEST"
   },
@@ -394,7 +394,8 @@
    "remarks": [
     "Good luck, trainer!",
     "Mind the seals..."
-   ]
+   ],
+   "sheet": "characters/VEXA"
   },
   {
    "id": "algebra_cavern_merchant",
@@ -424,7 +425,8 @@
    "remarks": [
     "Fresh capsules!",
     "Fair prices, far from home."
-   ]
+   ],
+   "sheet": "characters/MERCHANT"
   }
  ]
 }

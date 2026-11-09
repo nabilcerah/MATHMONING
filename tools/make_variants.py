@@ -77,12 +77,9 @@ def recolour(image, shift, sat_mul, val_mul):
     return Image.fromarray(data.astype(np.uint8), "RGBA")
 
 
-# Story characters (lore update): recoloured from the existing character sheets.
-CHARACTER_VARIANTS = {
-    "VERA": ("LUNA", 0.72, 1.10, 0.92),               # violet Timekeeper coat
-    "STRANGER": ("LUNA", 0.70, 0.25, 0.55),           # the hooded stranger: grey and shadowed
-    "ABACUS": ("PROFESSOR_NUMERIS", 0.09, 1.20, 0.92),  # the village historian: warm browns
-}
+# Story characters used to be recoloured from other sheets. Since the 9 Nov art drop VERA, STRANGER and
+# ABACUS have their own art (tools/process_monster_sprites.py), so nothing is recoloured any more.
+CHARACTER_VARIANTS = {}
 
 
 def main():

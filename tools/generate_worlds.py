@@ -63,7 +63,7 @@ WORLDS = {
                                              "something guards the chamber beyond. Win a few battles to warm up, then restore the seals."],
                              "active": ["The seals answer to algebra: find the unknown, keep both sides balanced, and solve pairs together."],
                              "completed": ["The lab is ours again! Its gateway leads to the Geometry Kingdom."]}},
-        "chests": [("B", "Greater Potion", 2), ("C", "Basic Mathball", 3)],
+        "chests": [("B", "Greater Potion", 2), ("C", "Numeris Core", 3)],
         "records": [("B", "record_order_charter", "Order charter"), ("C", "record_vault_log", "vault log"),
                     ("D", "record_vexa_notes", "old lab notes")],
         "sign": ["ALGEBRA CAVERN", "Monsters here think in unknowns. Every x has a value - find it!"],

@@ -93,13 +93,14 @@
    ],
    "dialogue": {
     "any": [
-     "Welcome to the MATHMART! Potions, Mathballs, boosts and study tomes - all for Numera Coins."
+     "Welcome to the MATHMART! Potions, Numeris Cores, boosts and study tomes - all for Numera Coins."
     ]
    },
    "remarks": [
-    "Advanced Mathballs in stock!",
+    "Advanced Numeris Cores in stock!",
     "EXP Stars are back!"
-   ]
+   ],
+   "sheet": "characters/PENNY"
   }
  ],
  "encounters": []

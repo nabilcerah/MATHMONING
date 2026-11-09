@@ -1,0 +1,62 @@
+{
+  "name": "HYPOT",
+  "source": "Random NPC/SIR HYPOT.jpg",
+  "poses": [
+    {
+      "pose": "stand",
+      "file": "0.png",
+      "dx": -44,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "1.png",
+      "dx": -44,
+      "dy": -96
+    },
+    {
+      "pose": "walk2",
+      "file": "2.png",
+      "dx": -51,
+      "dy": -96
+    },
+    {
+      "pose": "run",
+      "file": "3.png",
+      "dx": -46,
+      "dy": -94
+    },
+    {
+      "pose": "wave",
+      "file": "4.png",
+      "dx": -56,
+      "dy": -98
+    },
+    {
+      "pose": "cheer",
+      "file": "5.png",
+      "dx": -59,
+      "dy": -110
+    },
+    {
+      "pose": "surprised",
+      "file": "6.png",
+      "dx": -44,
+      "dy": -110
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -41,
+      "dy": -98
+    },
+    {
+      "pose": "fist",
+      "file": "8.png",
+      "dx": -28,
+      "dy": -108
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 88
+}

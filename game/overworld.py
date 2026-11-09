@@ -292,7 +292,7 @@ class Overworld:
         return f"characters/{name}"
 
     def companion_spec(self):
-        """The first companion (your lead, unless it stays in its Mathball)."""
+        """The first companion (your lead, unless it stays in its Numeris Core)."""
         followers = self.followers()
         if followers:
             return followers[0].spec

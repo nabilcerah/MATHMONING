@@ -4,8 +4,8 @@
     "Math Potion":       {"effect": "heal", "amount": 0.3, "use": "both", "price": 50, "description": "Restores 30% of max HP."},
     "Energy Potion":     {"effect": "focus", "amount": 2, "use": "battle", "price": 40, "description": "Restores 2 Focus in battle."},
     "Full Restore":      {"effect": "heal", "amount": 1.0, "use": "both", "price": 150, "description": "Restores all HP."},
-    "Basic Mathball":    {"effect": "capture", "bonus": 0, "use": "battle", "price": 100, "description": "Captures a weakened wild monster after a binding challenge."},
-    "Advanced Mathball": {"effect": "capture", "bonus": 15, "use": "battle", "price": 250, "description": "A stronger Mathball: +15% capture chance."},
+    "Numeris Core":    {"effect": "capture", "bonus": 0, "use": "battle", "price": 100, "description": "Captures a weakened wild monster after a binding challenge."},
+    "Advanced Numeris Core": {"effect": "capture", "bonus": 15, "use": "battle", "price": 250, "description": "A stronger Numeris Core: +15% capture chance."},
     "Attack Boost":      {"effect": "boost_attack", "amount": 1.25, "use": "battle", "price": 120, "description": "Your monsters deal 25% more damage for the rest of the battle."},
     "Defence Boost":     {"effect": "boost_defence", "amount": 0.75, "use": "battle", "price": 120, "description": "Your monsters take 25% less damage for the rest of the battle."},
     "Revive Crystal":    {"effect": "revive", "amount": 0.5, "use": "both", "price": 200, "description": "Revives a fainted monster with 50% HP."},
@@ -17,8 +17,9 @@
                           "description": "Bram's thanks. GEOMAX and GEOMAXIMUS take 10% less damage while you carry it."},
     "Crystal Shard":     {"effect": "sell", "use": "key", "price": 0, "sell": 30, "description": "A shard from the Crystal Seal. Sell it at the Mathmart."}
   },
-  "shop": ["Math Potion", "Energy Potion", "Full Restore", "Basic Mathball", "Advanced Mathball", "Attack Boost",
+  "shop": ["Math Potion", "Energy Potion", "Full Restore", "Numeris Core", "Advanced Numeris Core", "Attack Boost",
            "Defence Boost", "Revive Crystal", "Knowledge Tome", "EXP Star"],
-  "renamed": {"Health Potion": "Math Potion", "Focus Crystal": "Energy Potion", "Math Capsule": "Basic Mathball",
-              "Revival Crystal": "Revive Crystal", "EXP Booster": "Basic Mathball", "Learning Crystal": "Energy Potion"}
+  "renamed": {"Basic Mathball": "Numeris Core", "Advanced Mathball": "Advanced Numeris Core",
+              "Health Potion": "Math Potion", "Focus Crystal": "Energy Potion", "Math Capsule": "Numeris Core",
+              "Revival Crystal": "Revive Crystal", "EXP Booster": "Numeris Core", "Learning Crystal": "Energy Potion"}
 }

@@ -589,7 +589,7 @@
    ],
    "name": "mossy chest",
    "verb": "Open",
-   "item": "Basic Mathball",
+   "item": "Numeris Core",
    "count": 1,
    "title": "MOSSY CHEST"
   },
@@ -615,7 +615,7 @@
    ],
    "name": "sun-bleached chest",
    "verb": "Open",
-   "item": "Basic Mathball",
+   "item": "Numeris Core",
    "count": 2,
    "title": "DESERT CHEST"
   },
@@ -1125,7 +1125,7 @@
    ],
    "lines": [
     "Press TAB for your trainer menu: party, bag, quests and your learning profile.",
-    "Weaken a wild monster, then throw a Basic Mathball from your BAG to capture it.",
+    "Weaken a wild monster, then throw a Numeris Core from your BAG to capture it.",
     "Crystal beats Time, Time beats Dark, Dark beats Earth, Earth beats Crystal!",
     "Your monsters evolve at the shrine when they are strong in battle AND you are strong in their maths topic."
    ],
@@ -1241,7 +1241,8 @@
       "A remainder is where the next count begins. I've been telling everyone. Nobody believes me. Do you?"
      ]
     }
-   ]
+   ],
+   "sheet": "characters/TAMSIN"
   },
   {
    "id": "mira",
@@ -1249,7 +1250,7 @@
    "role": "Villager",
    "kind": "quest",
    "quest": "lost_numbers",
-   "sheet": "characters/LUNA",
+   "sheet": "characters/MIRA",
    "look": {
     "hair": "#6b3d2a",
     "skin": "#e9b48e",
@@ -1402,7 +1403,8 @@
    "remarks": [
     "Sums? Sums!",
     "DIVOWLs love Pine Ridge..."
-   ]
+   ],
+   "sheet": "characters/TOBI"
   },
   {
    "id": "fisherman",

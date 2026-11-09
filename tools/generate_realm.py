@@ -109,7 +109,7 @@ def map_data(ground, path, bridge, spires):
              "name": "Star Chart", "verb": "Study", "title": "STAR CHART",
              "text": ["A sky map is carved into the crystal. Three stars are missing from their places."]},
             {"id": "chest_glimmer", "kind": "chest", "pos": [28, 5], "name": "crystal chest", "verb": "Open",
-             "item": "Basic Mathball", "count": 2, "title": "CRYSTAL CHEST"},
+             "item": "Numeris Core", "count": 2, "title": "CRYSTAL CHEST"},
             {"id": "chest_shard", "kind": "chest", "pos": [38, 42], "name": "geode chest", "verb": "Open",
              "item": "Energy Potion", "count": 2, "title": "GEODE CHEST"},
         ],

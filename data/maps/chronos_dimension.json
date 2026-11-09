@@ -398,7 +398,8 @@
    "remarks": [
     "Good luck, trainer!",
     "Mind the seals..."
-   ]
+   ],
+   "sheet": "characters/TICK"
   },
   {
    "id": "chronos_dimension_merchant",
@@ -428,7 +429,8 @@
    "remarks": [
     "Fresh capsules!",
     "Fair prices, far from home."
-   ]
+   ],
+   "sheet": "characters/MERCHANT"
   },
   {
    "id": "vera",

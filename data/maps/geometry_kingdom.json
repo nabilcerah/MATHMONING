@@ -392,7 +392,8 @@
    "remarks": [
     "Good luck, trainer!",
     "Mind the seals..."
-   ]
+   ],
+   "sheet": "characters/HYPOT"
   },
   {
    "id": "geometry_kingdom_merchant",
@@ -422,7 +423,8 @@
    "remarks": [
     "Fresh capsules!",
     "Fair prices, far from home."
-   ]
+   ],
+   "sheet": "characters/MERCHANT"
   }
  ]
 }

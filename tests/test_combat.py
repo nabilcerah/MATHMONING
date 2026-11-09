@@ -242,11 +242,11 @@ class MathmartItemTests(unittest.TestCase):
         b.use_item("Full Restore")
         self.assertEqual(b.active.hp, b.active.max_hp)
         self.assertEqual(capture_manager.capture_chance(0.5, False, 15), 60)
-        c = battle(bag={"Advanced Mathball": 1})
+        c = battle(bag={"Advanced Numeris Core": 1})
         c.enemy.hp = 1
-        c.begin_capture("Advanced Mathball")
+        c.begin_capture("Advanced Numeris Core")
         c.resolve_capture(True)
-        self.assertEqual(c.inventory.count("Advanced Mathball"), 0)
+        self.assertEqual(c.inventory.count("Advanced Numeris Core"), 0)
         roll = next(e for e in c.log if e["kind"] == "capture_roll")
         self.assertEqual(roll["chance"], capture_manager.capture_chance(1 / c.enemy.max_hp, True, 15))
 

@@ -60,7 +60,7 @@
      "title": "CAMPFIRE",
      "text": ["The fire crackles. Sparks pop in twos and threes: 2, 4, 6, 8... skip counting is just multiplication in disguise."]},
     {"id": "chest_meadow", "kind": "chest", "pos": [26, 3], "name": "mossy chest", "verb": "Open",
-     "item": "Basic Mathball", "count": 1, "title": "MOSSY CHEST"},
+     "item": "Numeris Core", "count": 1, "title": "MOSSY CHEST"},
     {"id": "chest_grove", "kind": "chest", "pos": [4, 24], "name": "hidden chest", "verb": "Open",
      "item": "Math Potion", "count": 2, "title": "HIDDEN CHEST"},
     {"id": "chest_ridge", "kind": "chest", "pos": [37, 13], "name": "ridge chest", "verb": "Open",

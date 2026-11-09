@@ -101,7 +101,7 @@ class ArenaMatchTests(unittest.TestCase):
         self.assertGreater(self.arena.stats["rating"], 1000)
         self.assertEqual(self.repository.arena_stats(self.player.player_id)["wins"], 1)
         self.assertIn("arena_beaten:byte", self.repository.world_flags(self.player.player_id))
-        self.assertEqual(self.repository.inventory(self.player.player_id)["Basic Mathball"], 6)
+        self.assertEqual(self.repository.inventory(self.player.player_id)["Numeris Core"], 6)
         self.assertEqual(self.repository.overall_summary(self.player.player_id)["attempted"], attempts_before + 3)
         self.arena.draw(self.surface, 2)
         self.arena.handle_key(pygame.K_RETURN)

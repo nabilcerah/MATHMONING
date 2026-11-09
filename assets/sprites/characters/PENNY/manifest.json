@@ -1,0 +1,62 @@
+{
+  "name": "PENNY",
+  "source": "Random NPC/PENNY.jpg",
+  "poses": [
+    {
+      "pose": "stand",
+      "file": "0.png",
+      "dx": -28,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "1.png",
+      "dx": -33,
+      "dy": -96
+    },
+    {
+      "pose": "walk2",
+      "file": "2.png",
+      "dx": -26,
+      "dy": -96
+    },
+    {
+      "pose": "run",
+      "file": "3.png",
+      "dx": -29,
+      "dy": -97
+    },
+    {
+      "pose": "wave",
+      "file": "4.png",
+      "dx": -33,
+      "dy": -97
+    },
+    {
+      "pose": "cheer",
+      "file": "5.png",
+      "dx": -46,
+      "dy": -102
+    },
+    {
+      "pose": "surprised",
+      "file": "6.png",
+      "dx": -35,
+      "dy": -97
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -44,
+      "dy": -96
+    },
+    {
+      "pose": "fist",
+      "file": "8.png",
+      "dx": -30,
+      "dy": -105
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 56
+}

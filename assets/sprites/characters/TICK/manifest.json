@@ -1,0 +1,62 @@
+{
+  "name": "TICK",
+  "source": "Random NPC/KEEPER TICK.jpg",
+  "poses": [
+    {
+      "pose": "stand",
+      "file": "0.png",
+      "dx": -43,
+      "dy": -96
+    },
+    {
+      "pose": "walk1",
+      "file": "1.png",
+      "dx": -39,
+      "dy": -93
+    },
+    {
+      "pose": "walk2",
+      "file": "2.png",
+      "dx": -67,
+      "dy": -96
+    },
+    {
+      "pose": "run",
+      "file": "3.png",
+      "dx": -68,
+      "dy": -96
+    },
+    {
+      "pose": "wave",
+      "file": "4.png",
+      "dx": -43,
+      "dy": -96
+    },
+    {
+      "pose": "cheer",
+      "file": "5.png",
+      "dx": -72,
+      "dy": -105
+    },
+    {
+      "pose": "surprised",
+      "file": "6.png",
+      "dx": -49,
+      "dy": -96
+    },
+    {
+      "pose": "hurt",
+      "file": "7.png",
+      "dx": -85,
+      "dy": -101
+    },
+    {
+      "pose": "fist",
+      "file": "8.png",
+      "dx": -57,
+      "dy": -105
+    }
+  ],
+  "idle_height": 96,
+  "idle_width": 86
+}

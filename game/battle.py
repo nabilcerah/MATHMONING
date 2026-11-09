@@ -62,7 +62,7 @@ class BattleScreen:
         self.sub_selected = 0
         self.panel = None              # QuestionPanel while a question is open
         self.panel_kind = None         # "move" or "capture"
-        self.bag_filter = None         # "capture" when CAPTURE opened the bag on the Mathballs
+        self.bag_filter = None         # "capture" when CAPTURE opened the bag on the Numeris Cores
         self.capture_told = False      # the "it's weak, CAPTURE it!" tip shows once per battle
         self.pending_item = None
         self.answers = []
@@ -290,7 +290,7 @@ class BattleScreen:
                      and item_data()[item]["effect"] == "capture"]
             if len(balls) == 1:
                 self.choose_item(balls[0])
-            else:                                      # several kinds: pick which Mathball
+            else:                                      # several kinds: pick which Numeris Core
                 self.bag_filter, self.state, self.sub_selected = "capture", "bag", 0
         elif action == "BAG":
             self.bag_filter = None
@@ -421,7 +421,7 @@ class BattleScreen:
                 self.message = str(error)
                 return
             self._open_question(topic, "capture")
-            self.panel.feedback = f"Binding challenge! Answer to strengthen the capsule ({self.enemy.name}'s affinity)."
+            self.panel.feedback = f"Binding challenge! Answer to power the Numeris Core ({self.enemy.name}'s affinity)."
             return
         if info["effect"] in ("heal", "revive"):
             self.pending_item, self.state, self.sub_selected = item, "target", 0
@@ -499,16 +499,30 @@ class BattleScreen:
         height = 58 if self.battle.kind == "boss" else 46
         draw_creature(surface, self.enemy.spec, (252 + slide + shake, 72), height, pose, flip=True, tint=tint)
 
+    CORE = "items/NUMERIS_CORE"     # the capture device's 9-frame animation (assets/Characters/NUMERIS CORE.jpg)
+
     def _draw_capsule(self, surface, frame):
-        wobble = 0 if self.capsule <= 0 else ((self.capsule // 6) % 3 - 1) * 2
-        x, y = 252 + wobble, 66
-        pygame.draw.circle(surface, PALETTE["ink"], (x, y), 9)
-        pygame.draw.circle(surface, PALETTE["coral"], (x, y), 8)
-        pygame.draw.rect(surface, PALETTE["white"], (x - 8, y, 17, 8))
-        pygame.draw.line(surface, PALETTE["ink"], (x - 8, y), (x + 8, y), 2)
-        pygame.draw.circle(surface, PALETTE["gold"], (x, y), 3)
+        """The NUMERIS CORE: it opens, pulls the monster in, seals and wobbles - then a gold star if caught."""
+        from game import monster_sprites
+        elapsed = 60 - self.capsule if self.capsule > 0 else 60
+        if self.outcome == "captured" and self.capsule <= 0:
+            pose = 8                                            # success: the gold star
+        elif elapsed < 12:
+            pose = 4                                            # it opens
+        elif elapsed < 24:
+            pose = 5                                            # the pull
+        elif elapsed < 36:
+            pose = 6                                            # the monster is drawn inside
+        else:
+            pose = 7                                            # sealed, wobbling
+        wobble = ((self.capsule // 6) % 3 - 1) * 2 if pose == 7 and self.capsule > 0 else 0
+        x, y = 252 + wobble, 70                              # where the wild monster stood
+        if monster_sprites.available(self.CORE):
+            monster_sprites.draw(surface, self.CORE, (x, y), 30, pose)
+        else:                                                   # art missing: a simple crystal
+            pygame.draw.polygon(surface, PALETTE["sky"], [(x, y - 26), (x + 10, y - 13), (x, y), (x - 10, y - 13)])
         if self.outcome == "captured" and frame % 30 < 15:
-            for dx, dy in ((-12, -10), (12, -12), (0, -16)):
+            for dx, dy in ((-16, -26), (16, -28), (0, -36)):
                 pygame.draw.rect(surface, PALETTE["gold"], (x + dx, y + dy, 2, 2))
 
     def _draw_player(self, surface, frame):

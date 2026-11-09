@@ -426,12 +426,21 @@ class TrialsInTheWorldTests(GameCase):
         game._handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0))
         self.assertEqual(game.state, "overworld")
 
-    def test_infinity_zero_only_appears_once_unlocked(self):
-        from game.trial_roamers import spawn_for
+    def test_story_trials_wait_at_their_gates_and_the_rest_hide_far_away(self):
+        from game.trial_roamers import spawn_for, walking_distances
         chronos = load_map("chronos_dimension")
-        self.assertNotIn("infinity_zero", {t.id for t in spawn_for(chronos, {}, random.Random(1))})
         beaten = {m: {"wins": 1} for m in ("voltbyte", "mycomorph", "nullshade", "crystalgon", "equinox", "sphynox")}
-        self.assertIn("infinity_zero", {t.id for t in spawn_for(chronos, beaten, random.Random(1))})
+        ids = {t.id for t in spawn_for(chronos, beaten, random.Random(1))}
+        self.assertNotIn("infinity_zero", ids)                   # fought at the Time Spire gate instead
+        self.assertEqual(ids, {"chronowl", "hexabyte"})
+        gate = next(e for e in chronos.data["interactables"] if e.get("kind") == "boss_gate")
+        self.assertEqual(gate["trial"], "infinity_zero")
+        forest = load_map("number_forest")
+        distances = walking_distances(forest)
+        for trial in spawn_for(forest, {}, random.Random(2)):
+            same_area = [d for c, d in distances.items() if forest.area_at(c)[0] == forest.area_at(trial.home)[0]]
+            # Hidden in the far end of its area: further than 80% of that area's cells.
+            self.assertGreaterEqual(distances[trial.home], sorted(same_area)[int(len(same_area) * 0.8)], trial.id)
 
 
 class QuestTrackerTests(GameCase):
@@ -476,16 +485,6 @@ class QuestTrackerTests(GameCase):
 class SoundSettingsTests(GameCase):
     """1:47 report: a Settings screen that controls the sound."""
 
-    def setUp(self):
-        super().setUp()
-        from pathlib import Path
-        from unittest.mock import patch
-        from game import settings
-        target = Path(self.folder.name) / "settings.json" if hasattr(self, "folder") else Path(tempfile.mkdtemp()) / "s.json"
-        self.patcher = patch.object(settings, "_path", lambda: target)
-        self.patcher.start()
-        self.addCleanup(self.patcher.stop)
-
     def test_volumes_mute_and_scanlines_are_saved(self):
         from game import audio, settings
         from states.settings_state import ROWS, SettingsScreen
@@ -503,7 +502,8 @@ class SoundSettingsTests(GameCase):
         self.assertFalse(game.sound)
         self.assertFalse(audio._state["enabled"])
         screen.draw(pygame.Surface((320, 240)), 1)
-        self.assertEqual(settings.load()["sound"], False)          # remembered for next time
+        self.assertEqual(settings.load(game.settings_folder)["sound"], False)   # remembered for next time
+        self.assertTrue(str(game.settings_folder).startswith(self.folder.name))  # tests never touch real saves
         screen.handle_key(pygame.K_RETURN)
         self.assertTrue(audio._state["enabled"])
         screen.handle_key(pygame.K_ESCAPE)

@@ -181,6 +181,13 @@ class WorldPlaythroughTests(unittest.TestCase):
 
     def beat_boss(self):
         game = self.game
+        if game.state == "mbattle":                     # a Monster Trials boss (stone arch, guardian, spire)
+            battle = game.monster_battle
+            battle.engine.outcome = "won"
+            game.monster_battle = None
+            game._trial_over(battle)
+            finish_story(game)
+            return
         self.assertEqual(game.state, "battle")
         self.assertEqual(game.battle.battle.kind, "boss")
         game.battle.battle.enemy.hp = 0
@@ -224,7 +231,7 @@ class WorldPlaythroughTests(unittest.TestCase):
                 # The gate stays shut and the way on stays closed until the seals and the boss are done.
                 gate_id = f"{map_id}_gate"
                 self.interact(gate_id)
-                self.assertNotEqual(game.state, "battle")
+                self.assertNotIn(game.state, ("battle", "mbattle"))
                 self.interact(forward)
                 self.assertEqual(game.world.world.map_id, map_id)
                 for seal in seals:
@@ -235,9 +242,14 @@ class WorldPlaythroughTests(unittest.TestCase):
                 self.solve_challenge()
                 self.assertEqual(game.quests.status(quest_id), "active")      # still waiting for the boss
                 self.interact(gate_id)                                  # "Face ...!"
-                boss = game.battle.battle.enemy
-                self.assertEqual(boss.species_id, game.boss_gate()["boss"])
-                self.assertFalse(game.battle.battle.can_capture)
+                gate = game.boss_gate()
+                if gate.get("trial"):
+                    self.assertEqual(game.state, "mbattle")
+                    self.assertEqual(game.monster_battle.engine.defn.id, gate["trial"])
+                else:
+                    boss = game.battle.battle.enemy
+                    self.assertEqual(boss.species_id, gate["boss"])
+                    self.assertFalse(game.battle.battle.can_capture)
                 self.beat_boss()
                 self.assertEqual(game.quests.status(quest_id), "completed")
                 self.assertIn(game.boss_gate()["victory"][:20], game.world.message)

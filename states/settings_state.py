@@ -17,7 +17,8 @@ class SettingsScreen(Screen):
 
     def __init__(self, game):
         super().__init__(game)
-        self.values = store.load()
+        self.folder = getattr(game, "settings_folder", None)
+        self.values = store.load(self.folder)
         store.apply(game, self.values)
 
     def items(self):
@@ -33,7 +34,7 @@ class SettingsScreen(Screen):
         elif row in ("sound", "scanlines"):
             self.values[row] = not self.values[row]
         store.apply(self.game, self.values)
-        store.save(self.values)
+        store.save(self.values, self.folder)
         if row == "sfx" or (row == "sound" and self.values["sound"]):
             audio.play("select")             # hear the new level straight away
 

@@ -119,14 +119,17 @@ class RegionFlowTests(unittest.TestCase):
         self.assertEqual(quests.step_index("fading_numera"), 4)
         coins = game.repository.coins(game.player.player_id)
         self.talk_through("arch")                                 # "Face the beast!"
-        self.assertEqual(game.state, "battle")
-        self.assertEqual(game.battle.battle.kind, "boss")
-        self.assertFalse(game.battle.battle.can_run)
-        self.assertFalse(game.battle.battle.can_capture)
-        finish_battle(game.battle, limit=4000)
-        self.assertEqual(game.battle.outcome, "won")
-        game._update()
-        self.assertIn("boss_after_numerex", finish_story(game))
+        # The Arithmetic Beast is ARITHMORD, a Monster Trials creature (1:47 report).
+        self.assertEqual(game.state, "mbattle")
+        battle = game.monster_battle
+        self.assertEqual(battle.engine.defn.id, "arithmord")
+        battle.engine.outcome = "won"
+        game.monster_battle = None
+        game._trial_over(battle)
+        shown = finish_story(game)
+        self.assertIn("boss_after_numerex", shown)
+        self.assertIn("trial_story_arithmord", shown)            # the Professor tells its story
+        self.assertTrue(game.world.has_flag("trial_story:arithmord"))
         self.assertTrue(game.world.has_flag("boss:numerex"))
         self.assertEqual(quests.status("fading_numera"), "completed")
         self.assertTrue(game.world.has_flag("region:number_forest_complete"))

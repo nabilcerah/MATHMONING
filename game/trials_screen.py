@@ -53,6 +53,9 @@ class TrialsScreen:
         if not home:
             return "Unknown"
         world = load_map(home[0])
+        if home[1] is None:                                    # a story Trial, waiting behind its gate
+            gate = next((e for e in world.data.get("interactables", []) if e.get("trial") == monster.id), {})
+            return f"{gate.get('title', 'the gate').title()}, {world.name}"
         area = next((name for area_id, name, _ in world.areas if area_id == home[1]), "")
         return f"{area}, {world.name}" if area else world.name
 

@@ -21,7 +21,7 @@ Along the way you can:
 - **Follow quests:** restore the Numera Seals, find Mira's lost numbered stones, rebuild Bram's bridge to the desert, wake the Crystal Seal and decode the rune tablet.
 - **Visit the village:** the MATHMART sells potions, Mathballs, boosts, Knowledge Tomes and EXP Stars. At the MATHMON RECOVERY CENTER, Nurse Hana heals your team when you solve her problems.
 - **Uncover the story:** a prologue, four chapters and a final chapter with three endings, told in pixel dialogue boxes. Find the historical records in every world, discover what Professor Numeris has been hiding, and learn who the hooded stranger is. Everything you learn goes into the **Codex**.
-- **Hunt the Monster Trials:** twelve unique bosses roam the worlds, each with its own maths weakness, battle phases and tricks, and five mastery ranks to climb. Walk into one to battle it; the Trials catalogue (T) shows the ones you have met and hints where the others roam.
+- **Hunt the Monster Trials:** twelve legendary creatures, each with its own maths weakness, battle phases and a story. Three are story bosses behind their seals - ARITHMORD (the Arithmetic Beast at the stone arch), EQUINOX and INFINITY ZERO; the other nine hide in rocky nooks at the most remote dead ends of each world. After your first win the Professor tells its story, and the Codex (Trial Monsters) keeps it. The Trials catalogue (T) shows the ones you have met.
 - **Duel rivals in the Math Arena:** a best-of-five race where the first correct answer wins the round.
 - **Fill your MathDex** with every monster you have seen and befriended.
 
@@ -42,7 +42,7 @@ Wrong answers are part of the journey. A hint costs a little, a second try still
 | N / T / M / J | World map / Trials catalogue / MathDex / show-hide quest tracker |
 | F11 | Fullscreen |
 
-Menus also work with the mouse. On a phone, on-screen buttons appear so you can play with a tap.
+Menus also work with the mouse. Sound, music volume and sound-effect volume are in **Settings** (title screen or Esc > Settings). On a phone, on-screen buttons appear so you can play with a tap.
 
 In battle, choose **FIGHT / MONSTER / BAG / RUN**. Each move asks a question on its own topic, and first-try answers hit hardest.
 

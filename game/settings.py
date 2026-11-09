@@ -4,6 +4,7 @@ Desktop: saves/settings.json next to the save file. Browser: localStorage (the s
 the SQLite database, which holds per-player data; settings belong to the device).
 """
 import json
+from pathlib import Path
 
 from config import SAVE_DIR, WEB
 
@@ -11,11 +12,12 @@ KEY = "mathmon_settings_v1"
 DEFAULTS = {"sound": True, "music": 7, "sfx": 8, "scanlines": False}
 
 
-def _path():
-    return SAVE_DIR / "settings.json"
+def _path(folder=None):
+    """settings.json sits next to the save database (tests use their own temporary folder)."""
+    return (Path(folder) if folder else SAVE_DIR) / "settings.json"
 
 
-def load():
+def load(folder=None):
     data = {}
     try:
         if WEB:
@@ -23,8 +25,8 @@ def load():
             store = _storage()
             raw = store.getItem(KEY) if store is not None else None
             data = json.loads(str(raw)) if raw else {}
-        elif _path().exists():
-            data = json.loads(_path().read_text(encoding="utf-8"))
+        elif _path(folder).exists():
+            data = json.loads(_path(folder).read_text(encoding="utf-8"))
     except Exception:
         data = {}
     settings = dict(DEFAULTS)
@@ -34,7 +36,7 @@ def load():
     return settings
 
 
-def save(settings):
+def save(settings, folder=None):
     try:
         raw = json.dumps({k: settings[k] for k in DEFAULTS})
         if WEB:
@@ -43,8 +45,8 @@ def save(settings):
             if store is not None:
                 store.setItem(KEY, raw)
         else:
-            _path().parent.mkdir(parents=True, exist_ok=True)
-            _path().write_text(raw, encoding="utf-8")
+            _path(folder).parent.mkdir(parents=True, exist_ok=True)
+            _path(folder).write_text(raw, encoding="utf-8")
     except Exception:
         pass
 

@@ -827,7 +827,9 @@ class Overworld:
             elif kind == "capsule":
                 self._draw_capsule(surface, *item, frame)
             elif kind == "trial":
-                item.draw(surface, self.to_screen(item.x, item.y), frame, f"trial_seen:{item.id}" in self.flags)
+                item.draw_cave(surface, self.to_screen)
+                if item.visible_from(self.avatar):
+                    item.draw(surface, self.to_screen(item.x, item.y), frame, f"trial_seen:{item.id}" in self.flags)
             elif kind == "companion":
                 self._draw_companion(surface, *item, frame)
             else:

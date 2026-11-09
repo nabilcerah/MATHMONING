@@ -6,6 +6,7 @@ plus a stack of overlay screens (trainer menu, party, sanctuary, bag, shop, ques
 evolution, puzzle challenges, pause).
 """
 import asyncio
+from pathlib import Path
 import random
 import sys
 
@@ -115,7 +116,8 @@ class GameManager:
         self.sound = True
         self.settings_screen = None
         from game import settings as player_settings
-        player_settings.apply(self, player_settings.load())     # sound, volumes, scanlines from last time
+        self.settings_folder = Path(database_path).parent if database_path else None   # next to the save
+        player_settings.apply(self, player_settings.load(self.settings_folder))   # sound, volumes, scanlines
         self.player_name = ""
         self.frame = 0
         self.running = True

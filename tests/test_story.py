@@ -281,6 +281,7 @@ class StoryGameTests(unittest.TestCase):
             return 2 if len(asked) == 1 else len(options) - 1
         self.assertEqual(self.use("rowan", pick=practice_then_leave), ["prof_ch1"])
         self.assertEqual(game.state, "battle")
+        self.assertEqual(len(asked), 1)      # the battle starts right after choosing it (bug 9 Nov)
 
     def test_records_codex_and_the_locked_drawer(self):
         self.new_game()

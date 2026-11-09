@@ -18,7 +18,8 @@ BLIPS = {
 MUSIC = {"menu": "menu", "overworld": "forest", "number_forest": "forest", "village_shop": "forest",
          "village_sanctuary": "forest", "village_recovery": "forest", "algebra_cavern": "cavern",
          "geometry_kingdom": "kingdom", "chronos_dimension": "chronos", "crystal_realm": "chronos",
-         "battle": "battle", "boss": "boss"}
+         "battle": "battle", "boss": "boss",
+         "wild_battle": "wild_battle", "arena": "arena"}   # recorded tracks (assets/sounds/New Sound)
 
 _state = {"ready": None, "sounds": {}, "music": None, "enabled": True, "loop_sound": None}
 

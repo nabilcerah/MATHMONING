@@ -51,6 +51,7 @@ SHEETS = {
     "LUNA": ("LUNA.jpg", "light_checker"),
     "PROFESSOR_NUMERIS": ("PROFESSOR NUMERIS.jpg", "light_checker_solid"),  # white lab coat
     "REX": ("REX.jpg", "light_checker"),
+    "BRAM": ("bram.jpg.jpeg", "grey_checker"),      # the builder: a 5 x 3 sheet, see GRIDS
     # Advanced battle monsters (3x3 sheets laid out as idle / walk / attack rows).
     "CRYSTALGON": ("CRYSTALGON.jpg", "grey_checker"),
     "NULLSHADE": ("NULLSHADE.jpg", "grey_checker"),
@@ -65,7 +66,12 @@ SHEETS = {
     "SPHYNOX": ("SPHYNOX.jpg", "grey_checker"),
     "INFINITY_ZERO": ("INFINITY ZERO.jpg", "grey_checker"),
 }
-CHARACTERS = {"ALEX", "LUNA", "PROFESSOR_NUMERIS", "REX"}
+CHARACTERS = {"ALEX", "LUNA", "PROFESSOR_NUMERIS", "REX", "BRAM"}
+# Sheets that are not 3 x 3: (columns, rows, the (column, row) cell for each of the 9 poses).
+GRIDS = {
+    # stand, walk1, walk2, run, wave (talking: hammer raised), cheer, surprised, hurt, fist
+    "BRAM": (5, 3, [(0, 0), (3, 1), (4, 0), (3, 1), (1, 0), (2, 0), (4, 1), (2, 2), (2, 1)]),
+}
 ROW_LAYOUT = {"CRYSTALGON", "NULLSHADE", "VOLTBYTE", "CHRONOWL", "INFERMATH", "EQUINOX", "MYCOMORPH",
               "HEXABYTE", "GALAXION", "ARITHMORD", "SPHYNOX", "INFINITY_ZERO"}
 
@@ -197,10 +203,11 @@ def process(name, filename, mode):
     h, w = sheet.shape[:2]
     inset = 6 if mode in ("checker", "grey_checker") else 0  # skip the grid lines between cells
     frames = []
+    columns, rows, cells = GRIDS.get(name, (3, 3, [(i % 3, i // 3) for i in range(9)]))
     for index in range(9):
-        row, col = divmod(index, 3)
-        x0, x1 = col * w // 3 + inset, (col + 1) * w // 3 - inset
-        y0, y1 = row * h // 3 + inset, (row + 1) * h // 3 - inset
+        col, row = cells[index]
+        x0, x1 = col * w // columns + inset, (col + 1) * w // columns - inset
+        y0, y1 = row * h // rows + inset, (row + 1) * h // rows - inset
         cleaned = clean_frame(sheet[y0:y1, x0:x1], mode)
         if cleaned is None:
             raise SystemExit(f"{name}: pose {index} came out empty")

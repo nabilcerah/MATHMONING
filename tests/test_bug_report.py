@@ -328,3 +328,66 @@ class CaptureMenuTests(GameCase):
         battle.choose_action("CAPTURE")
         self.assertEqual(battle.state, "menu")
         self.assertIn("Mathball", battle.message)
+
+
+class Bug9NovTests(GameCase):
+    """Bug report 9 Nov: three companions, a livelier Recovery Center, Bram's sprite, battle music."""
+
+    def test_up_to_three_companions_follow_and_the_party_screen_picks_them(self):
+        game = self.game
+        game.party.add(create("GEOMAX", 5))
+        game.party.add(create("DIVOWL", 4))
+        game.save_party()
+        world = game.world
+        self.assertEqual([m.name for m in world.followers()], [m.name for m in game.party.party])
+        for _ in range(80):
+            world.update(1, 0)
+        spots = [world.avatar.follower_spot(14 * (i + 1)) for i in range(3)]
+        self.assertGreater(world.avatar.x - spots[2][0], world.avatar.x - spots[0][0])   # in a line behind
+        party = game.open_screen("party")
+        party.selected = 1
+        party.handle_key(pygame.K_f)                          # GEOMAX rests in its Mathball
+        self.assertEqual([m.name for m in world.followers()], [game.party.party[0].name, "DIVOWL"])
+        self.assertIn("rests", party.notice)
+        party.draw(pygame.Surface((320, 240)), 1)
+        party.handle_key(pygame.K_f)
+        self.assertEqual(len(world.followers()), 3)
+        game.world.draw(pygame.Surface((320, 240)), 1)
+
+    def test_the_recovery_center_has_people_who_move_and_talk(self):
+        game = self.game
+        game._travel_to_map("village_recovery", (7, 7))
+        world = game.world
+        self.assertGreaterEqual(len(world.npcs), 3)
+        self.assertEqual(len(world.painted_actors), 2)
+        start = {npc.id: (npc.x, npc.y) for npc in world.npcs}
+        said = set()
+        surface = pygame.Surface((320, 240))
+        for frame in range(1500):
+            world.update()
+            said |= {p.bubble[0] for p in world.painted_actors if p.bubble}
+            if frame % 100 == 0:
+                world.draw(surface, frame)
+        self.assertTrue(any((npc.x, npc.y) != start[npc.id] for npc in world.npcs))
+        self.assertTrue(said)                                 # the painted nurse / receptionist speak
+
+    def test_bram_has_his_own_sprite_and_battles_have_their_music(self):
+        forest = load_map("number_forest")
+        bram = next(n for n in forest.data["npcs"] if n["id"] == "bram")
+        self.assertEqual(bram["sheet"], "characters/BRAM")
+        self.assertTrue((ROOT / "assets" / "sprites" / "characters" / "BRAM" / "manifest.json").exists())
+        for track in ("wild_battle", "arena"):
+            self.assertTrue((ROOT / "assets" / "sounds" / f"{track}.ogg").exists(), track)
+        from game import audio
+        game = self.game
+        played = []
+        original = audio.music
+        audio.music = played.append
+        try:
+            game._start_battle(create("VOLTIX", 2), "wild")
+            game._play_music()
+            game.battle.battle.kind = "trainer"
+            game._play_music()
+        finally:
+            audio.music = original
+        self.assertEqual(played, ["wild_battle", "battle"])

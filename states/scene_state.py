@@ -84,6 +84,9 @@ class SceneScreen(Screen):
             else:
                 self._show(line)
             return
+        if getattr(self, "end_after_lines", False):
+            self._finish()
+            return
         if self.choices and not self._choices_finished():
             self.in_choice, self.selected = True, 0
             return
@@ -123,6 +126,10 @@ class SceneScreen(Screen):
         self.actions += actions
         if quest:
             self.quests.append(quest)
+        if actions:
+            # An option that starts something (e.g. "Practice battle?") ends the talk after its
+            # lines, so the battle begins right away instead of after "Nothing for now".
+            self.end_after_lines = True
         self.queue = list(option.get("lines", []))
         self.line = None
         self._next_line()

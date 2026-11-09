@@ -462,6 +462,10 @@ class GameManager:
     def _play_music(self, boss=False):
         if boss:
             audio.music("boss")
+        elif self.state == "battle" and self.battle is not None and self.battle.battle.kind == "wild":
+            audio.music("wild_battle")
+        elif self.state == "arena":
+            audio.music("arena")
         elif self.state in ("battle", "mbattle"):
             audio.music("battle")
         elif self.state in ("menu", "name", "avatar", "starter", "settings", "confirm_new"):

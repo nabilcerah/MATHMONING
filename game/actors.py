@@ -47,21 +47,24 @@ def _overlaps(a, b):
     return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
 
 
+FOLLOW_GAP = 14     # trail steps between the avatar and each companion
+
+
 class Avatar(Actor):
     SPEED = 1.15  # pixels per frame at 60 FPS
 
     def __init__(self, x, y):
         super().__init__(x, y, PLAYER_LOOK)
-        self.trail = deque(maxlen=40)
+        self.trail = deque(maxlen=FOLLOW_GAP * 3 + 6)   # room for three companions in a line
         self.reset_trail()
 
     def reset_trail(self):
-        """Put the companion one step behind the avatar (used on spawn and after long jumps)."""
+        """Line the companions up behind the avatar (used on spawn and after long jumps)."""
         fx, fy = self.facing
-        spot = (self.x - fx * 14, self.y - fy * 10 if fy else self.y)
         self.trail.clear()
-        for _ in range(self.trail.maxlen):
-            self.trail.append((spot[0], spot[1], self.facing))
+        for i in range(self.trail.maxlen, 0, -1):     # oldest (furthest back) first
+            back = i * 0.9
+            self.trail.append((self.x - fx * back, self.y - fy * back * 0.75, self.facing))
 
     def walk(self, dx, dy, world, others=()):
         """Move with axis-separated collision and gentle corner sliding. Returns distance moved."""
@@ -113,7 +116,8 @@ class Avatar(Actor):
         cx, cy = self.center()
         return cx + self.facing[0] * 12, cy + self.facing[1] * 12 + (3 if self.facing[1] > 0 else 0)
 
-    def follower_spot(self, lag=14):
+    def follower_spot(self, lag=None):
+        lag = lag or FOLLOW_GAP
         return self.trail[-lag] if len(self.trail) >= lag else self.trail[0]
 
 

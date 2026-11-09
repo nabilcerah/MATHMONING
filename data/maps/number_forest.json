@@ -1244,7 +1244,7 @@
    "role": "Builder",
    "kind": "quest",
    "quest": "broken_bridge",
-   "sheet": "characters/REX",
+   "sheet": "characters/BRAM",
    "look": {
     "hair": "#3b2a1a",
     "skin": "#c08a5e",

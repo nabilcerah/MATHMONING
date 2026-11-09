@@ -9,3 +9,4 @@ build/
 .vercel
 .env*
 .vbuild/
+assets/sounds/New Sound/

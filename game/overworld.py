@@ -10,7 +10,7 @@ import random
 import pygame
 
 from config import PALETTE, ROOT, VIRTUAL_WIDTH
-from game.actors import NPC, Avatar
+from game.actors import FOLLOW_GAP, NPC, Avatar
 from game.creatures import draw_creature
 from game.sprites import frame_for
 from monsters.monster_data import challenges, species
@@ -62,6 +62,30 @@ def _clear_replaced_buildings(world, name, image):
             image.set_clip(None)
         elif name == getattr(world, "canopy", None):
             image.fill((0, 0, 0, 0), area)
+
+
+class PaintedActor:
+    """Someone painted into the background art: they breathe and now and then say something."""
+
+    def __init__(self, spec, index):
+        self.rect = spec["rect"]                  # background pixels: x, y, w, h
+        self.remarks = spec.get("remarks", [])
+        self.phase = index * 37
+        # Speech bubbles sit above the painted head (x, y are the 'feet' the bubble code expects).
+        self.x = self.rect[0] + self.rect[2] / 2
+        self.y = self.rect[1] + 20
+        self.bubble = None
+        self.timer = 200 + index * 170
+
+    def update(self, avatar, rng):
+        if self.bubble:
+            message, frames = self.bubble
+            self.bubble = (message, frames - 1) if frames > 1 else None
+        self.timer -= 1
+        if self.timer <= 0:
+            self.timer = rng.randint(420, 720)
+            if self.remarks and math.hypot(avatar.x - self.x, avatar.y - self.y) < 160:
+                self.bubble = (rng.choice(self.remarks), 200)
 
 
 class Dialogue:
@@ -178,6 +202,7 @@ class Overworld:
         self.npcs = [NPC(spec, self.world, self.rng) for spec in self.world.data.get("npcs", [])
                      if self._npc_visible(spec)]
         self.objects = {entry["id"]: entry for entry in self.world.data.get("interactables", [])}
+        self.painted_actors = [PaintedActor(spec, i) for i, spec in enumerate(self.world.data.get("painted_actors", []))]
         self.target = None
         self.dialogue = None
         self.message = ""
@@ -260,9 +285,28 @@ class Overworld:
         return f"characters/{name}"
 
     def companion_spec(self):
-        """Your lead monster follows you around."""
+        """The first companion (your lead, unless it stays in its Mathball)."""
+        followers = self.followers()
+        if followers:
+            return followers[0].spec
         lead = self.party.lead if self.party else None
         return lead.spec if lead else species("FRACTELLA")
+
+    @staticmethod
+    def stay_flag(monster):
+        return f"stay:{monster.instance_id};"
+
+    def followers(self):
+        """Up to three party MathMon walk behind you; the Party screen (F) lets one stay in its ball."""
+        party = self.party.party if self.party else []
+        return [m for m in party if self.stay_flag(m) not in self.flags][:3]
+
+    def clear_flag(self, flag):
+        if flag not in self.flags:
+            return
+        self.flags.discard(flag)
+        if self.repository and self.player.player_id:
+            self.repository.clear_world_flags(self.player.player_id, flag)
 
     def set_message(self, message, frames=210):
         self.message = str(message)
@@ -369,6 +413,8 @@ class Overworld:
         if self.dialogue:
             self.dialogue.age += 1
             dx = dy = 0
+        for painted in self.painted_actors:
+            painted.update(self.avatar, self.rng)
         # The player can always walk through people (bug report: NPCs standing in narrow paths blocked the way).
         moved = self.avatar.walk(dx, dy, self.world, ())
         if (dx or dy) and not moved:
@@ -740,6 +786,7 @@ class Overworld:
                 else:
                     self._draw_tile(surface, sx, sy, mx, my, frame, rustle)
 
+        self._draw_painted_actors(surface, frame)
         # Depth-sorted entities: objects, NPCs, companion and avatar.
         drawables = []
         for entry in self.objects.values():
@@ -748,8 +795,9 @@ class Overworld:
             drawables.append((npc.y, "npc", npc))
         for roamer in self.roamers:
             drawables.append((roamer.y, "roamer", roamer))
-        fx, fy, ffacing = self.avatar.follower_spot()
-        drawables.append((fy - 0.5, "companion", (fx, fy, ffacing)))
+        for place, monster in enumerate(self.followers()):
+            fx, fy, ffacing = self.avatar.follower_spot(FOLLOW_GAP * (place + 1))
+            drawables.append((fy - 0.5, "companion", (fx, fy, ffacing, monster.spec)))
         drawables.append((self.avatar.y, "avatar", self.avatar))
         for _, kind, item in sorted(drawables, key=lambda d: d[0]):
             if kind == "object":
@@ -773,6 +821,9 @@ class Overworld:
         for npc in self.npcs:
             if npc.bubble:
                 self._draw_bubble(surface, npc)
+        for painted in self.painted_actors:
+            if painted.bubble:
+                self._draw_bubble(surface, painted)
         surface.set_clip(None)
         self._draw_hud(surface, frame)
 
@@ -1097,9 +1148,8 @@ class Overworld:
         bob = 1 if actor.moving and int(actor.walk_time * 8) % 2 else 0
         surface.blit(image, (sx - 8, sy - 15 - bob))
 
-    def _draw_companion(self, surface, x, y, facing, frame):
+    def _draw_companion(self, surface, x, y, facing, spec, frame):
         sx, sy = self.to_screen(x, y)
-        spec = self.companion_spec()
         hop = 1 if self.avatar.moving and (frame // 6) % 2 else 0
         pygame.draw.ellipse(surface, (50, 96, 62), (sx - 6, sy - 2, 12, 4))
         pose = ("idle", "idle2", "idle3", "idle2")[(frame // 8) % 4] if self.avatar.moving else "idle"
@@ -1182,6 +1232,20 @@ class Overworld:
         for cx, cy, sx, sy in ((x, y, 1, 1), (x + w, y, -1, 1), (x, y + h, 1, -1), (x + w, y + h, -1, -1)):
             pygame.draw.line(surface, color, (cx, cy), (cx + 3 * sx, cy))
             pygame.draw.line(surface, color, (cx, cy), (cx, cy + 3 * sy))
+
+    def _draw_painted_actors(self, surface, frame):
+        """People painted into an interior (the nurse, the receptionist) breathe: their part of the
+        painting lifts by a pixel now and then, so the room never looks like a still photo."""
+        if not self.painted_actors:
+            return
+        background = painted_background(self.world)
+        scale = self.world.background_scale
+        for index, painted in enumerate(self.painted_actors):
+            if (frame + painted.phase) % 100 >= 50:
+                continue
+            x, y, w, h = (v * scale for v in painted.rect)
+            sx, sy = self.to_screen(x, y)
+            surface.blit(background, (sx, sy - 1), (x, y, w, h))
 
     def _draw_bubble(self, surface, npc):
         message, frames_left = npc.bubble

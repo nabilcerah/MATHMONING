@@ -1,5 +1,5 @@
 {
- "_comment": "MATHMON RECOVERY CENTER (MCR) interior. Background art: assets/backgrounds/village_recovery_interior.png (from 'Interior Mathmon Recovery Center (MCR).jpeg'); collision from tools/process_building_art.py. The nurse and the information desk are part of the painting, so their interactables are painted. Drawn at half size (15 x 9 tiles) so the painted nurse matches the characters' size.",
+ "_comment": "MATHMON RECOVERY CENTER (MCR) interior. Background art: assets/backgrounds/village_recovery_interior.png (from 'Interior Mathmon Recovery Center (MCR).jpeg'); collision from tools/process_building_art.py. The nurse and the information desk are part of the painting, so their interactables are painted. Drawn at half size (15 x 9 tiles) so the painted nurse matches the characters' size. painted_actors: people in the painting who breathe and talk (game/overworld.py PaintedActor); npcs: visitors walking between the waypoints.",
  "id": "village_recovery",
  "name": "Mathmon Recovery Center",
  "interior": true,
@@ -32,7 +32,40 @@
    ]
   }
  ],
- "waypoints": {},
+ "waypoints": {
+  "entrance": [
+   5,
+   6
+  ],
+  "counter_left": [
+   6,
+   4
+  ],
+  "counter_right": [
+   8,
+   4
+  ],
+  "chairs": [
+   10,
+   6
+  ],
+  "corner": [
+   13,
+   4
+  ],
+  "window": [
+   13,
+   7
+  ],
+  "board": [
+   2,
+   3
+  ],
+  "stairs": [
+   2,
+   4
+  ]
+ },
  "interactables": [
   {
    "id": "exit_recovery",
@@ -87,6 +120,151 @@
    ]
   }
  ],
- "npcs": [],
- "encounters": []
+ "npcs": [
+  {
+   "id": "mcr_kai",
+   "name": "Kai",
+   "role": "Trainer",
+   "kind": "talker",
+   "look": {
+    "hair": "#2d2a26",
+    "skin": "#c99a6e",
+    "clothes": "#3f7fbf",
+    "accent": "#f2bb52",
+    "pants": "#2e3240",
+    "shoes": "#2a1d14"
+   },
+   "routine": [
+    {
+     "waypoint": "entrance",
+     "wait": 3,
+     "face": "up"
+    },
+    {
+     "waypoint": "counter_right",
+     "wait": 6,
+     "face": "up"
+    },
+    {
+     "waypoint": "chairs",
+     "wait": 7,
+     "face": "right"
+    }
+   ],
+   "lines": [
+    "My VOLTIX lost to a wild DIVOWL. Division is hard when you're tired!",
+    "Nurse Hana asked me three questions. I got two - good enough for a nap."
+   ],
+   "remarks": [
+    "Come on, capsule...",
+    "I should practise my times tables."
+   ]
+  },
+  {
+   "id": "mcr_mia",
+   "name": "Mia",
+   "role": "Young trainer",
+   "kind": "talker",
+   "look": {
+    "hair": "#e07a3a",
+    "skin": "#f0c8a0",
+    "clothes": "#d9577a",
+    "accent": "#ffffff",
+    "pants": "#3a3f50",
+    "shoes": "#5a2a1a"
+   },
+   "routine": [
+    {
+     "waypoint": "corner",
+     "wait": 6,
+     "face": "down"
+    },
+    {
+     "waypoint": "window",
+     "wait": 5,
+     "face": "left"
+    }
+   ],
+   "lines": [
+    "Did you know the capsule glows greener as your MathMon gets better?",
+    "I'm waiting for my AQUABIT. It swallowed a negative number."
+   ],
+   "remarks": [
+    "Is it done yet?",
+    "Seven... eight... nine...!"
+   ]
+  },
+  {
+   "id": "mcr_pell",
+   "name": "Old Pell",
+   "role": "Retired trainer",
+   "kind": "talker",
+   "look": {
+    "hair": "#d8d8d8",
+    "skin": "#d9a77a",
+    "clothes": "#6b5a3a",
+    "accent": "#a0c060",
+    "pants": "#3a3a3a",
+    "shoes": "#2a1d14"
+   },
+   "routine": [
+    {
+     "waypoint": "board",
+     "wait": 8,
+     "face": "up"
+    },
+    {
+     "waypoint": "stairs",
+     "wait": 5,
+     "face": "down"
+    },
+    {
+     "waypoint": "counter_left",
+     "wait": 4,
+     "face": "up"
+    }
+   ],
+   "lines": [
+    "In my day the capsules ran on long division. You young ones have it easy!",
+    "Read the information desk. Knowledge is the best medicine."
+   ],
+   "remarks": [
+    "Hmm, a new poster.",
+    "Back in my day..."
+   ]
+  }
+ ],
+ "encounters": [],
+ "painted_actors": [
+  {
+   "name": "Nurse Hana",
+   "rect": [
+    111,
+    18,
+    19,
+    24
+   ],
+   "remarks": [
+    "Next patient, please!",
+    "Every right answer powers the capsule.",
+    "Rest is part of training too!",
+    "Fractions heal fastest. Don't ask me why."
+   ]
+  },
+  {
+   "name": "Receptionist",
+   "rect": [
+    47,
+    19,
+    18,
+    26
+   ],
+   "remarks": [
+    "Welcome to the Recovery Center!",
+    "The capsule fits one MathMon at a time.",
+    "Visiting hours: whenever you need us.",
+    "Please sign the guest book... in numbers!"
+   ]
+  }
+ ]
 }

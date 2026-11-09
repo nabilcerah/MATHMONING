@@ -25,7 +25,14 @@ MONSTER_AT = (248, 102)
 PLAYER_AT = (62, 146)
 EVENT_FRAMES = 54          # how long each monster-turn event stays on screen (ENTER skips)
 POTION_HEAL = 0.35
-ACTIONS = ("ATTACK", "SKILLS", "POTION", "LOG", "FLEE")
+# The same menu as every other battle (report: boss fights felt different and you could not switch).
+ACTIONS = ("FIGHT", "SKILLS", "MONSTER", "BAG", "RUN")
+ALIASES = {"ATTACK": "FIGHT", "FLEE": "RUN", "POTION": "BAG"}      # older names still work
+BAG_EFFECTS = ("heal", "revive", "boost_attack", "boost_defence")
+TIP_FLAG = "tip:trial_battle"
+TIP = ("TRIAL BATTLE! This monster has PHASES, SHIELDS and charged attacks. FIGHT: pick a maths topic - green "
+       "topics hit its weakness. Answer interrupt questions to stop a charge. MONSTER: switch your fighter. "
+       "BAG: items. L: battle log.")
 COLORS = {"sky": PALETTE["sky"], "gold": PALETTE["gold"], "coral": PALETTE["coral"], "mint": PALETTE["mint"],
           "muted": PALETTE["muted"], "cream": PALETTE["cream"], "white": PALETTE["white"]}
 
@@ -81,6 +88,13 @@ class MonsterBattleScreen:
         self.animator.play("walk", loop=True)
         self._enqueue(self.engine.begin())
         self.message = self.queue[0].text if self.queue else ""
+        self.bag_items = []
+        self.forced_switch = False       # your fighter fainted: choose who battles next
+        self.tip = None
+        flags = repository.world_flags(player.player_id) if getattr(player, "player_id", None) else set()
+        if TIP_FLAG not in flags and getattr(player, "player_id", None):
+            self.tip = TIP                # shown once, the first time you face a Trial monster
+            repository.set_world_flag(player.player_id, TIP_FLAG)
 
     # ================================================================== helpers
     @property
@@ -182,7 +196,7 @@ class MonsterBattleScreen:
         self.age += 1
         self.animator.update()
         self.effects.update()
-        if self.state == "intro" and self.age > 50:
+        if self.state == "intro" and self.age > 50 and not self.tip:
             self.animator.play("idle", loop=True)
             self.state = "events"
         if self.state == "question":
@@ -215,6 +229,15 @@ class MonsterBattleScreen:
         self.player_hp_shown += (self.engine.player.hp - self.player_hp_shown) * 0.15
 
     def _after_events(self):
+        if self.engine.outcome == "lost" and self.switch_options():
+            # Your fighter fainted but the team can go on: choose who battles next.
+            self.fighter.hp = 0
+            self.team.save(self.fighter)
+            self.engine.outcome = None
+            self.forced_switch = True
+            self.state, self.sub_selected = "party", 0
+            self.message = f"{self.fighter_spec.name} fainted! Choose who battles next."
+            return
         if self.engine.outcome:
             self._finish()
         elif self.state == "events":
@@ -243,6 +266,7 @@ class MonsterBattleScreen:
             return
         if self.state == "intro":
             if key in (pygame.K_RETURN, pygame.K_SPACE):
+                self.tip = None
                 self.age = 60
         elif self.state == "events":
             if key in (pygame.K_RETURN, pygame.K_SPACE):
@@ -253,6 +277,10 @@ class MonsterBattleScreen:
             self._topic_key(key)
         elif self.state == "skills":
             self._skills_key(key)
+        elif self.state == "party":
+            self._party_key(key)
+        elif self.state == "bag":
+            self._bag_key(key)
         elif self.state == "question":
             self._question_key(key, unicode)
         elif self.state == "result":
@@ -272,33 +300,132 @@ class MonsterBattleScreen:
 
     def choose(self, action):
         engine = self.engine
-        if action == "ATTACK":
+        action = ALIASES.get(action, action)
+        if action == "FIGHT":
             if engine.forced_question():
                 self._ask(None)
             else:
                 self.state, self.sub_selected = "topic", 0
         elif action == "SKILLS":
             self.state, self.sub_selected = "skills", 0
-        elif action == "POTION":
-            if engine.player.hp >= engine.player.max_hp:
-                self.message = "HP is already full."
-            elif not self.repository.use_item(self.player.player_id, "Math Potion"):
-                self.message = "No Math Potions left. Win battles to earn more."
+        elif action == "MONSTER":
+            if not self.switch_options():
+                self.message = "No one else can battle right now."
             else:
-                healed = engine.heal_player(round(engine.player.max_hp * POTION_HEAL))
-                self._popup(f"+{healed}", PLAYER_AT[0], PLAYER_AT[1] - 48, PALETTE["mint"])
-                engine.log.append(("item", f"A Math Potion restores {healed} HP."))
-                self.message = (f"A Math Potion restores {healed} HP and you brace yourself - {engine.name}'s next "
-                                "hit is halved!")
-                self._monster_turn()
+                self.state, self.sub_selected = "party", 0
+        elif action == "BAG":
+            self.bag_items = self.usable_items()
+            if not self.bag_items:
+                self.message = "Your bag has nothing to use in battle. Visit the Mathmart!"
+            else:
+                self.state, self.sub_selected = "bag", 0
         elif action == "LOG":
             self.show_log = True
-        elif action == "FLEE":
+        elif action == "RUN":
             engine.outcome = "fled"
             engine.log.append(("info", "You step back from the battle."))
             self.fighter.hp = engine.player.hp
             self.team.save(self.fighter)
             self.state, self.closed = "over", True
+
+    # ------------------------------------------------------------------ MONSTER: switch your fighter
+    def switch_options(self):
+        """Party members who can take over (not fainted, not already battling)."""
+        return [m for m in self.team.members if m is not self.fighter and m.hp > 0]
+
+    def switch_to(self, member, free=False):
+        """Send ``member`` in. The boss keeps its HP, phase and charge. Costs your turn unless ``free``."""
+        engine = self.engine
+        self.fighter.hp = engine.player.hp
+        self.team.save(self.fighter)
+        trainer_level = engine.trainer_level
+        self.fighter = member
+        self.fighter_spec = self.team.spec_of(member)
+        engine.player = PlayerCombatant.from_level(self.fighter_spec.name, member.level, member.hp, member.max_hp,
+                                                   trainer_level)
+        self.player_hp_shown = float(member.hp)
+        self.player_pose = ("idle", 0)
+        engine.log.append(("info", f"Go, {self.fighter_spec.name}!"))
+        self.message = f"Go, {self.fighter_spec.name}!"
+        self._popup(self.fighter_spec.name, PLAYER_AT[0], PLAYER_AT[1] - 56, PALETTE["gold"])
+        if free:
+            self.state, self.selected = "menu", 0
+        else:
+            self._monster_turn()
+
+    def _party_key(self, key):
+        options = self.switch_options()
+        if key == pygame.K_ESCAPE and not self.forced_switch:
+            self.state = "menu"
+            return
+        if not options:
+            return
+        if key in (pygame.K_UP, pygame.K_w):
+            self.sub_selected = (self.sub_selected - 1) % len(options)
+        elif key in (pygame.K_DOWN, pygame.K_s):
+            self.sub_selected = (self.sub_selected + 1) % len(options)
+        elif key in (pygame.K_RETURN, pygame.K_SPACE):
+            free, self.forced_switch = self.forced_switch, False
+            self.switch_to(options[self.sub_selected], free=free)
+
+    # ------------------------------------------------------------------ BAG: battle items
+    def usable_items(self):
+        from monsters.monster_data import items as item_data
+        bag = self.repository.inventory(self.player.player_id) if hasattr(self.repository, "inventory") else {}
+        data = item_data()
+        return [name for name, count in bag.items()
+                if count > 0 and data.get(name, {}).get("effect") in BAG_EFFECTS
+                and data[name].get("use") in ("battle", "both")]
+
+    def use_item(self, name):
+        """Use a bag item on your fighter (or revive a fainted team-mate). Costs your turn."""
+        from monsters.monster_data import items as item_data
+        info = item_data()[name]
+        engine = self.engine
+        effect = info["effect"]
+        if effect == "heal" and engine.player.hp >= engine.player.max_hp:
+            self.message = "HP is already full."
+            return False
+        fainted = [m for m in self.team.members if m is not self.fighter and m.hp <= 0]
+        if effect == "revive" and not fainted:
+            self.message = "No one in your team has fainted."
+            return False
+        if not self.repository.use_item(self.player.player_id, name):
+            self.message = f"No {name} left."
+            return False
+        if effect == "heal":
+            healed = engine.heal_player(round(engine.player.max_hp * float(info["amount"])))
+            self._popup(f"+{healed}", PLAYER_AT[0], PLAYER_AT[1] - 48, PALETTE["mint"])
+            text_ = (f"{name} restores {healed} HP and you brace yourself - {engine.name}'s next hit is halved!")
+        elif effect == "revive":
+            member = fainted[0]
+            member.hp = max(1, round(member.max_hp * float(info["amount"])))
+            self.team.save(member)
+            text_ = f"{name}: {self.team.name_of(member)} is back on its feet!"
+        elif effect == "boost_attack":
+            engine.player.attack *= float(info["amount"])
+            text_ = f"{name}: your attacks hit {round((float(info['amount']) - 1) * 100)}% harder!"
+        else:
+            engine.player.defence /= float(info["amount"])
+            text_ = f"{name}: you take less damage!"
+        engine.log.append(("item", text_))
+        self.message = text_
+        self._monster_turn()
+        return True
+
+    def _bag_key(self, key):
+        if key == pygame.K_ESCAPE:
+            self.state = "menu"
+            return
+        if not self.bag_items:
+            return
+        if key in (pygame.K_UP, pygame.K_w):
+            self.sub_selected = (self.sub_selected - 1) % len(self.bag_items)
+        elif key in (pygame.K_DOWN, pygame.K_s):
+            self.sub_selected = (self.sub_selected + 1) % len(self.bag_items)
+        elif key in (pygame.K_RETURN, pygame.K_SPACE):
+            if not self.use_item(self.bag_items[self.sub_selected]):
+                self.state = "menu"
 
     def _topic_key(self, key):
         options = self.engine.topic_options()
@@ -417,6 +544,8 @@ class MonsterBattleScreen:
             pygame.draw.rect(surface, color, (0, 143, 320, 1))
             text(surface, message, (160, 136), 13, color, center=True)
         self._draw_bottom(surface, frame)
+        if self.tip and self.state == "intro":
+            self._draw_tip(surface)
         if self.screen_flash:
             flash = pygame.Surface(surface.get_size())
             flash.fill(PALETTE["white"])
@@ -570,6 +699,14 @@ class MonsterBattleScreen:
                 note = {"weak": "WEAKNESS x1.5!", "resist": "RESISTED x0.6", "normal": "normal damage"}[option["effect"]]
                 text(surface, note, (264, 216), 7, PALETTE["mint"] if option["effect"] == "weak" else
                      PALETTE["coral"] if option["effect"] == "resist" else PALETTE["muted"], center=True)
+            elif self.state == "party":
+                options = self.switch_options()
+                labels = [f"{self.team.name_of(m)[:9]} {m.hp}/{m.max_hp}" for m in options]
+                menu(surface, (214, 150, 100, 74), labels or ["(nobody)"], self.sub_selected, 8, frame, (), 13)
+            elif self.state == "bag":
+                bag = self.repository.inventory(self.player.player_id)
+                labels = [f"{name[:12]} x{bag.get(name, 0)}" for name in self.bag_items]
+                menu(surface, (214, 150, 100, 74), labels, self.sub_selected, 8, frame, (), 13)
             elif self.state == "skills":
                 labels, locked = [], []
                 for index, skill in enumerate(SKILLS):
@@ -585,12 +722,20 @@ class MonsterBattleScreen:
                 skill = SKILLS[self.sub_selected]
                 wrapped(surface, skill.description, (12, 200, 190, 20), 8, PALETTE["sky"], 9, 2)
         hints = {"menu": "UP/DOWN  ENTER   L: BATTLE LOG",
+                 "party": ("CHOOSE WHO BATTLES NEXT" if self.forced_switch else "SWITCH COSTS YOUR TURN   ESC BACK"),
+                 "bag": "USING AN ITEM COSTS YOUR TURN   ESC BACK",
                  "topic": "CHOOSE A MATHS ATTACK   GREEN = WEAKNESS   ESC BACK",
                  "skills": "SKILLS ARE FREE ACTIONS   ESC BACK",
                  "question": ("TYPE + ENTER   TAB: OPTIONS   H: HINT" if self.typing else
                               "1-5 OR ARROWS + ENTER   TAB: TYPE IT (x1.15)   H: HINT   F: FOCUS"),
                  "result": "ENTER: CONTINUE", "events": "ENTER: NEXT", "over": "ENTER: LEAVE"}.get(self.state, "")
         text(surface, hints, (160, 232), 7, PALETTE["cream"], center=True)
+
+    def _draw_tip(self, surface):
+        panel(surface, (20, 60, 280, 84), PALETTE["night"], PALETTE["gold"])
+        text(surface, "HOW TRIAL BATTLES WORK", (160, 66), 10, PALETTE["gold"], center=True)
+        wrapped(surface, self.tip, (28, 80, 264, 58), 8, PALETTE["white"], 9, 6)
+        text(surface, "ENTER: GOT IT", (160, 136), 8, PALETTE["mint"], center=True)
 
     def _draw_question(self, surface, frame):
         engine = self.engine

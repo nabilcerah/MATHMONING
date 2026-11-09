@@ -100,7 +100,7 @@ class ScreenTests(unittest.TestCase):
                 screen.draw(self.surface, frames)
                 frames += 1
                 state = screen.state
-                if state in ("menu", "topic", "result", "over"):
+                if state in ("intro", "menu", "topic", "result", "over"):     # intro: the first-time tip
                     screen.handle_key(pygame.K_RETURN)
                 elif state == "events":
                     screen.handle_key(pygame.K_RETURN)
@@ -144,7 +144,10 @@ class ScreenTests(unittest.TestCase):
         screen.handle_key(pygame.K_ESCAPE)
         screen.state = "menu"
         screen.engine.player.hp -= 20
-        screen.choose("POTION")
+        screen.choose("BAG")                                  # potions now live in the BAG
+        self.assertEqual(screen.state, "bag")
+        screen.sub_selected = screen.bag_items.index("Math Potion")
+        screen.handle_key(pygame.K_RETURN)
         self.assertIn("restores", screen.message)
         screen.state = "menu"
         screen.choose("FLEE")
@@ -153,3 +156,82 @@ class ScreenTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TrialBattleTeamTests(unittest.TestCase):
+    """Boss fights use the same FIGHT / SKILLS / MONSTER / BAG / RUN menu, with switching and items."""
+
+    def setUp(self):
+        from monsters.monster_factory import create
+        self.folder = tempfile.TemporaryDirectory()
+        self.repo = PlayerRepository(Database(self.folder.name + "/team.sqlite3"))
+        pid = self.repo.create_player("T", "FRACTELLA")
+        party = self.repo.load_party(pid)
+        party.add(create("GEOMAX", 6))
+        party.add(create("DIVOWL", 6))
+        self.repo.save_party(pid, party)
+        self.player = Player("T", "FRACTELLA", 5, 80, 80, 0, 16, 60, pid)
+        self.surface = pygame.Surface((320, 240))
+
+    def tearDown(self):
+        self.folder.cleanup()
+
+    def battle(self):
+        screen = MonsterBattleScreen(self.repo, self.player, "arithmord", 1, random.Random(4))
+        self.assertIsNotNone(screen.tip)                          # the first time: how Trial battles work
+        screen.draw(self.surface, 1)
+        screen.handle_key(pygame.K_RETURN)
+        for _ in range(300):
+            screen.update()
+            if screen.state == "events":
+                screen.handle_key(pygame.K_RETURN)
+            if screen.state == "menu":
+                break
+        self.assertEqual(screen.state, "menu")
+        return screen
+
+    def test_menu_matches_the_other_battles(self):
+        from game.monster_battle import ACTIONS
+        self.assertEqual(ACTIONS, ("FIGHT", "SKILLS", "MONSTER", "BAG", "RUN"))
+        self.battle()                                             # shows the tip once...
+        self.assertIsNone(MonsterBattleScreen(self.repo, self.player, "arithmord", 1, random.Random(4)).tip)  # ...only once
+
+    def test_switching_keeps_the_boss_state_and_costs_a_turn(self):
+        screen = self.battle()
+        boss_hp = screen.engine.monster_hp
+        first = screen.fighter
+        screen.choose("MONSTER")
+        self.assertEqual(screen.state, "party")
+        screen.draw(self.surface, 2)
+        screen.handle_key(pygame.K_RETURN)
+        self.assertIsNot(screen.fighter, first)
+        self.assertEqual(screen.engine.player.name, screen.fighter_spec.name)
+        self.assertEqual(screen.engine.monster_hp, boss_hp)
+        self.assertEqual(screen.state, "events")                 # the boss takes its turn
+
+    def test_a_fainted_fighter_is_replaced_instead_of_losing(self):
+        screen = self.battle()
+        screen.engine.player.hp = 0
+        screen.engine.outcome = "lost"
+        screen._after_events()
+        self.assertIsNone(screen.engine.outcome)
+        self.assertEqual(screen.state, "party")
+        self.assertTrue(screen.forced_switch)
+        screen.handle_key(pygame.K_ESCAPE)                       # you must pick someone
+        self.assertEqual(screen.state, "party")
+        screen.handle_key(pygame.K_RETURN)
+        self.assertEqual(screen.state, "menu")                   # a free switch after fainting
+        self.assertGreater(screen.engine.player.hp, 0)
+
+    def test_bag_items_work_in_trial_battles(self):
+        screen = self.battle()
+        pid = self.player.player_id
+        self.repo.add_item(pid, "Attack Boost", 1)
+        attack = screen.engine.player.attack
+        screen.choose("BAG")
+        self.assertIn("Attack Boost", screen.bag_items)
+        screen.draw(self.surface, 3)
+        screen.sub_selected = screen.bag_items.index("Attack Boost")
+        screen.handle_key(pygame.K_RETURN)
+        self.assertGreater(screen.engine.player.attack, attack)
+        self.assertEqual(self.repo.item_count(pid, "Attack Boost"), 0)

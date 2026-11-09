@@ -69,19 +69,25 @@ class ScreenTests(unittest.TestCase):
     def tearDown(self):
         self.folder.cleanup()
 
-    def test_trials_screen_browses_and_picks_a_challenge(self):
+    def test_trials_is_a_catalogue_of_monsters_met_in_the_world(self):
         trials = TrialsScreen(self.repo, self.player)
-        for key in (pygame.K_RIGHT, pygame.K_DOWN, pygame.K_e, pygame.K_q, pygame.K_LEFT, pygame.K_UP):
+        for key in (pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LEFT, pygame.K_UP):
             trials.handle_key(key)
             trials.update()
             trials.draw(self.surface, 1)
-        trials.selected = len(trials.monsters) - 1  # Infinity Zero starts locked
-        trials.handle_key(pygame.K_RETURN)
-        self.assertFalse(trials.closed)
-        self.assertIn("Defeat", trials.notice)
+        first = trials.monsters[0]
+        self.assertFalse(trials.seen(first))                  # never met: a shadow
         trials.selected = 0
         trials.handle_key(pygame.K_RETURN)
-        self.assertEqual(trials.challenge, (trials.monsters[0].id, 1))
+        self.assertFalse(trials.closed)                       # ENTER never starts a battle any more
+        self.assertIsNone(trials.challenge)
+        self.repo.set_world_flag(self.player.player_id, f"trial_seen:{first.id}")
+        trials.refresh()
+        self.assertTrue(trials.seen(first))
+        self.assertIn(",", trials.where(first))               # e.g. "Green Meadow, Number Forest"
+        trials.handle_key(pygame.K_RETURN)
+        self.assertIn("Find", trials.notice)
+        trials.draw(self.surface, 2)
 
     def test_every_monster_battle_runs_and_draws_to_the_end(self):
         for monster_id in load_all():

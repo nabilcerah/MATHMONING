@@ -265,12 +265,14 @@ class _Toolbox:
     def rule_difficulty(self, topic):
         analysis = self.o.analyst.analyse(self.player_id, topic)
         history = self.o.repository.question_history(self.player_id, topic, limit=1)
-        return self.o.difficulty_manager.recommend(analysis, history[0]["difficulty"] if history else "").level
+        return self.o.difficulty_manager.recommend(analysis, history[0]["difficulty"] if history else "",
+                                                   self.o.player_level()).level
 
     def recommend_difficulty(self, topic):
         analysis = self.o.analyst.analyse(self.player_id, self._topic(topic))
         history = self.o.repository.question_history(self.player_id, topic, limit=1)
-        decision = self.o.difficulty_manager.recommend(analysis, history[0]["difficulty"] if history else "")
+        decision = self.o.difficulty_manager.recommend(analysis, history[0]["difficulty"] if history else "",
+                                                       self.o.player_level())
         return {"topic": topic, "difficulty": decision.level, "reason": decision.reason,
                 "summary": decision.level}
 

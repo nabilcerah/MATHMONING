@@ -48,6 +48,7 @@ class AgentOrchestrator:
         self.game_master = GameMaster()
         self.game_master_agent = self.game_master
         self.quest_manager = None   # set by the game once a save is loaded (read-only use)
+        self.level_provider = None  # set by the game: callable -> the team's level (difficulty floor)
         self.last_decision = None
         self.planner = PlannerAgent(self, self.llm)
         self.plans = {}             # player_id -> {"plan": Plan, "remaining": questions left to steer}
@@ -104,7 +105,7 @@ class AgentOrchestrator:
         self._use(decision, self.difficulty_manager)
         history = self.repository.question_history(player_id, topic, limit=12)
         previous = history[0]["difficulty"] if history else ""
-        difficulty = self.difficulty_manager.recommend(analysis, previous)
+        difficulty = self.difficulty_manager.recommend(analysis, previous, self.player_level())
         plan = None if affinity else self._active_plan(player_id, [topic])
         if plan and plan.difficulty != difficulty.level:
             gap = abs(curriculum.DIFFICULTIES.index(plan.difficulty) - curriculum.DIFFICULTIES.index(difficulty.level))
@@ -269,6 +270,12 @@ class AgentOrchestrator:
         decision.step("8. Summary stored for future recommendations")
 
     # ======================================================================== AI Planner (LLM agent)
+    def player_level(self):
+        try:
+            return int(self.level_provider()) if self.level_provider else None
+        except Exception:
+            return None
+
     def _active_plan(self, player_id, topics):
         entry = self.plans.get(player_id)
         if not entry or entry["remaining"] <= 0 or entry["plan"].focus_topic not in topics:

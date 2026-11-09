@@ -235,3 +235,29 @@ class GameMasterTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LevelDifficultyTests(unittest.TestCase):
+    """Report 9 Nov: the maths gets harder in line with the player's level."""
+
+    def test_the_team_level_sets_a_difficulty_floor(self):
+        manager = DifficultyManager()
+        fresh = analysis(status="developing", mastery=20, evidence=8, recent=0.8)
+        levels = [manager.recommend(fresh, "", level).level for level in (1, 5, 10, 15)]
+        self.assertEqual(levels, ["foundation", "intermediate", "advanced", "mastery"])
+
+    def test_struggling_learners_get_the_floor_one_band_lower(self):
+        manager = DifficultyManager()
+        struggling = analysis(status="weakness", mastery=20, evidence=8, recent=0.2)
+        self.assertEqual(manager.recommend(struggling, "", 12).level, "intermediate")
+
+    def test_the_orchestrator_uses_the_game_level(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        repository = PlayerRepository(Database(folder.name + "/l.sqlite3"))
+        pid = repository.create_player("Lv", "CHRONOX")
+        orchestrator = AgentOrchestrator(repository, rng=random.Random(2))
+        orchestrator.level_provider = lambda: 11
+        decision = orchestrator.request_question(pid, "addition")
+        self.assertIn(decision.difficulty.level, ("intermediate", "advanced"))   # climbs one band at a time
+        self.assertIn("Lv 11", decision.difficulty.reason)

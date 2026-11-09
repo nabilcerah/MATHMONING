@@ -1,9 +1,9 @@
 {
- "_comment": "MATHMON RECOVERY CENTER (MCR) interior. Background art: assets/backgrounds/village_recovery_interior.png (from 'Interior Mathmon Recovery Center (MCR).jpeg'); collision from tools/process_building_art.py. The nurse and the information desk are part of the painting, so their interactables are painted. Drawn at half size (15 x 9 tiles) so the painted nurse matches the characters' size. painted_actors: people in the painting who breathe and talk (game/overworld.py PaintedActor); npcs: visitors walking between the waypoints.",
+ "_comment": "MATHMON RECOVERY CENTER (MCR) interior. Background art: assets/backgrounds/village_recovery_interior.png (from 'Interior Mathmon Recovery Center (MCR).jpeg'); collision from tools/process_building_art.py. The nurse and the information desk are part of the painting, so their interactables are painted. Drawn at half size (15 x 9 tiles) so the painted nurse matches the characters' size. Background v2 has the nurse and receptionist painted out (tools/process_building_art.py); they are real NPCs now. capsules: drawn recovery capsules (game/overworld.py).",
  "id": "village_recovery",
  "name": "Mathmon Recovery Center",
  "interior": true,
- "background": "village_recovery_interior.png",
+ "background": "village_recovery_interior_v2.png",
  "background_scale": 1,
  "baked_features": true,
  "collision_file": "village_recovery_collision.txt",
@@ -64,6 +64,26 @@
   "stairs": [
    2,
    4
+  ],
+  "capsule_1": [
+   12,
+   3
+  ],
+  "capsule_2": [
+   13,
+   3
+  ],
+  "capsule_3": [
+   14,
+   3
+  ],
+  "desk": [
+   7,
+   2
+  ],
+  "floor_mid": [
+   7,
+   5
   ]
  },
  "interactables": [
@@ -118,9 +138,145 @@
     "Mathea has four worlds: Number Forest, the Algebra Cavern, the Geometry Kingdom and the Chronos Dimension.",
     "Each world's camp has a Recovery Station. Solve problems there to heal on the road!"
    ]
+  },
+  {
+   "id": "capsule_1",
+   "kind": "sign",
+   "pos": [
+    12,
+    2
+   ],
+   "name": "Recovery Capsule",
+   "painted": true,
+   "title": "RECOVERY CAPSULE",
+   "text": [
+    "A resting AQUABIT floats in the healing liquid. Its pulse is steady. Almost ready to go home!"
+   ]
+  },
+  {
+   "id": "capsule_2",
+   "kind": "sign",
+   "pos": [
+    13,
+    2
+   ],
+   "name": "Recovery Capsule",
+   "painted": true,
+   "title": "RECOVERY CAPSULE",
+   "text": [
+    "A resting PYRON floats in the healing liquid. Its flame is flickering back to full strength."
+   ]
+  },
+  {
+   "id": "capsule_3",
+   "kind": "sign",
+   "pos": [
+    14,
+    2
+   ],
+   "name": "Recovery Capsule",
+   "painted": true,
+   "title": "RECOVERY CAPSULE",
+   "text": [
+    "A resting VOLTIX floats in the healing liquid. Tiny sparks dance in the liquid. It's charging up!"
+   ]
   }
  ],
  "npcs": [
+  {
+   "id": "nurse_hana",
+   "name": "Nurse Hana",
+   "role": "MathMon Nurse",
+   "kind": "clinic",
+   "look": {
+    "hair": "#7a3f24",
+    "skin": "#f0c8a0",
+    "clothes": "#f4f4f4",
+    "accent": "#e2557a",
+    "pants": "#f4f4f4",
+    "shoes": "#e2557a"
+   },
+   "routine": [
+    {
+     "waypoint": "capsule_1",
+     "wait": 5,
+     "face": "up"
+    },
+    {
+     "waypoint": "capsule_2",
+     "wait": 4,
+     "face": "up"
+    },
+    {
+     "waypoint": "capsule_3",
+     "wait": 5,
+     "face": "up"
+    },
+    {
+     "waypoint": "counter_right",
+     "wait": 5,
+     "face": "up"
+    },
+    {
+     "waypoint": "floor_mid",
+     "wait": 3,
+     "face": "down"
+    }
+   ],
+   "dialogue": {
+    "any": [
+     "Hello! I'm Nurse Hana. I'm checking on our patients.",
+     "Want to rest one of your MathMon in the Recovery Capsule? Solve my problems and it heals!"
+    ]
+   },
+   "remarks": [
+    "Pulse... steady.",
+    "Liquid level: perfect.",
+    "Next patient, please!",
+    "Every right answer powers the capsule.",
+    "This VOLTIX keeps sparking!"
+   ]
+  },
+  {
+   "id": "mcr_reception",
+   "name": "Receptionist Ada",
+   "role": "Reception",
+   "kind": "talker",
+   "look": {
+    "hair": "#1f1f2a",
+    "skin": "#e0b48a",
+    "clothes": "#f0f0f0",
+    "accent": "#3fb0a0",
+    "pants": "#2e3240",
+    "shoes": "#2a1d14"
+   },
+   "routine": [
+    {
+     "waypoint": "desk",
+     "wait": 5,
+     "face": "down"
+    },
+    {
+     "waypoint": "desk",
+     "wait": 3,
+     "face": "left"
+    },
+    {
+     "waypoint": "desk",
+     "wait": 3,
+     "face": "right"
+    }
+   ],
+   "lines": [
+    "Welcome to the Recovery Center! Talk to me at the counter, or find Nurse Hana on her rounds.",
+    "The capsule fits one MathMon at a time."
+   ],
+   "remarks": [
+    "Welcome to the Recovery Center!",
+    "Please sign the guest book... in numbers!",
+    "Next, please!"
+   ]
+  },
   {
    "id": "mcr_kai",
    "name": "Kai",
@@ -235,36 +391,27 @@
   }
  ],
  "encounters": [],
- "painted_actors": [
+ "capsules": [
   {
-   "name": "Nurse Hana",
-   "rect": [
-    111,
-    18,
-    19,
-    24
+   "pos": [
+    12,
+    2
    ],
-   "remarks": [
-    "Next patient, please!",
-    "Every right answer powers the capsule.",
-    "Rest is part of training too!",
-    "Fractions heal fastest. Don't ask me why."
-   ]
+   "species": "AQUABIT"
   },
   {
-   "name": "Receptionist",
-   "rect": [
-    47,
-    19,
-    18,
-    26
+   "pos": [
+    13,
+    2
    ],
-   "remarks": [
-    "Welcome to the Recovery Center!",
-    "The capsule fits one MathMon at a time.",
-    "Visiting hours: whenever you need us.",
-    "Please sign the guest book... in numbers!"
-   ]
+   "species": "PYRON"
+  },
+  {
+   "pos": [
+    14,
+    2
+   ],
+   "species": "VOLTIX"
   }
  ]
 }

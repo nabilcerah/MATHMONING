@@ -21,9 +21,11 @@ Along the way you can:
 - **Follow quests:** restore the Numera Seals, find Mira's lost numbered stones, rebuild Bram's bridge to the desert, wake the Crystal Seal and decode the rune tablet.
 - **Visit the village:** the MATHMART sells potions, Mathballs, boosts, Knowledge Tomes and EXP Stars. At the MATHMON RECOVERY CENTER, Nurse Hana heals your team when you solve her problems.
 - **Uncover the story:** a prologue, four chapters and a final chapter with three endings, told in pixel dialogue boxes. Find the historical records in every world, discover what Professor Numeris has been hiding, and learn who the hooded stranger is. Everything you learn goes into the **Codex**.
-- **Take on the Monster Trials (T):** twelve unique bosses, each with its own maths weakness, battle phases and tricks, and five mastery ranks to climb.
+- **Hunt the Monster Trials:** twelve unique bosses roam the worlds, each with its own maths weakness, battle phases and tricks, and five mastery ranks to climb. Walk into one to battle it; the Trials catalogue (T) shows the ones you have met and hints where the others roam.
 - **Duel rivals in the Math Arena:** a best-of-five race where the first correct answer wins the round.
 - **Fill your MathDex** with every monster you have seen and befriended.
+
+Questions grow harder as your team levels up, and your active quests sit in the top-right corner with how far away the next objective is.
 
 Wrong answers are part of the journey. A hint costs a little, a second try still lands, and press **H** to see an animated picture of the strategy: a number line, fraction bars, a balance scale or shapes. If your team faints, Sage Ilo carries everyone back to the Sanctuary. Nothing you caught or learned is lost.
 
@@ -37,7 +39,7 @@ Wrong answers are part of the journey. A hint costs a little, a second try still
 | Esc | Pause / back |
 | 1–4 | Menu shortcuts (battle actions, moves) |
 | H / W | Hint / worked example while answering |
-| N / T / M | World map / Monster Trials / MathDex |
+| N / T / M / J | World map / Trials catalogue / MathDex / show-hide quest tracker |
 | F11 | Fullscreen |
 
 Menus also work with the mouse. On a phone, on-screen buttons appear so you can play with a tap.

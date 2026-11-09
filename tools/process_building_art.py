@@ -39,14 +39,14 @@ MART_COLLISION = """
 MCR_COLLISION = """
 ###############
 ###############
-##.#########...
+##.############
 ....#######....
 ...............
 ##.........##..
 ##.........##.#
 #..........##.#
 ###############
-"""   # 15 x 9 tiles: the painting at HALF size, so the painted nurse is as tall as the player
+"""   # 15 x 9 tiles (the painting at half size); row 2, columns 12-14 hold three recovery capsules
 
 
 def grid(text):
@@ -67,6 +67,31 @@ def connected(rows, start):
     assert floor == seen, f"unreachable floor cells: {sorted(floor - seen)[:5]}"
 
 
+FLOOR_PERIOD = 16     # the MCR floor tiles repeat every 16 px in the source art
+
+
+def erase_painted_people(image):
+    """Paint the nurse (behind the counter) and the receptionist (by the info board) out of the
+    MCR art, using the repeating floor / wall pattern next to them. Coordinates are source pixels."""
+    a = np.asarray(image).copy()
+    # Nurse: x 204-262, y 42-88. Copy each column from 16 px to its right, right to left, so
+    # the clean wall + floor beside her (x 262-278) repeats across.
+    for x in range(261, 210, -1):
+        a[42:89, x] = a[42:89, x + FLOOR_PERIOD]
+    # The healing machine left of her is symmetric (centre x = 185): rebuild its hidden right edge.
+    for x in range(204, 211):
+        a[28:89, x] = a[28:89, 370 - x]
+    # Receptionist, floor part (y 79-96): repeat the clean floor on her left, left to right.
+    for x in range(78, 129):
+        a[79:97, x] = a[79:97, x - FLOOR_PERIOD]
+    # Receptionist, information-board part (y 47-78): empty shelves (each row's typical colour)
+    # and the board's right frame continued down.
+    for y in range(47, 79):
+        a[y, 78:124] = np.median(a[y, 68:78], axis=0)
+        a[y, 124:129] = a[44, 124:129]
+    return Image.fromarray(a)
+
+
 def interiors():
     mart = Image.open(BG / "Interior mathmart.jpeg").convert("RGB")
     assert mart.size == (176, 144), mart.size          # exactly 11 x 9 tiles of 16 px
@@ -76,9 +101,12 @@ def interiors():
     (MAPS / "village_shop_collision.txt").write_text("\n".join(rows) + "\n", encoding="utf-8")
 
     mcr = Image.open(BG / "Interior Mathmon Recovery Center (MCR).jpeg").convert("RGB")
+    # The nurse and the receptionist are real, moving characters now: paint them out of the art.
+    mcr = erase_painted_people(mcr)
     # Half size (15 x 9 tiles): at full size the painted nurse was ~3x taller than the characters.
     mcr = mcr.resize((480, 296), Image.NEAREST).crop((0, 4, 480, 292)).resize((240, 144), Image.LANCZOS)
-    mcr.save(BG / "village_recovery_interior.png", optimize=True)
+    # A new file: the earlier village_recovery_interior.png (with the painted people) is kept.
+    mcr.save(BG / "village_recovery_interior_v2.png", optimize=True)
     rows = grid(MCR_COLLISION)
     connected(rows, (7, 7))
     (MAPS / "village_recovery_collision.txt").write_text("\n".join(rows) + "\n", encoding="utf-8")

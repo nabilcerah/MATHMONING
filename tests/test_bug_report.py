@@ -358,18 +358,26 @@ class Bug9NovTests(GameCase):
         game = self.game
         game._travel_to_map("village_recovery", (7, 7))
         world = game.world
-        self.assertGreaterEqual(len(world.npcs), 3)
-        self.assertEqual(len(world.painted_actors), 2)
-        start = {npc.id: (npc.x, npc.y) for npc in world.npcs}
-        said = set()
+        self.assertEqual(world.world.background, "village_recovery_interior_v2.png")   # people painted out
+        self.assertTrue((ROOT / "assets" / "backgrounds" / "village_recovery_interior.png").exists())  # kept
+        hana = next(n for n in world.npcs if n.id == "nurse_hana")
+        desk = next(n for n in world.npcs if n.id == "mcr_reception")
+        self.assertEqual(desk.cell(), (7, 2))                  # behind the counter
+        visited, said = set(), set()
         surface = pygame.Surface((320, 240))
-        for frame in range(1500):
+        for frame in range(3600):
             world.update()
-            said |= {p.bubble[0] for p in world.painted_actors if p.bubble}
-            if frame % 100 == 0:
+            visited.add(hana.cell())
+            said |= {n.bubble[0] for n in world.npcs if n.bubble}
+            if frame % 300 == 0:
                 world.draw(surface, frame)
-        self.assertTrue(any((npc.x, npc.y) != start[npc.id] for npc in world.npcs))
-        self.assertTrue(said)                                 # the painted nurse / receptionist speak
+        self.assertTrue({(12, 3), (13, 3), (14, 3)} & visited)   # she checks the capsules
+        self.assertGreater(len(visited), 5)                       # and really walks around
+        self.assertTrue(said)
+        # Talking to Nurse Hana offers the Recovery Capsule.
+        hana.state = "talking"
+        world._talk(hana)
+        self.assertIn("clinic", [action for _, action in world.dialogue.choices])
 
     def test_bram_has_his_own_sprite_and_battles_have_their_music(self):
         forest = load_map("number_forest")
@@ -391,3 +399,75 @@ class Bug9NovTests(GameCase):
         finally:
             audio.music = original
         self.assertEqual(played, ["wild_battle", "battle"])
+
+
+class TrialsInTheWorldTests(GameCase):
+    """1:16PM report: Trial monsters are fought only by finding them on the map."""
+
+    def test_a_trial_monster_roams_its_area_and_touching_it_starts_the_battle(self):
+        game = self.game
+        world = game.world
+        ids = {t.id for t in world.trial_roamers}
+        self.assertEqual(ids, {"voltbyte", "mycomorph", "nullshade"})   # Number Forest's three
+        trial = next(t for t in world.trial_roamers if t.id == "voltbyte")
+        world.encounter_grace = 0
+        world.avatar.x, world.avatar.y = trial.x, trial.y
+        game.world.draw(pygame.Surface((320, 240)), 1)
+        event = world.update()
+        self.assertEqual(event, "trial")
+        game.states.clear()                                   # (the meadow's arrival scene, if it queued)
+        game.story_busy, game.story_queue = False, []
+        game._start_trial(world.encounter_trial)
+        self.assertEqual(game.state, "mbattle")
+        self.assertTrue(world.has_flag("trial_seen:voltbyte"))
+        self.assertNotIn("voltbyte", {t.id for t in world.trial_roamers})   # gone until you come back
+        game.monster_battle.closed = True
+        game.monster_battle.handle_key = lambda *a: None
+        game._handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0))
+        self.assertEqual(game.state, "overworld")
+
+    def test_infinity_zero_only_appears_once_unlocked(self):
+        from game.trial_roamers import spawn_for
+        chronos = load_map("chronos_dimension")
+        self.assertNotIn("infinity_zero", {t.id for t in spawn_for(chronos, {}, random.Random(1))})
+        beaten = {m: {"wins": 1} for m in ("voltbyte", "mycomorph", "nullshade", "crystalgon", "equinox", "sphynox")}
+        self.assertIn("infinity_zero", {t.id for t in spawn_for(chronos, beaten, random.Random(1))})
+
+
+class QuestTrackerTests(GameCase):
+    """1:16PM report: quests in the top-right corner, with a show/hide button and the distance."""
+
+    def test_tracker_shows_the_quest_and_how_far_the_objective_is(self):
+        game = self.game
+        world = game.world
+        entries = world.tracker.entries()
+        self.assertTrue(entries)
+        title, step, distance = entries[0]
+        self.assertTrue(title and step)
+        self.assertRegex(distance, r"^(\d+ m (N|NE|E|SE|S|SW|W|NW)|You're here!|In .+)$")
+        world.draw(pygame.Surface((320, 240)), 1)
+
+    def test_the_tab_button_and_j_hide_and_show_it(self):
+        from game.quest_tracker import TAB
+        game = self.game
+        tracker = game.world.tracker
+        self.assertTrue(tracker.visible)
+        game._overworld_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_j, unicode="j", mod=0))
+        self.assertFalse(tracker.visible)
+        self.assertIn("ui:quest_tracker_hidden", game.repository.world_flags(game.player.player_id))  # remembered
+        from game import ui
+        ui.set_view(1, (0, 0))
+        game._handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=TAB.center))
+        self.assertTrue(tracker.visible)
+
+    def test_objectives_point_at_people_places_and_objects(self):
+        from game.quest_tracker import direction
+        world = self.game.world
+        tracker = world.tracker
+        self.assertIsInstance(tracker.target({"type": "talk", "npc": "bram"}), tuple)
+        self.assertIsInstance(tracker.target({"type": "challenge", "id": "stone_1"}), tuple)
+        self.assertIsInstance(tracker.target({"type": "visit", "area": "ridge"}), tuple)
+        self.assertEqual(tracker.target({"type": "talk", "npc": "vexa"}), "Algebra Cavern")
+        self.assertIsInstance(tracker.target({"type": "win_battles", "count": 1}), tuple)
+        self.assertEqual(direction(10, -10), "NE")
+        self.assertEqual(direction(0, 5), "S")

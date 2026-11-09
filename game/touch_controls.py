@@ -17,7 +17,8 @@ REPEAT_DELAY, REPEAT_EVERY = 22, 6   # frames: holding a D-pad arrow repeats it 
 # Shortcut keys: MathDex, map, Trials / hint, type-answer toggle, battle log / tier & page, Focus.
 SHORTCUTS = (("M", pygame.K_m, "m"), ("N", pygame.K_n, "n"), ("T", pygame.K_t, "t"),
              ("H", pygame.K_h, "h"), ("TAB", pygame.K_TAB, ""), ("L", pygame.K_l, "l"),
-             ("Q", pygame.K_q, "q"), ("E", pygame.K_e, "e"), ("F", pygame.K_f, "f"), ("W", pygame.K_w, "w"))
+             ("Q", pygame.K_q, "q"), ("E", pygame.K_e, "e"), ("F", pygame.K_f, "f"), ("W", pygame.K_w, "w"),
+             ("J", pygame.K_j, "j"))                      # J: show / hide the quest tracker
 DIRECTIONS = {pygame.K_UP: (0, -1), pygame.K_DOWN: (0, 1), pygame.K_LEFT: (-1, 0), pygame.K_RIGHT: (1, 0)}
 
 
@@ -134,9 +135,11 @@ class TouchControls:
             buttons.append(Button("A", pygame.K_RETURN, "\r", (win_w - big - b // 2, win_h - big * 2 - b, big, big), big=True))
             buttons.append(Button("B", pygame.K_ESCAPE, "", (win_w - big * 2 - b, win_h - big - b // 2, big, big),
                                   big=True, color=(235, 112, 92)))
-            for i, (label, key, uni) in enumerate(SHORTCUTS + (("123", 0, ""), ("ABC", 0, ""))):
+            top_row = SHORTCUTS + (("123", 0, ""), ("ABC", 0, ""))
+            # The whole row must fit the screen width (it grew when J was added).
+            small = min(int(b * 0.8), (win_w - b // 2 - 4 * (len(top_row) - 1)) // len(top_row))
+            for i, (label, key, uni) in enumerate(top_row):
                 kind = {"123": "keypad", "ABC": "text"}.get(label, "key")
-                small = int(b * 0.8)
                 buttons.append(Button(label, key, uni, (b // 4 + i * (small + 4), b // 4, small, small), kind=kind,
                                       color=(110, 177, 206)))
             keys = "123456789-0/"

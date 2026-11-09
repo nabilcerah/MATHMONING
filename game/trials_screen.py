@@ -1,8 +1,9 @@
-"""Monster Trials: the collection and challenge hall for the advanced monster battles.
+"""Monster Trials: the CATALOGUE of the advanced Trial monsters.
 
-Shows every data-driven monster with its live idle animation (the selected one walks), its
-mastery rank (the stars), lock status, speciality, weakness and signature mechanic. Choose a
-tier with Q/E and press ENTER to battle. Closing with a choice sets ``self.challenge``.
+Trial monsters are fought only by finding them in the world (game/trial_roamers.py). This page
+shows every one you have encountered - live animation, mastery stars, speciality, weakness,
+signature mechanic and where it roams. Ones you have not met yet are a shadow with a hint of
+where to look, like unseen entries in the MathDex.
 """
 import pygame
 
@@ -30,7 +31,7 @@ class TrialsScreen:
         self.selected = 0
         self.rank_choice = {}
         self.closed = False
-        self.challenge = None
+        self.challenge = None          # kept for compatibility: the catalogue never starts battles
         self.notice = ""
         self.refresh()
 
@@ -38,6 +39,22 @@ class TrialsScreen:
         self.trainer = self.store.trainer()
         self.records = self.store.records()
         self.fighter = self.team.leader()
+        self.flags = self.repository.world_flags(self.player.player_id) if self.player.player_id else set()
+
+    def seen(self, monster):
+        record = self.records.get(monster.id) or {}
+        return f"trial_seen:{monster.id}" in self.flags or bool(record.get("wins") or record.get("losses"))
+
+    @staticmethod
+    def where(monster):
+        from game.trial_roamers import home_of
+        from game.world_map import load_map
+        home = home_of(monster.id)
+        if not home:
+            return "Unknown"
+        world = load_map(home[0])
+        area = next((name for area_id, name, _ in world.areas if area_id == home[1]), "")
+        return f"{area}, {world.name}" if area else world.name
 
     def record(self, monster):
         return self.records.get(monster.id) or {"rank": 0, "wins": 0, "losses": 0}
@@ -69,17 +86,9 @@ class TrialsScreen:
             row = (row - 1) % rows
         elif key in (pygame.K_DOWN, pygame.K_s):
             row = (row + 1) % rows
-        elif key in (pygame.K_q, pygame.K_e, pygame.K_LEFTBRACKET, pygame.K_RIGHTBRACKET):
-            ranks = self.ranks(monster)
-            index = ranks.index(self.chosen_rank(monster)) + (1 if key in (pygame.K_e, pygame.K_RIGHTBRACKET) else -1)
-            self.rank_choice[monster.id] = ranks[index % len(ranks)]
-            return
         elif key in (pygame.K_RETURN, pygame.K_SPACE):
-            if not is_unlocked(monster, self.records):
-                self.notice = unlock_text(monster, self.records)
-                return
-            self.challenge = (monster.id, self.chosen_rank(monster))
-            self.closed = True
+            self.notice = (f"Find {monster.name} in {self.where(monster)} to battle it!" if self.seen(monster)
+                           else "Explore the world to encounter this Trial monster!")
             return
         self.selected = min(len(self.monsters) - 1, row * COLUMNS + col)
         self.notice = ""
@@ -101,7 +110,9 @@ class TrialsScreen:
         for index, monster in enumerate(self.monsters):
             self._card(surface, monster, index, frame)
         self._details(surface, self.monsters[self.selected])
-        footer = self.notice or "ARROWS: CHOOSE   Q/E: TIER   ENTER: BATTLE   T/ESC: BACK"
+        seen = sum(1 for m in self.monsters if self.seen(m))
+        text(surface, f"SEEN {seen}/{len(self.monsters)}", (130, 4), 9, PALETTE["mint"])
+        footer = self.notice or "ARROWS: BROWSE   T/ESC: BACK   (Trial monsters are fought where they roam)"
         text(surface, footer, (160, 233), 7, PALETTE["coral"] if self.notice else PALETTE["cream"], center=True)
 
     def _card(self, surface, monster, index, frame):
@@ -110,11 +121,11 @@ class TrialsScreen:
         chosen = index == self.selected
         record = self.record(monster)
         home = tier_by_id(monster.rarity)
-        locked = not is_unlocked(monster, self.records)
+        locked = not self.seen(monster)
         panel(surface, (x, y, CARD_W, CARD_H), PALETTE["night"] if not locked else PALETTE["ink"],
               PALETTE["gold"] if chosen else home.color)
         surface.set_clip((x + 2, y + 2, CARD_W - 4, CARD_H - 4))
-        tint = (40, 40, 60) if locked else (None if record["wins"] else (70, 80, 110) if not chosen else None)
+        tint = (30, 30, 50) if locked else None        # never met: a shadow, like the MathDex
         animator = self.animators[monster.id]
         if animator.available:
             animator.draw(surface, (x + CARD_W // 2, y + CARD_H - 11), 26, tint=tint)
@@ -129,14 +140,14 @@ class TrialsScreen:
 
     def _details(self, surface, monster):
         record = self.record(monster)
-        locked = not is_unlocked(monster, self.records)
         rank = self.chosen_rank(monster)
         tier = tiers()[rank - 1]
         level = level_for_rank(rank, self.player_level())
         panel(surface, (6, 162, 308, 64), PALETTE["night"], tier.color)
-        if locked:
-            text(surface, "??? - LOCKED", (12, 166), 11, PALETTE["muted"])
-            wrapped(surface, unlock_text(monster, self.records), (12, 180, 296, 20), 9, PALETTE["cream"], 10, 2)
+        if not self.seen(monster):
+            text(surface, "??? - NOT ENCOUNTERED YET", (12, 166), 11, PALETTE["muted"])
+            hint = unlock_text(monster, self.records) if not is_unlocked(monster, self.records) else                 f"Rumoured to roam {self.where(monster)}. Find it there to battle it."
+            wrapped(surface, hint, (12, 182, 296, 30), 9, PALETTE["cream"], 10, 3)
             return
         text(surface, f"{monster.name.upper()}", (12, 165), 11, tuple(monster.color))
         text(surface, f"{topic_label(monster.math_speciality).upper()} SPECIALIST", (100, 167), 7, PALETTE["muted"])
@@ -146,10 +157,9 @@ class TrialsScreen:
         wrapped(surface, monster.defence_style, (12, 196, 296, 9), 7, PALETTE["sky"], 8, 1)
         mastery = RANK_NAMES[record["rank"]]
         text(surface, f"MASTERY: {mastery}   WINS {record['wins']}", (12, 208), 7, PALETTE["gold"])
-        ranks = self.ranks(monster)
-        arrows = ("< " if len(ranks) > 1 else "") + f"{tier.name.upper()} TIER  Lv {level}" + (" >" if len(ranks) > 1 else "")
         pygame.draw.rect(surface, tier.color, (186, 206, 124, 11))
-        text(surface, arrows, (248, 211), 8, PALETTE["ink"], center=True)
+        text(surface, f"NEXT: {tier.name.upper()} TIER  Lv {level}", (248, 211), 8, PALETTE["ink"], center=True)
+        text(surface, f"ROAMS: {self.where(monster)}"[:44], (12, 218), 7, PALETTE["cream"])
         warn = level - self.fighter.level
         if warn >= 6:
             text(surface, f"Tough! Your leader is Lv {self.fighter.level}.", (308, 197), 7, PALETTE["coral"], align="right")

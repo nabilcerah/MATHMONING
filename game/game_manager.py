@@ -88,6 +88,7 @@ class GameManager:
         self.rng = random.Random()
         self.llm = LLMProvider()
         self.orchestrator = AgentOrchestrator(self.repository, rng=self.rng, llm=self.llm)
+        self.orchestrator.level_provider = self.party_level      # harder maths as the team levels up
         self.saved_record = self.repository.load_player()
         self.states = StateManager("menu")
         self.player = None
@@ -164,6 +165,12 @@ class GameManager:
         if self.state == "battle" and self.battle:
             self.battle.handle_event(event)
             return
+        if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == "overworld" and self.world
+                and not self.world.dialogue):
+            from game.quest_tracker import TAB
+            if TAB.collidepoint(ui.to_virtual(event.pos)):
+                self.world.tracker.toggle()
+                return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state in ("menu", "starter", "avatar"):
             self._menu_click(ui.to_virtual(event.pos))
             return
@@ -182,21 +189,17 @@ class GameManager:
         elif self.state == "trials" and self.trials:
             self.trials.handle_key(event.key)
             if self.trials.closed:
-                challenge, self.trials = self.trials.challenge, None
-                if challenge:
-                    self.save_all()
-                    self.monster_battle = MonsterBattleScreen(self.repository, self.player, challenge[0], challenge[1],
-                                                              self.rng, self._team())
-                    self.state = "mbattle"
-                else:
-                    self._back_to_world("The Trials hall is open whenever you press T.")
+                self.trials = None
+                self._back_to_world("Trial monsters roam the world - find one to challenge it!")
         elif self.state == "mbattle" and self.monster_battle:
             self.monster_battle.handle_key(event.key, event.unicode)
             if self.monster_battle.closed:
-                self.monster_battle = None
+                battle, self.monster_battle = self.monster_battle, None
                 self._reload_party()
-                self.trials = TrialsScreen(self.repository, self.player, self._team())
-                self.state = "trials"
+                won = battle.engine.outcome == "won"
+                name = battle.engine.name
+                self._back_to_world(f"You defeated {name}! It will be back, stronger, when you return here."
+                                    if won else f"{name} retreats into the wild. Find it again to retry!")
         elif self.state == "puzzle" and self.puzzle:
             self.puzzle.handle_key(event.key, event.unicode)
             if self.puzzle.closed:
@@ -654,6 +657,9 @@ class GameManager:
         if event.key == pygame.K_m:
             self.open_screen("mathdex")
             return
+        if event.key == pygame.K_j and self.world:
+            self.world.tracker.toggle()          # quest tracker in the top-right corner
+            return
         if event.key == pygame.K_t:
             self.save_all()
             self.trials = TrialsScreen(self.repository, self.player, self._team())
@@ -803,6 +809,21 @@ class GameManager:
                                    scene=self.player.world)
         self.state = "battle"
 
+    def _start_trial(self, monster_id):
+        """A roaming Trial boss was touched: battle it at the next mastery tier you can reach."""
+        from battle_engine.monster_data import load_all
+        from battle_engine.progression import available_ranks, new_record
+        defn = load_all().get(monster_id)
+        if defn is None:
+            return
+        record = self.repository.monster_records(self.player.player_id).get(monster_id) or new_record(monster_id)
+        rank = available_ranks(defn, record)[-1]
+        self.world.set_flag(f"trial_seen:{monster_id}")      # the Trials catalogue now shows it
+        self.save_all()
+        self.monster_battle = MonsterBattleScreen(self.repository, self.player, monster_id, rank, self.rng,
+                                                  self._team())
+        self.state = "mbattle"
+
     def _wild_encounter(self):
         species_id, level = self.world.encounter_spec, self.world.encounter_level
         self.world.encounter_spec = self.world.encounter_level = None
@@ -899,6 +920,13 @@ class GameManager:
                 self.world.dirty, self.save_timer = False, 0
             if event == "encounter":
                 self._wild_encounter()
+            elif event == "trial":
+                if self.states.stack or self.story_busy or self.story_queue:
+                    # A story scene comes first; the Trial monster waits where it is.
+                    self.world.trial_roamers.append(self.world.encounter_trial_roamer)
+                    self.world.encounter_grace = 60
+                else:
+                    self._start_trial(self.world.encounter_trial)
         if self.state != self._last_state and WEB:
             self.persister.sync()
         if self.state != self._last_state:

@@ -11,6 +11,8 @@ import pygame
 
 from config import PALETTE, ROOT, VIRTUAL_WIDTH
 from game.actors import FOLLOW_GAP, NPC, Avatar
+from game.trial_roamers import spawn_for as spawn_trials
+from game.quest_tracker import QuestTracker
 from game.creatures import draw_creature
 from game.sprites import frame_for
 from monsters.monster_data import challenges, species
@@ -229,6 +231,11 @@ class Overworld:
             if self._zone_open(zone):
                 for _ in range(zone["quota"]):
                     self._spawn_roamer(zone)
+        # Monster Trials bosses that roam this map (data/trial_spawns.json).
+        self.encounter_trial = None
+        trial_records = repository.monster_records(player.player_id) if repository and player.player_id and             hasattr(repository, "monster_records") else {}
+        self.trial_roamers = spawn_trials(self.world, trial_records, self.rng)
+        self.tracker = QuestTracker(self)
         self._update_area()
         self._reveal_around()
         if self.world.background:
@@ -434,6 +441,11 @@ class Overworld:
         self._camera_follow()
         if self._update_roamers():
             return "encounter"
+        for trial in list(self.trial_roamers):
+            if trial.update(self.avatar) and not self.encounter_grace and not self.dialogue:
+                self.trial_roamers.remove(trial)          # it leaves after the battle until you return
+                self.encounter_trial, self.encounter_trial_roamer = trial.id, trial
+                return "trial"
         if moved:
             self.grass_distance += moved
             if self.grass_distance >= TILE:   # one movement step = one tile walked
@@ -572,6 +584,10 @@ class Overworld:
         elif npc.kind == "shop":
             pages = self._npc_pages(npc, "any", ["Welcome!"])
             self.open_dialogue(title, pages, subtitle, [("Browse the shop", "shop"), ("Goodbye", "close")], npc, "npc")
+        elif npc.kind == "clinic":
+            pages = self._npc_pages(npc, "any", ["How are your MathMon feeling today?"])
+            self.open_dialogue(title, pages, subtitle, [("Use the Recovery Capsule", "clinic"),
+                                                        ("Goodbye", "close")], npc, "npc")
         elif npc.kind == "sanctuary":
             pages = self._npc_pages(npc, "any", ["Welcome to the Sanctuary."])
             self.open_dialogue(title, pages, subtitle, [("Manage monsters", "sanctuary"),
@@ -795,6 +811,10 @@ class Overworld:
             drawables.append((npc.y, "npc", npc))
         for roamer in self.roamers:
             drawables.append((roamer.y, "roamer", roamer))
+        for trial in self.trial_roamers:
+            drawables.append((trial.y, "trial", trial))
+        for index, capsule in enumerate(self.world.data.get("capsules", [])):
+            drawables.append(((capsule["pos"][1] + 1) * TILE - 1, "capsule", (index, capsule)))
         for place, monster in enumerate(self.followers()):
             fx, fy, ffacing = self.avatar.follower_spot(FOLLOW_GAP * (place + 1))
             drawables.append((fy - 0.5, "companion", (fx, fy, ffacing, monster.spec)))
@@ -804,6 +824,10 @@ class Overworld:
                 self._draw_object(surface, item, frame)
             elif kind == "roamer":
                 self._draw_roamer(surface, item, frame)
+            elif kind == "capsule":
+                self._draw_capsule(surface, *item, frame)
+            elif kind == "trial":
+                item.draw(surface, self.to_screen(item.x, item.y), frame, f"trial_seen:{item.id}" in self.flags)
             elif kind == "companion":
                 self._draw_companion(surface, *item, frame)
             else:
@@ -1078,6 +1102,9 @@ class Overworld:
                 pygame.draw.circle(surface, (96, 98, 104), (x + 8, y + 7), 8)
                 pygame.draw.circle(surface, (140, 144, 150), (x + 8, y + 7), 6)
                 pygame.draw.circle(surface, glow, (x + 8, y + 7), 3)
+            if done:
+                self._blessing(surface, x + 8, y + 7, (240, 150, 230) if crystal else (120, 230, 240), frame,
+                               index=object_id)
         elif kind == "record":
             read = self.has_flag(f"record:{entry['record']}")
             pygame.draw.ellipse(surface, shadow, (x + 1, y + 11, 14, 5))
@@ -1108,11 +1135,16 @@ class Overworld:
             pygame.draw.rect(surface, (96, 98, 104), (x + 2, y + 9, 12, 6))
             pygame.draw.rect(surface, (128, 132, 136), (x + 3, y + 1, 10, 10))
             pygame.draw.rect(surface, (160, 164, 168), (x + 4, y + 2, 8, 2))
-            glow = rune if not done else (90, 96, 100)
-            pulse = 0 if done else (frame // 12) % 2
-            pygame.draw.rect(surface, glow, (x + 6, y + 4 - pulse, 4, 5))
-            if not done and frame % 50 < 6:
-                pygame.draw.rect(surface, PALETTE["white"], (x + 7, y + 1, 1, 1))
+            if done:
+                # Solved: the shrine is blessed - calm light, a floating crystal and spirit motes.
+                self._blessing(surface, x + 8, y + 8, rune, frame, index=object_id)
+                pygame.draw.rect(surface, rune, (x + 6, y + 4, 4, 5))
+                pygame.draw.rect(surface, PALETTE["white"], (x + 7, y + 5, 2, 2))
+            else:
+                pulse = (frame // 12) % 2
+                pygame.draw.rect(surface, rune, (x + 6, y + 4 - pulse, 4, 5))
+                if frame % 50 < 6:
+                    pygame.draw.rect(surface, PALETTE["white"], (x + 7, y + 1, 1, 1))
         elif object_id == "campfire":
             pygame.draw.rect(surface, (110, 112, 108), (x + 2, y + 10, 12, 4))
             pygame.draw.rect(surface, (102, 69, 48), (x + 3, y + 9, 10, 3))
@@ -1127,6 +1159,30 @@ class Overworld:
             pygame.draw.rect(surface, (150, 156, 150), (x + 4, y + 3, 8, 10))
             for row in range(3):
                 pygame.draw.line(surface, (100, 104, 102), (x + 5, y + 5 + row * 3), (x + 10, y + 5 + row * 3))
+
+    def _blessing(self, surface, cx, cy, color, frame, index=""):
+        """The living glow of a solved shrine or seal: a soft light pool, a breathing halo, spirit
+        motes orbiting and rising, a tiny floating crystal and the odd twinkle."""
+        seed = sum(map(ord, str(index))) % 97
+        t = (frame + seed * 7) / 60
+        breath = 0.5 + 0.5 * math.sin(t * 1.6)
+        glow = pygame.Surface((40, 40), pygame.SRCALPHA)
+        pygame.draw.ellipse(glow, (*color, int(40 + 35 * breath)), (4, 22, 32, 12))         # light pool
+        pygame.draw.circle(glow, (*color, int(30 + 30 * breath)), (20, 20), int(11 + 3 * breath), 1)  # halo
+        surface.blit(glow, (cx - 20, cy - 16))
+        for i in range(4):                                                                 # orbiting motes
+            angle = t * 1.3 + i * math.pi / 2
+            mx = cx + int(math.cos(angle) * 11)
+            my = cy - 4 + int(math.sin(angle) * 4) - int(((t * 12 + i * 9) % 18))
+            pygame.draw.rect(surface, color if i % 2 else PALETTE["white"], (mx, my, 1 + i % 2, 1 + i % 2))
+        bob = int(2 * math.sin(t * 2.2))                                                   # floating crystal
+        top = cy - 20 + bob
+        pygame.draw.polygon(surface, color, [(cx, top), (cx + 3, top + 4), (cx, top + 8), (cx - 3, top + 4)])
+        pygame.draw.line(surface, PALETTE["white"], (cx, top + 1), (cx + 1, top + 4))
+        if (frame + seed * 13) % 140 < 10:                                                 # twinkle
+            sx, sy = cx + 7, top - 2
+            pygame.draw.line(surface, PALETTE["white"], (sx - 2, sy), (sx + 2, sy))
+            pygame.draw.line(surface, PALETTE["white"], (sx, sy - 2), (sx, sy + 2))
 
     CHARACTER_HEIGHT = 26
 
@@ -1233,6 +1289,24 @@ class Overworld:
             pygame.draw.line(surface, color, (cx, cy), (cx + 3 * sx, cy))
             pygame.draw.line(surface, color, (cx, cy), (cx, cy + 3 * sy))
 
+    def _draw_capsule(self, surface, index, capsule, frame):
+        """A wall recovery capsule with a resting MathMon (the same art as the Recovery Center screen)."""
+        from types import SimpleNamespace
+        from states.clinic_state import draw_capsule
+        cache = self.__dict__.setdefault("_capsule_art", {})
+        stage = 3 + int(5 * (0.5 + 0.5 * math.sin(frame / 120 + index * 2)))
+        key = (index, stage, frame // 4 % 30)
+        if key not in cache:
+            if len(cache) > 300:
+                cache.clear()
+            big = pygame.Surface((92, 136), pygame.SRCALPHA)
+            patient = SimpleNamespace(spec=species(capsule["species"]), fainted=False)
+            draw_capsule(big, (0, 0, 92, 136), patient, stage, frame // 4 * 4)
+            cache[key] = pygame.transform.smoothscale(big, (20, 30))
+        x, y = capsule["pos"]
+        sx, sy = self.to_screen(x * TILE + TILE / 2, (y + 1) * TILE)
+        surface.blit(cache[key], (sx - 10, sy - 30))
+
     def _draw_painted_actors(self, surface, frame):
         """People painted into an interior (the nurse, the receptionist) breathe: their part of the
         painting lifts by a pixel now and then, so the room never looks like a still photo."""
@@ -1337,9 +1411,12 @@ class Overworld:
         else:
             text(surface, "WASD: WALK  E: TALK/USE  TAB: MENU  N: MAP  T: TRIALS  ESC: PAUSE", (160, bottom + 7), 9,
                  PALETTE["cream"], center=True)
-            hint = self.quest_hint() if self.quests else ""
-            text(surface, hint or "Tall grass hides wild MATHMON.", (160, bottom + 18), 8, PALETTE["muted"], center=True)
+            hint = self.quest_hint() if self.quests and not self.tracker.visible else ""
+            text(surface, hint or "J: show / hide quests   Tall grass hides wild MATHMON.", (160, bottom + 18), 8,
+                 PALETTE["muted"], center=True)
 
+        if self.quests and not self.dialogue and not self.world.interior:
+            self.tracker.draw(surface, frame)
         if self.message_frames and not self.dialogue:
             panel(surface, (8, bottom - 40, 304, 34), PALETTE["night"], PALETTE["gold"])
             wrapped(surface, self.message, (16, bottom - 34, 288, 24), 11, PALETTE["white"], 12, 2)

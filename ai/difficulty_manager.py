@@ -2,6 +2,9 @@
 
 Starting point - the mastery band:
     0-39 Foundation, 40-69 Intermediate, 70-84 Advanced, 85-100 Mastery challenge.
+Player level (report 9 Nov): the team's level sets a FLOOR, so questions grow harder as you
+level up - Lv 1-4 foundation, 5-9 intermediate, 10-14 advanced, 15+ mastery. A learner who is
+struggling gets the floor one band lower, so levelling up never makes maths unfair.
 Safeguards on top:
     * not enough evidence  -> never above Intermediate;
     * struggling recently (low accuracy, many second attempts, heavy hint use) -> one band down;
@@ -15,11 +18,15 @@ from mathematics.curriculum import DIFFICULTIES
 class DifficultyManager(Agent):
     name = "difficulty_manager"
     BANDS = ((85, "mastery"), (70, "advanced"), (40, "intermediate"), (0, "foundation"))
+    LEVEL_BANDS = ((15, "mastery"), (10, "advanced"), (5, "intermediate"), (0, "foundation"))
+
+    def level_floor(self, player_level):
+        return next(level for threshold, level in self.LEVEL_BANDS if player_level >= threshold)
 
     def band(self, mastery):
         return next(level for threshold, level in self.BANDS if mastery >= threshold)
 
-    def recommend(self, analysis, previous=""):
+    def recommend(self, analysis, previous="", player_level=None):
         level = self.band(analysis.mastery_score)
         reasons = [f"mastery {analysis.mastery_score} suggests {level}"]
         index = DIFFICULTIES.index(level)
@@ -33,12 +40,20 @@ class DifficultyManager(Agent):
         if analysis.hint_rate > 0.6 and index > 0 and analysis.evidence_count >= 3:
             index -= 1
             reasons.append("hints are doing a lot of the work, so one step gentler")
+        if player_level:
+            floor = DIFFICULTIES.index(self.level_floor(player_level))
+            if struggling and floor > 0:
+                floor -= 1
+            if index < floor:
+                index = floor
+                reasons.append(f"your team is Lv {player_level}, so at least {DIFFICULTIES[floor]}")
         if previous in DIFFICULTIES:
             last = DIFFICULTIES.index(previous)
             if abs(index - last) > 1:
                 index = last + (1 if index > last else -1)
                 reasons.append("changing one band at a time")
-        return validate_difficulty(DifficultyDecision(DIFFICULTIES[index], "; ".join(reasons).capitalize() + ".",
+        reason = "; ".join(reasons)
+        return validate_difficulty(DifficultyDecision(DIFFICULTIES[index], reason[:1].upper() + reason[1:] + ".",
                                                       previous))
 
     # Pre-GDD interface (Arena): three levels from the old per-topic stats.

@@ -746,7 +746,10 @@ class Overworld:
             needed = target.get("requires")
             if target.get("door"):
                 return base
-            return base + ("  - dormant" if needed and not self.has_flag(needed) else "  - travel")
+            if needed and not self.has_flag(needed):
+                reason = self.quests.unlocked_by(needed) if self.quests else ""
+                return base + (f"  - LOCKED: {reason}" if reason else "  - locked")
+            return base + "  - travel"
         if kind == "arena":
             return base + "  - race AI rivals!"
         if kind == "boss_gate":
@@ -822,6 +825,9 @@ class Overworld:
         for _, kind, item in sorted(drawables, key=lambda d: d[0]):
             if kind == "object":
                 self._draw_object(surface, item, frame)
+                if self.quest_locked(item):
+                    lx, ly = self.to_screen(item["pos"][0] * TILE + TILE / 2, item["pos"][1] * TILE)
+                    self._draw_padlock(surface, lx, ly - 14, frame)
             elif kind == "roamer":
                 self._draw_roamer(surface, item, frame)
             elif kind == "capsule":
@@ -1161,6 +1167,26 @@ class Overworld:
             pygame.draw.rect(surface, (150, 156, 150), (x + 4, y + 3, 8, 10))
             for row in range(3):
                 pygame.draw.line(surface, (100, 104, 102), (x + 5, y + 5 + row * 3), (x + 10, y + 5 + row * 3))
+
+    def quest_locked(self, entry):
+        """Is this object shut until a quest is done (a portal, a sealed boss gate, a locked record)?"""
+        kind = entry.get("kind")
+        if kind == "boss_gate":
+            gate_flag = entry.get("flag")
+            seals = entry.get("seals", [])
+            return not self.has_flag(gate_flag) and not all(self.has_flag(s) for s in seals)
+        needed = entry.get("requires")
+        return bool(needed) and kind in ("portal", "record") and not self.has_flag(needed)
+
+    def _draw_padlock(self, surface, cx, top, frame):
+        """A floating padlock: this way is locked by a quest."""
+        bob = 1 if frame % 50 < 25 else 0
+        y = top - bob
+        pygame.draw.rect(surface, PALETTE["ink"], (cx - 5, y - 1, 11, 10))
+        pygame.draw.rect(surface, PALETTE["gold"], (cx - 4, y, 9, 8))
+        pygame.draw.rect(surface, PALETTE["ink"], (cx - 3, y - 6, 7, 7), 1)
+        pygame.draw.rect(surface, PALETTE["gold"], (cx - 2, y - 5, 5, 5), 1)
+        pygame.draw.rect(surface, PALETTE["ink"], (cx, y + 3, 1, 3))
 
     def _blessing(self, surface, cx, cy, color, frame, index=""):
         """The living glow of a solved shrine or seal: a soft light pool, a breathing halo, spirit

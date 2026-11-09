@@ -100,7 +100,7 @@ class RealmGameTests(unittest.TestCase):
     def test_portal_wakes_after_the_boss_and_travel_is_saved(self):
         game = self.game
         self.stand_at("portal_realm")
-        self.assertIn("dormant", game.world.prompt())
+        self.assertIn("LOCKED: Defeat THE ARITHMETIC BEAST", game.world.prompt())   # the quest lock is visible
         self.use()
         self.assertIn("dark", game.world.dialogue.pages[0])
         game.world.close_dialogue()

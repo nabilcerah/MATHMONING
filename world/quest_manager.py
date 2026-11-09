@@ -47,7 +47,38 @@ class QuestManager:
         if self.status(quest_id) == "completed":
             return "Completed!"
         step = self.current_step(quest_id)
-        return step["text"] if step else ""
+        if not step:
+            return ""
+        done, total = self.step_progress(quest_id)
+        return f"{step['text']} ({done}/{total})" if total else step["text"]
+
+    def step_progress(self, quest_id):
+        """(done, total) for steps you complete bit by bit - battles, captures, chests, seals - else (0, 0)."""
+        step = self.current_step(quest_id) or {}
+        counters = self.states.get(quest_id, {}).get("progress", {}).get("counters", {})
+        kind = step.get("type")
+        if kind == "win_battles":
+            return min(counters.get("wins", 0) + counters.get("captures", 0), step["count"]), step["count"]
+        if kind == "capture":
+            return min(counters.get("captures", 0), step["count"]), step["count"]
+        if kind == "flags_all":
+            flags = self.flags()
+            return sum(1 for flag in step["flags"] if flag in flags), len(step["flags"])
+        if kind == "open_chests":
+            opened = sum(1 for flag in self.flags() if flag.startswith("opened:"))
+            return min(opened, step["count"]), step["count"]
+        return 0, 0
+
+    @staticmethod
+    def unlocked_by(flag):
+        """The quest step that sets ``flag`` (e.g. a boss), as short text - for 'LOCKED: ...' prompts."""
+        for quest in quests().values():
+            for step in quest.get("steps", []):
+                if step.get("type") == "flag" and step.get("flag") == flag:
+                    return step["text"].split(" in ")[0].split(" at ")[0].rstrip(".")
+            if flag in quest.get("rewards", {}).get("flags", []):
+                return f"Finish {quest['title'].title()}"
+        return ""
 
     def challenge(self, challenge_id):
         return challenges()[challenge_id]
@@ -93,7 +124,9 @@ class QuestManager:
                 return True   # already met earlier, e.g. before the quest log existed
             return event == "talk" and data.get("npc") == step["npc"]
         if kind == "win_battles":
-            return counters.get("wins", 0) >= step["count"]
+            # Catching a MathMon is winning that battle too (bug report: catches did not count). Saves made
+            # before the fix already hold their catches here, so they count as soon as the game loads.
+            return counters.get("wins", 0) + counters.get("captures", 0) >= step["count"]
         if kind == "capture":
             return counters.get("captures", 0) >= step["count"]
         if kind == "capture_species":
@@ -114,7 +147,7 @@ class QuestManager:
         state = self.states[quest_id]
         progress = state["progress"]
         counters = progress.setdefault("counters", {})
-        if event == "battle_won":
+        if event in ("battle_won", "trial_won"):
             counters["wins"] = counters.get("wins", 0) + 1
         elif event == "capture":
             counters["captures"] = counters.get("captures", 0) + 1

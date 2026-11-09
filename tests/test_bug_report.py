@@ -702,3 +702,68 @@ class WorldMapPinTests(GameCase):
         game._handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=pos))
         self.assertEqual(game.state, "overworld")
         self.assertEqual(game.world.area_id, pin["area"])
+
+
+class QuestLockAndProgressTests(GameCase):
+    """Bug: stuck on THE UNKNOWN GUARDIAN after winning battles; quest locks should be visible."""
+
+    def enter_cavern(self):
+        from tests.test_cutscene import run_scene
+        game = self.game
+        game.world.set_flag("boss:numerex")
+        game.world.set_flag("region:number_forest_complete")
+        game.quests._save("fading_numera", "completed", {})
+        game._travel_to_map("algebra_cavern", (10, 24))
+        for _ in range(40):
+            game._update()
+        run_scene(game)
+        self.assertEqual(game.quests.step_index("unknown_guardian"), 1)
+
+    def test_catches_and_trial_wins_count_as_battles_won_with_progress_shown(self):
+        game = self.game
+        self.enter_cavern()
+        self.assertTrue(game.quests.step_text("unknown_guardian").endswith("(0/2)"))
+        game.quests.notify("capture", species="VOLTIX")          # caught it instead of knocking it out
+        self.assertTrue(game.quests.step_text("unknown_guardian").endswith("(1/2)"))
+        game.quests.notify("trial_won", id="infermath")          # beat the Trial monster in the tunnels
+        self.assertEqual(game.quests.step_index("unknown_guardian"), 2)
+        self.assertEqual(game.quests.step_text("unknown_guardian"), "Restore the three Variable Seals. (0/3)")
+        game.world.set_flag("challenge:seal_x1")
+        self.assertIn("(1/3)", game.quests.step_text("unknown_guardian"))
+
+    def test_locked_portals_and_gates_show_a_padlock_and_the_reason(self):
+        game = self.game
+        self.enter_cavern()
+        world = game.world
+        gateway = world.objects["algebra_cavern_forward"]
+        gate = world.objects["algebra_cavern_gate"]
+        self.assertTrue(world.quest_locked(gateway))
+        self.assertTrue(world.quest_locked(gate))
+        x, y = gateway["pos"]
+        world.avatar.x, world.avatar.y = world.world.cell_to_feet((x, y + 1))
+        world.avatar.facing = (0, -1)
+        world.update()
+        self.assertIn("LOCKED: Defeat THE UNKNOWN GUARDIAN", world.prompt())
+        world.draw(pygame.Surface((320, 240)), 1)
+        world.set_flag("boss:guardian")
+        self.assertFalse(world.quest_locked(gateway))
+
+
+class StuckSaveTests(unittest.TestCase):
+    def test_a_save_stuck_on_win_battles_with_old_catches_moves_on_when_loaded(self):
+        from game.game_manager import GameManager
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        path = folder.name + "/stuck.sqlite3"
+        game = GameManager(database_path=path)
+        game.player_name = "Stuck"
+        game._create_new_player()
+        finish_story(game)
+        game.quests._save("unknown_guardian", "active", {"step": 1, "counters": {"captures": 2}})   # the old bug
+        game.save_all()
+        game.llm.close()
+        again = GameManager(database_path=path)
+        again._continue_game()
+        finish_story(again)
+        self.assertEqual(again.quests.step_index("unknown_guardian"), 2)
+        again.llm.close()

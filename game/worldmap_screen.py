@@ -254,6 +254,11 @@ class WorldMapScreen:
             elif kind == "boss_gate":
                 pulse = 2 + (frame // 15) % 2
                 pygame.draw.circle(surface, (190, 120, 255), (int(mx), int(my)), pulse, 1)
+            if self.overworld.quest_locked(entry):        # a quest still keeps this shut
+                lx, ly = int(mx), int(my) - 6
+                pygame.draw.rect(surface, PALETTE["ink"], (lx - 3, ly - 1, 7, 6))
+                pygame.draw.rect(surface, PALETTE["gold"], (lx - 2, ly, 5, 4))
+                pygame.draw.rect(surface, PALETTE["gold"], (lx - 1, ly - 3, 3, 3), 1)
         for roamer in self.overworld.roamers:
             if revealed(self.world.to_cell(roamer.x, roamer.y - 2)):
                 mx, my = self.to_map(roamer.x, roamer.y)

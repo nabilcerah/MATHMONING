@@ -377,6 +377,7 @@ class GameManager:
         self.repository.touch_player(record.player_id)      # it is now the most recently played profile
         self._load(record)
         self.quests.start_auto_quests()
+        self.quests.notify("refresh")       # re-check every step (a save stuck before a rule fix moves on)
         self._enter_world()
         self.world.set_message(f"Welcome back, {self.player.name}. Your trail is waiting.")
 
@@ -894,6 +895,9 @@ class GameManager:
         else:
             self._back_to_world(f"You defeated {name}! It will be back, stronger, when you return here."
                                 if won else f"{name} retreats into the wild. Find it again to retry!")
+        if won and not gate:
+            messages, done = self.quests.notify("trial_won", id=monster_id)   # counts for "win N battles"
+            self._quest_feedback(messages, done)
         if won and not self.world.has_flag(f"trial_story:{monster_id}"):
             self.story_event("trial_won", id=monster_id)        # the Professor tells its story
 

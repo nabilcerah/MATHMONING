@@ -25,8 +25,8 @@ class PauseScreen(Screen):
             self.game.save_all()
             self.notice = "Game saved."
         elif choice == "SETTINGS":
-            self.game.scanlines = not self.game.scanlines
-            self.notice = "Scanlines " + ("on." if self.game.scanlines else "off.") + "  F11: fullscreen"
+            from states.settings_state import SettingsScreen
+            self.game.states.push(SettingsScreen(self.game))      # sound, volumes, scanlines
         else:
             self.game.save_all()
             self.close("main_menu")

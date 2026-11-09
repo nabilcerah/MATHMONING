@@ -1,8 +1,9 @@
 {
   "_comment": "The CODEX. An entry appears when its 'unlock' flag is held (default 'lore:<id>'). Each part shows when its own 'unlock' flag is held (null = with the entry); locked parts show as '???' so the reader knows something is missing. Records also have 'pages': the in-world text shown when you read the object (kind 'record' in a map). Monster entries come from bestiary.json; chapter entries from chapters.json.",
-  "sections": ["world", "characters", "monsters", "regions", "records", "story"],
+  "sections": ["world", "characters", "monsters", "regions", "records", "story", "trials"],
   "section_titles": {"world": "WORLD HISTORY", "characters": "CHARACTERS", "monsters": "MATHMON", "regions": "REGIONS",
-                     "records": "HISTORICAL RECORDS", "story": "MAIN STORY"},
+                     "records": "HISTORICAL RECORDS", "story": "MAIN STORY",
+                     "trials": "TRIAL MONSTERS"},
   "entries": {
     "creation": {"section": "world", "title": "The Null and the Five Axioms", "parts": [
       {"text": "Before the beginning there was the Null: not emptiness, but something undefined. Nothing could be counted, so nothing could exist."},
@@ -177,6 +178,42 @@
     "record_engine_plan": {"section": "records", "title": "Plan of the Origin Engine", "unlock": "record:record_engine_plan",
       "pages": ["A carved diagram: five roots meeting in a circle at the Zero Point. Around it, the Engine - a calculation in stone, nine steps long.",
                 "At the bottom, in four different scripts: 'IF IT DOES NOT COME OUT EVEN, STOP.'"],
-      "parts": [{"text": "A nine-step calculation in stone. 'If it does not come out even, stop.'"}]}
+      "parts": [{"text": "A nine-step calculation in stone. 'If it does not come out even, stop.'"}]},
+    "trial_voltbyte": {"section": "trials", "title": "Voltbyte, the Lantern Spark", "unlock": "trial_seen:voltbyte", "parts": [
+      {"text": "An electric Trial monster that stores its charge in neat rows and columns - every spark it throws is a times table."},
+      {"text": "When lightning struck a Tallyfolk counting stone, the stone kept counting - in multiples. That pattern became Voltbyte. The Tallyfolk let it power their lantern-roads: 6 lanterns in 8 rows, never one more. When the Numera faded it forgot how to stop multiplying and fled to the forest's quietest corner.", "unlock": "trial_story:voltbyte"}]},
+    "trial_nullshade": {"section": "trials", "title": "Nullshade, the Shadow Below Zero", "unlock": "trial_seen:nullshade", "parts": [
+      {"text": "A void Trial monster made of the space below zero. It grows stronger on every 'less than nothing'."},
+      {"text": "Nullshade is older than the Tallyfolk: a scrap of the Null left behind when the Axioms woke. The Tallyfolk learned to tame it with negative numbers - a debt written down is a debt that cannot grow. They chained it under the ruins, where the ground line dips below zero.", "unlock": "trial_story:nullshade"}]},
+    "trial_mycomorph": {"section": "trials", "title": "Mycomorph, the Sharing Spore", "unlock": "trial_seen:mycomorph", "parts": [
+      {"text": "A spore Trial monster that splits itself into equal parts - every spore is a fraction of the whole colony."},
+      {"text": "The Tallyfolk shared every harvest by Mycomorph's rings: a quarter for the village, a quarter for the seed store, half for the long winter. While the colony was shared fairly it slept peacefully under the pines; unfair shares make it swell and spread.", "unlock": "trial_story:mycomorph"}]},
+    "trial_crystalgon": {"section": "trials", "title": "Crystalgon, the Measuring Gem", "unlock": "trial_seen:crystalgon", "parts": [
+      {"text": "A crystal Trial monster whose facets measure every angle that touches them."},
+      {"text": "Crystalgon grew around the first perfect triangle the masons of Euclidia ever laid. Each new facet records a shape: an area on one face, an angle on the next. The Crystal Realm's light is its memory of every building Euclidia ever planned.", "unlock": "trial_story:crystalgon"}]},
+    "trial_chronowl": {"section": "trials", "title": "Chronowl, the Pattern Herald", "unlock": "trial_seen:chronowl", "parts": [
+      {"text": "A time Trial monster whose hoots form sequences: each call is the next term."},
+      {"text": "The Timekeepers raised Chronowls as messengers. A message was a sequence - 2, 4, 8 meant 'come quickly', 1, 1, 2, 3 meant 'all is well'. When the clocks stopped, Chronowl kept hooting the last pattern it learned, over and over, alone on the isles.", "unlock": "trial_story:chronowl"}]},
+    "trial_equinox": {"section": "trials", "title": "Equinox, the Scale of Promises", "unlock": "trial_seen:equinox", "parts": [
+      {"text": "A golden scarab Trial monster that weighs both sides of every equation."},
+      {"text": "The Order of the Unknown trusted Equinox to keep their promises: an x locked in an equation is safe only while both sides balance. It guarded the chamber beneath the caverns for a thousand years - until someone injected Remainder into its shell and tipped every scale it held.", "unlock": "trial_story:equinox"}]},
+    "trial_infermath": {"section": "trials", "title": "Infermath, the Forge of Unknowns", "unlock": "trial_seen:infermath", "parts": [
+      {"text": "A fire Trial monster that melts any expression down until only x is left."},
+      {"text": "The forge-spirit of the Order of the Unknown. Their smiths fed it messy expressions - 3x + 2 = 17 - and it burned away everything that was not the answer. When the caverns went cold it began melting the tunnels themselves.", "unlock": "trial_story:infermath"}]},
+    "trial_arithmord": {"section": "trials", "title": "Arithmord, the Arithmetic Beast", "unlock": "trial_seen:arithmord", "parts": [
+      {"text": "A chaos Trial monster of tangled operations - add, take away, multiply and divide all at once."},
+      {"text": "Arithmord was the Tallyfolk's Final Sum: a creature made to hold every calculation of their age. When the Numera faded its operations tangled - it forgot which comes first - and the Tallyfolk sealed it behind the stone arch with three Numera Seals. Swollen with Remainder, it became the Arithmetic Beast.", "unlock": "trial_story:arithmord"}]},
+    "trial_galaxion": {"section": "trials", "title": "Galaxion, the Star Counter", "unlock": "trial_seen:galaxion", "parts": [
+      {"text": "A cosmic Trial monster that counts stars in numbers too big to say out loud."},
+      {"text": "Euclidia's astronomers mapped the sky on Galaxion's back. It counts in place value: thousands of stars, millions, billions, each digit a new ring of light. When its count slipped a place, whole constellations vanished from the garden courts.", "unlock": "trial_story:galaxion"}]},
+    "trial_sphynox": {"section": "trials", "title": "Sphynox, the Riddle Door", "unlock": "trial_seen:sphynox", "parts": [
+      {"text": "A spirit Trial monster that answers every question with a puzzle of logic."},
+      {"text": "Sphynox kept the doors of Euclidia's great library. No key opened them - only a true statement. It has watched over the Pillar Court for a thousand years, waiting for anyone patient enough to reason with it.", "unlock": "trial_story:sphynox"}]},
+    "trial_hexabyte": {"section": "trials", "title": "Hexabyte, the Runaway Power", "unlock": "trial_seen:hexabyte", "parts": [
+      {"text": "A poison Trial monster that doubles itself again and again - exponents grown out of control."},
+      {"text": "Hexabyte was a Timekeeper experiment: a creature that grew by powers, so a garden could bloom in a single hour. It never stopped - 2, 4, 8, 16... The Timekeepers froze it inside a stopped moment on the Tock Isles. When the clocks broke, the moment cracked.", "unlock": "trial_story:hexabyte"}]},
+    "trial_infinity_zero": {"section": "trials", "title": "Infinity Zero, Guardian of the Engine", "unlock": "trial_seen:infinity_zero", "parts": [
+      {"text": "The mythical Trial monster where zero meets infinity: the guardian of the Engine itself."},
+      {"text": "Infinity Zero is the oldest pattern in Mathea - the moment between nothing and everything. It guards the Engine beneath the Time Spire, where every Axiom meets. Every lesson of every civilisation is folded into it, which is why only a trainer who has learned from all of them can calm it.", "unlock": "trial_story:infinity_zero"}]}
   }
 }

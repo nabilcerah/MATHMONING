@@ -329,7 +329,9 @@
    "open": "The seals flare and the chamber door slides open. A golden scarab weighs you up...",
    "fight": "Face the guardian!",
    "victory": "THE UNKNOWN GUARDIAN is defeated! The lab's gateway hums to life - the Geometry Kingdom awaits.",
-   "quiet": "The chamber is calm. Every unknown here has been found."
+   "quiet": "The chamber is calm. Every unknown here has been found.",
+   "trial": "equinox",
+   "trial_rank": 2
   },
   {
    "id": "algebra_cavern_forward",

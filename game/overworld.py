@@ -1195,6 +1195,10 @@ class Overworld:
                 pose = (1, 0, 2, 0)[int(actor.walk_time * 8) % 4]
             elif getattr(actor, "state", "") == "talking":
                 pose = 4  # wave while chatting
+            elif getattr(actor, "state", "") == "working" and getattr(actor, "spec", {}).get("task_poses"):
+                # Busy at their spot: the fisherman casts and catches, Nurse Hana checks capsules...
+                poses = actor.spec["task_poses"]
+                pose = poses[(self.age // 45 + len(actor.id)) % len(poses)]
             else:
                 pose = 0
             monster_sprites.draw(surface, actor.sheet, (sx, sy + 1), self.CHARACTER_HEIGHT, pose,

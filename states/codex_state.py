@@ -8,7 +8,7 @@ from game.ui import panel, text, wrap_lines
 from states.base import LEFT, RIGHT, Screen
 from world.story_manager import lore
 
-SECTIONS = ("world", "characters", "monsters", "regions", "records", "story")
+SECTIONS = ("world", "characters", "monsters", "regions", "records", "story", "trials")
 VISIBLE = 11
 
 
@@ -67,7 +67,7 @@ class CodexScreen(Screen):
         self.draw_frame(surface, "CODEX", footer="LEFT/RIGHT: SECTION   UP/DOWN: ENTRY   Z/X: SCROLL   ESC: BACK")
         for i, key in enumerate(SECTIONS):
             label = titles[key].split()[0] if key != "monsters" else "MATHMON"
-            text(surface, label, (4 + i * 53, 30), 8, PALETTE["gold"] if i == self.section else PALETTE["muted"])
+            text(surface, label, (4 + i * 45, 30), 8, PALETTE["gold"] if i == self.section else PALETTE["muted"])
         pygame.draw.line(surface, PALETTE["deep"], (4, 40), (316, 40))
         chapter = self.story.chapter()
         text(surface, f"{chapter['number']}: {chapter['title']}", (316, 214), 7, PALETTE["sky"], align="right")

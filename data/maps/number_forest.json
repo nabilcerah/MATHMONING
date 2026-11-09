@@ -492,6 +492,34 @@
   "tobi_spot2": [
    17,
    67
+  ],
+  "fishing_spot": [
+   12,
+   61
+  ],
+  "zaki_north": [
+   15,
+   53
+  ],
+  "zaki_east": [
+   20,
+   61
+  ],
+  "zaki_south": [
+   17,
+   69
+  ],
+  "hakim_a": [
+   21,
+   60
+  ],
+  "hakim_b": [
+   14,
+   70
+  ],
+  "hakim_c": [
+   19,
+   66
   ]
  },
  "interactables": [
@@ -769,7 +797,9 @@
    "open": "The seals blaze with light and the arch groans open. Something huge stirs inside...",
    "fight": "Face the beast!",
    "victory": "THE ARITHMETIC BEAST is defeated! The Numera flows back into Number Forest. A cave opens in the ruins - the Algebra Cavern awaits!",
-   "quiet": "The arch is quiet now. The Numera flows freely through Number Forest."
+   "quiet": "The arch is quiet now. The Numera flows freely through Number Forest.",
+   "trial": "arithmord",
+   "trial_rank": 1
   },
   {
    "id": "door_shop",
@@ -1358,6 +1388,116 @@
    "remarks": [
     "Sums? Sums!",
     "DIVOWLs love Pine Ridge..."
+   ]
+  },
+  {
+   "id": "fisherman",
+   "name": "Fisherman Salleh",
+   "role": "Fisherman",
+   "kind": "talker",
+   "sheet": "characters/FISHERMAN",
+   "task_poses": [
+    1,
+    3,
+    6,
+    7,
+    8,
+    6,
+    5,
+    4
+   ],
+   "routine": [
+    {
+     "waypoint": "fishing_spot",
+     "wait": 30,
+     "face": "left"
+    }
+   ],
+   "lines": [
+    "The lake fish swim in schools of 7. Catch one school and you've got a multiple of 7!",
+    "Patience, young trainer. Fishing is like long division: slow, steady, and something always remains."
+   ],
+   "remarks": [
+    "Bite... bite...",
+    "Got one!",
+    "Another tiddler.",
+    "Shh, you'll scare them."
+   ]
+  },
+  {
+   "id": "encik_zaki",
+   "name": "Encik Zaki",
+   "role": "Village guard",
+   "kind": "talker",
+   "sheet": "characters/ZAKI",
+   "task_poses": [
+    8,
+    0,
+    4
+   ],
+   "routine": [
+    {
+     "waypoint": "zaki_north",
+     "wait": 6,
+     "face": "down"
+    },
+    {
+     "waypoint": "zaki_east",
+     "wait": 5,
+     "face": "right"
+    },
+    {
+     "waypoint": "zaki_south",
+     "wait": 6,
+     "face": "down"
+    }
+   ],
+   "lines": [
+    "Halt! ...Oh, it's you. All quiet in Starter Village today.",
+    "Strange shapes were seen near the ruins at night. Trial monsters hide in the far, quiet corners - be careful."
+   ],
+   "remarks": [
+    "Patrol report: all clear.",
+    "Twelve houses, all counted.",
+    "Keep the paths tidy!"
+   ]
+  },
+  {
+   "id": "hakim",
+   "name": "Hakim",
+   "role": "Young explorer",
+   "kind": "talker",
+   "sheet": "characters/HAKIM",
+   "task_poses": [
+    0,
+    4,
+    8
+   ],
+   "routine": [
+    {
+     "waypoint": "hakim_a",
+     "wait": 5,
+     "face": "right"
+    },
+    {
+     "waypoint": "hakim_b",
+     "wait": 4,
+     "face": "down"
+    },
+    {
+     "waypoint": "hakim_c",
+     "wait": 5,
+     "face": "left"
+    }
+   ],
+   "lines": [
+    "I'm mapping every path in the forest! So far: 47 paths, 3 dead ends... and 1 very angry VOLTIX.",
+    "They say a Trial monster sleeps at the end of a hidden trail. I'll find it one day!"
+   ],
+   "remarks": [
+    "Path 48... found it!",
+    "Where does this one go?",
+    "I'm not lost, I'm exploring!"
    ]
   }
  ],

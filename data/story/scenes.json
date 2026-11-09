@@ -1,5 +1,5 @@
 {
-  "_comment": "Story scenes. trigger: {event, ...filters} must match a game event (opening, enter_world, talk, visit, interact, challenge, boss_before, boss_after, record, flag). requires/excludes: world flags. once (default true): plays once, remembered as 'scene:<id>'. Lines: s = speaker id (characters.json), t = text. choices.mode: 'explore' = ask as many as you like, then the exit option; 'decide' = pick one (sets flags that change the story). Effects: set (flags), lore (codex ids), quest (start), action (battle | challenge:<id> | ending:<id>). cutscene: steps played before the first line; a line's 'cut': steps played before that line (walk, face, emote, camera, wait, fade, shake, flash, place - see states/cutscene.py).",
+  "_comment": "Story scenes. trigger: {event, ...filters} must match a game event (opening, enter_world, talk, visit, interact, challenge, boss_before, boss_after, record, flag). requires/excludes: world flags. once (default true): plays once, remembered as 'scene:<id>'. Lines: s = speaker id (characters.json), t = text. choices.mode: 'explore' = ask as many as you like, then the exit option; 'decide' = pick one (sets flags that change the story). Effects: set (flags), lore (codex ids), quest (start), action (battle | challenge:<id> | ending:<id>). cutscene: steps played before the first line; a line's 'cut': steps played before that line (walk, face, emote, camera, wait, fade, shake, flash, place - see states/cutscene.py). trial_won: fired after the first victory over a Trial monster (id = its monster id).",
   "scenes": {
     "opening": {
       "category": "main",
@@ -433,7 +433,7 @@
       "lines": [
         {
           "s": "narrator",
-          "t": "A NUMEREX rises from the shadows - but swollen, its markings crawling with numbers that never add up."
+          "t": "Out of the dark beneath the arch uncoils ARITHMORD, the Tallyfolk's Final Sum - its plus, minus, times and divide signs knotted together and crawling with numbers that never add up."
         },
         {
           "s": "numlink",
@@ -465,7 +465,7 @@
       "lines": [
         {
           "s": "narrator",
-          "t": "The Beast shrinks back into an ordinary NUMEREX and slips away into the dark. On top of the arch, a hooded figure is watching you."
+          "t": "ARITHMORD's tangled signs slowly fall back into order, and the Beast sinks quietly into the dark beneath the arch. On top of the arch, a hooded figure is watching you."
         },
         {
           "s": "stranger",
@@ -1827,6 +1827,306 @@
           "s": "abacus",
           "t": "The Professor always told me the stones were 'just poetry'. Funny. He reads ancient scripts better than anyone alive."
         }
+      ]
+    },
+    "trial_story_voltbyte": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "voltbyte"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Voltbyte! The Tallyfolk's lantern-keeper. Every lantern-road in the old forest was lit by its arrays - rows times columns, never a spark wasted."
+        },
+        {
+          "s": "numlink",
+          "t": "When the Numera faded, its tables got jumbled and it hid in the dark. You reminded it how multiplying works. I think it'll light the paths again."
+        },
+        {
+          "s": "numlink",
+          "t": "...Odd. Its charge felt like it had been stirred up on purpose. I'll make a note. A very small note."
+        }
+      ],
+      "set": [
+        "trial_story:voltbyte",
+        "trial_seen:voltbyte"
+      ]
+    },
+    "trial_story_nullshade": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "nullshade"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Nullshade... a leftover piece of the Null itself! The Tallyfolk wrote their debts into it - minus three, minus seven - so the darkness had a number and couldn't spread."
+        },
+        {
+          "s": "numlink",
+          "t": "You kept count of every negative. That's exactly how they held it. Below zero isn't nothing, trainer - it's a direction."
+        },
+        {
+          "s": "numlink",
+          "t": "Its chains were cut cleanly, though. Not rusted. Cut. ...Never mind. Probably nothing!"
+        }
+      ],
+      "set": [
+        "trial_story:nullshade",
+        "trial_seen:nullshade"
+      ]
+    },
+    "trial_story_mycomorph": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "mycomorph"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Mycomorph! The Tallyfolk's harvest-keeper. They divided every crop by its rings - halves, quarters, eighths - so nobody ever went hungry."
+        },
+        {
+          "s": "numlink",
+          "t": "Unequal shares upset it. You put every fraction back in balance, so the colony can rest under the pines again."
+        },
+        {
+          "s": "numlink",
+          "t": "I once tried to share a cake by its rings. Seven pieces, five people. It sulked for a week."
+        }
+      ],
+      "set": [
+        "trial_story:mycomorph",
+        "trial_seen:mycomorph"
+      ]
+    },
+    "trial_story_crystalgon": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "crystalgon"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Crystalgon carries the first perfect triangle of Euclidia inside it! Every facet is a measurement - an area here, an angle there."
+        },
+        {
+          "s": "numlink",
+          "t": "Remainder had clouded its faces, so its measurements came out crooked. You measured true, and the realm's light is clearer already."
+        },
+        {
+          "s": "numlink",
+          "t": "If you listen closely, it hums at exactly 180 degrees. Don't ask me how you hear an angle."
+        }
+      ],
+      "set": [
+        "trial_story:crystalgon",
+        "trial_seen:crystalgon"
+      ]
+    },
+    "trial_story_chronowl": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "chronowl"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Chronowl! The Timekeepers' messenger. They talked in sequences - every hoot was the next term in a message."
+        },
+        {
+          "s": "numlink",
+          "t": "It was stuck repeating the last message it ever received. By finishing its patterns you told it time can move again."
+        },
+        {
+          "s": "numlink",
+          "t": "That last message... 20, 0, 20, 0. A warning. Twenty years ago. ...I need to sit down."
+        }
+      ],
+      "set": [
+        "trial_story:chronowl",
+        "trial_seen:chronowl"
+      ]
+    },
+    "trial_story_equinox": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "equinox"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Equinox, the guardian of the Order of the Unknown. Every equation they wrote, it weighed - left side, right side - so the promises inside stayed true."
+        },
+        {
+          "s": "numlink",
+          "t": "Someone poured Remainder into it on purpose. That's not decay, trainer. That's sabotage."
+        },
+        {
+          "s": "numlink",
+          "t": "You balanced it again, one step at a time. The Order would have liked you. ...So would someone I used to know."
+        }
+      ],
+      "set": [
+        "trial_story:equinox",
+        "trial_seen:equinox"
+      ]
+    },
+    "trial_story_infermath": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "infermath"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Infermath was the Order's forge. Give it 3x + 2 = 17 and it burns away the 2, then the 3, until only x = 5 glows in the coals."
+        },
+        {
+          "s": "numlink",
+          "t": "With no smiths left to feed it, it started melting the tunnels. You gave it real equations again. Hear that crackle? That's a happy forge."
+        },
+        {
+          "s": "numlink",
+          "t": "Inverse operations, trainer. Undo what was done, in reverse order. True for forges... and for mistakes."
+        }
+      ],
+      "set": [
+        "trial_story:infermath",
+        "trial_seen:infermath"
+      ]
+    },
+    "trial_story_arithmord": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "arithmord"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "The Arithmetic Beast was Arithmord all along - the Tallyfolk's Final Sum, holding every calculation of their whole age."
+        },
+        {
+          "s": "numlink",
+          "t": "Without the Numera it forgot the order of operations: brackets, powers, multiply and divide, add and subtract... all in a heap. You untangled it one step at a time."
+        },
+        {
+          "s": "numlink",
+          "t": "The Tallyfolk sealed it to protect it, not to punish it. Someone else broke those seals. I'm going to find out who."
+        }
+      ],
+      "set": [
+        "trial_story:arithmord",
+        "trial_seen:arithmord"
+      ]
+    },
+    "trial_story_galaxion": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "galaxion"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Galaxion! Euclidia's astronomers mapped the night sky on its back. Every ring of light is a place value - thousands, millions, billions."
+        },
+        {
+          "s": "numlink",
+          "t": "One slipped digit and a whole constellation disappears. You put every place back where it belongs."
+        },
+        {
+          "s": "numlink",
+          "t": "I counted its stars once. I got to four hundred and twelve and fell asleep. It didn't seem offended."
+        }
+      ],
+      "set": [
+        "trial_story:galaxion",
+        "trial_seen:galaxion"
+      ]
+    },
+    "trial_story_sphynox": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "sphynox"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Sphynox guarded Euclidia's library. No locks, no keys - only logic. Say something true and the door opens."
+        },
+        {
+          "s": "numlink",
+          "t": "It doesn't fight to hurt you. It fights to see if you think clearly. Clearly, you do!"
+        },
+        {
+          "s": "numlink",
+          "t": "It asked me a riddle once. I'm still not sure if 'yes' was the right answer."
+        }
+      ],
+      "set": [
+        "trial_story:sphynox",
+        "trial_seen:sphynox"
+      ]
+    },
+    "trial_story_hexabyte": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "hexabyte"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Hexabyte... the Timekeepers' biggest mistake. They wanted a garden that grew by powers. It doubled, and doubled, and never stopped."
+        },
+        {
+          "s": "numlink",
+          "t": "They froze it in a stopped moment. You understood its powers well enough to calm it - square by square."
+        },
+        {
+          "s": "numlink",
+          "t": "Twenty years ago I wrote a formula that doubled too. I should have stopped it sooner. ...That's a story for another day."
+        }
+      ],
+      "set": [
+        "trial_story:hexabyte",
+        "trial_seen:hexabyte"
+      ]
+    },
+    "trial_story_infinity_zero": {
+      "category": "comm",
+      "trigger": {
+        "event": "trial_won",
+        "id": "infinity_zero"
+      },
+      "lines": [
+        {
+          "s": "numlink",
+          "t": "Infinity Zero... the guardian of the Engine where all five Axioms meet. Zero and infinity, nothing and everything, in one creature."
+        },
+        {
+          "s": "numlink",
+          "t": "Every sum, every x, every angle, every pattern you've learned - it tested all of them. And you were ready."
+        },
+        {
+          "s": "numlink",
+          "t": "Thank you, trainer. Not for defeating it. For understanding it. That's what the Engine always needed."
+        }
+      ],
+      "set": [
+        "trial_story:infinity_zero",
+        "trial_seen:infinity_zero"
       ]
     }
   }

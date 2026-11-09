@@ -84,6 +84,18 @@
   "floor_mid": [
    7,
    5
+  ],
+  "bench": [
+   10,
+   6
+  ],
+  "stair_foot": [
+   2,
+   4
+  ],
+  "capsule_view": [
+   11,
+   4
   ]
  },
  "interactables": [
@@ -235,21 +247,27 @@
     "Next patient, please!",
     "Every right answer powers the capsule.",
     "This VOLTIX keeps sparking!"
+   ],
+   "sheet": "characters/NURSE_HANA",
+   "task_poses": [
+    1,
+    2,
+    6,
+    7
    ]
   },
   {
-   "id": "mcr_reception",
-   "name": "Receptionist Ada",
+   "id": "mcr_farah",
+   "name": "Receptionist Farah",
    "role": "Reception",
-   "kind": "talker",
-   "look": {
-    "hair": "#1f1f2a",
-    "skin": "#e0b48a",
-    "clothes": "#f0f0f0",
-    "accent": "#3fb0a0",
-    "pants": "#2e3240",
-    "shoes": "#2a1d14"
-   },
+   "kind": "clinic",
+   "sheet": "characters/FARAH",
+   "task_poses": [
+    0,
+    1,
+    8,
+    3
+   ],
    "routine": [
     {
      "waypoint": "desk",
@@ -267,126 +285,96 @@
      "face": "right"
     }
    ],
-   "lines": [
-    "Welcome to the Recovery Center! Talk to me at the counter, or find Nurse Hana on her rounds.",
-    "The capsule fits one MathMon at a time."
-   ],
+   "dialogue": {
+    "any": [
+     "Welcome to the Mathmon Recovery Center! I'm Farah.",
+     "Shall I book one of your MathMon into a Recovery Capsule?"
+    ]
+   },
    "remarks": [
     "Welcome to the Recovery Center!",
     "Please sign the guest book... in numbers!",
+    "Nurse Hana is on her rounds.",
     "Next, please!"
    ]
   },
   {
-   "id": "mcr_kai",
-   "name": "Kai",
-   "role": "Trainer",
-   "kind": "talker",
-   "look": {
-    "hair": "#2d2a26",
-    "skin": "#c99a6e",
-    "clothes": "#3f7fbf",
-    "accent": "#f2bb52",
-    "pants": "#2e3240",
-    "shoes": "#2a1d14"
-   },
-   "routine": [
-    {
-     "waypoint": "entrance",
-     "wait": 3,
-     "face": "up"
-    },
-    {
-     "waypoint": "counter_right",
-     "wait": 6,
-     "face": "up"
-    },
-    {
-     "waypoint": "chairs",
-     "wait": 7,
-     "face": "right"
-    }
-   ],
-   "lines": [
-    "My VOLTIX lost to a wild DIVOWL. Division is hard when you're tired!",
-    "Nurse Hana asked me three questions. I got two - good enough for a nap."
-   ],
-   "remarks": [
-    "Come on, capsule...",
-    "I should practise my times tables."
-   ]
-  },
-  {
-   "id": "mcr_mia",
-   "name": "Mia",
-   "role": "Young trainer",
-   "kind": "talker",
-   "look": {
-    "hair": "#e07a3a",
-    "skin": "#f0c8a0",
-    "clothes": "#d9577a",
-    "accent": "#ffffff",
-    "pants": "#3a3f50",
-    "shoes": "#5a2a1a"
-   },
-   "routine": [
-    {
-     "waypoint": "corner",
-     "wait": 6,
-     "face": "down"
-    },
-    {
-     "waypoint": "window",
-     "wait": 5,
-     "face": "left"
-    }
-   ],
-   "lines": [
-    "Did you know the capsule glows greener as your MathMon gets better?",
-    "I'm waiting for my AQUABIT. It swallowed a negative number."
-   ],
-   "remarks": [
-    "Is it done yet?",
-    "Seven... eight... nine...!"
-   ]
-  },
-  {
-   "id": "mcr_pell",
-   "name": "Old Pell",
+   "id": "uncle_shazlan",
+   "name": "Uncle Shazlan",
    "role": "Retired trainer",
    "kind": "talker",
-   "look": {
-    "hair": "#d8d8d8",
-    "skin": "#d9a77a",
-    "clothes": "#6b5a3a",
-    "accent": "#a0c060",
-    "pants": "#3a3a3a",
-    "shoes": "#2a1d14"
-   },
+   "sheet": "characters/SHAZLAN",
+   "speed": 0.32,
+   "task_poses": [
+    0,
+    7,
+    0,
+    5
+   ],
    "routine": [
     {
-     "waypoint": "board",
-     "wait": 8,
-     "face": "up"
+     "waypoint": "bench",
+     "wait": 9,
+     "face": "right"
     },
     {
-     "waypoint": "stairs",
-     "wait": 5,
+     "waypoint": "stair_foot",
+     "wait": 6,
      "face": "down"
     },
     {
      "waypoint": "counter_left",
-     "wait": 4,
+     "wait": 5,
      "face": "up"
     }
    ],
    "lines": [
     "In my day the capsules ran on long division. You young ones have it easy!",
-    "Read the information desk. Knowledge is the best medicine."
+    "My old PYRON is in capsule two. Forty years we've battled together."
    ],
    "remarks": [
-    "Hmm, a new poster.",
-    "Back in my day..."
+    "Hmm... my back.",
+    "Back in my day...",
+    "Forty years, old friend."
+   ]
+  },
+  {
+   "id": "aina",
+   "name": "Aina",
+   "role": "Student trainer",
+   "kind": "talker",
+   "sheet": "characters/AINA",
+   "task_poses": [
+    8,
+    0,
+    6,
+    0
+   ],
+   "routine": [
+    {
+     "waypoint": "capsule_view",
+     "wait": 8,
+     "face": "up"
+    },
+    {
+     "waypoint": "window",
+     "wait": 6,
+     "face": "left"
+    },
+    {
+     "waypoint": "entrance",
+     "wait": 4,
+     "face": "up"
+    }
+   ],
+   "lines": [
+    "My AQUABIT swallowed a negative number. Nurse Hana says it'll be fine!",
+    "I'm revising fractions while I wait. Want to quiz me?"
+   ],
+   "remarks": [
+    "Hang in there, AQUABIT!",
+    "3/4 + 1/8 is... 7/8!",
+    "Is it done yet?"
    ]
   }
  ],

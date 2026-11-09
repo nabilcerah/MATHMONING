@@ -71,8 +71,9 @@ FLOOR_PERIOD = 16     # the MCR floor tiles repeat every 16 px in the source art
 
 
 def erase_painted_people(image):
-    """Paint the nurse (behind the counter) and the receptionist (by the info board) out of the
-    MCR art, using the repeating floor / wall pattern next to them. Coordinates are source pixels."""
+    """Paint the nurse (behind the counter), the receptionist (by the info board) and the ball emblem
+    on the floor out of the MCR art, using the repeating floor / wall pattern next to them.
+    Coordinates are source pixels."""
     a = np.asarray(image).copy()
     # Nurse: x 204-262, y 42-88. Copy each column from 16 px to its right, right to left, so
     # the clean wall + floor beside her (x 262-278) repeats across.
@@ -89,6 +90,9 @@ def erase_painted_people(image):
     for y in range(47, 79):
         a[y, 78:124] = np.median(a[y, 68:78], axis=0)
         a[y, 124:129] = a[44, 124:129]
+    # The ball emblem on the floor (x 192-287, y 160-252): plain floor tiles from 6 tiles to the left.
+    for x in range(190, 290):
+        a[158:255, x] = a[158:255, x - 6 * FLOOR_PERIOD]
     return Image.fromarray(a)
 
 
@@ -168,7 +172,20 @@ def key_out(image, box=None, tolerance=40):
 
 def exteriors():
     mcr = key_out(Image.open(BG / "Mathmon Recovery Center (MCR).jpeg"))
-    mcr.resize((64, round(64 * mcr.height / mcr.width)), Image.LANCZOS).save(BG / "recovery_center_exterior.png")
+    small = mcr.resize((64, round(64 * mcr.height / mcr.width)), Image.LANCZOS)
+    # At 64 px the roof's red cross blurs into a red-and-white disc (it read like a ball logo):
+    # repaint it as a crisp first-aid cross - a white tile with a thick red plus.
+    px = small.load()
+    for y in range(5, 13):
+        for x in range(28, 36):
+            px[x, y] = (250, 250, 250, 255)
+    for y in range(6, 12):
+        for x in range(31, 33):
+            px[x, y] = (214, 48, 49, 255)
+    for y in range(8, 10):
+        for x in range(29, 35):
+            px[x, y] = (214, 48, 49, 255)
+    small.save(BG / "recovery_center_exterior.png")
     mart = key_out(Image.open(BG / "Mathmart.jpeg"), box=(28, 28, 316, 318), tolerance=30)
     mart.resize((52, round(52 * mart.height / mart.width)), Image.LANCZOS).save(BG / "mathmart_exterior.png")
 

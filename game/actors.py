@@ -130,6 +130,7 @@ class NPC(Actor):
         self.name = spec.get("name", self.id)
         self.role = spec.get("role", "")
         self.kind = spec.get("kind", "talker")
+        self.SPEED = float(spec.get("speed", NPC.SPEED))      # e.g. Uncle Shazlan walks slowly
         self.world = world
         self.rng = rng
         self.routine = spec.get("routine", [])

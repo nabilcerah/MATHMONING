@@ -361,7 +361,7 @@ class Bug9NovTests(GameCase):
         self.assertEqual(world.world.background, "village_recovery_interior_v2.png")   # people painted out
         self.assertTrue((ROOT / "assets" / "backgrounds" / "village_recovery_interior.png").exists())  # kept
         hana = next(n for n in world.npcs if n.id == "nurse_hana")
-        desk = next(n for n in world.npcs if n.id == "mcr_reception")
+        desk = next(n for n in world.npcs if n.id == "mcr_farah")
         self.assertEqual(desk.cell(), (7, 2))                  # behind the counter
         visited, said = set(), set()
         surface = pygame.Surface((320, 240))
@@ -471,3 +471,53 @@ class QuestTrackerTests(GameCase):
         self.assertIsInstance(tracker.target({"type": "win_battles", "count": 1}), tuple)
         self.assertEqual(direction(10, -10), "NE")
         self.assertEqual(direction(0, 5), "S")
+
+
+class SoundSettingsTests(GameCase):
+    """1:47 report: a Settings screen that controls the sound."""
+
+    def setUp(self):
+        super().setUp()
+        from pathlib import Path
+        from unittest.mock import patch
+        from game import settings
+        target = Path(self.folder.name) / "settings.json" if hasattr(self, "folder") else Path(tempfile.mkdtemp()) / "s.json"
+        self.patcher = patch.object(settings, "_path", lambda: target)
+        self.patcher.start()
+        self.addCleanup(self.patcher.stop)
+
+    def test_volumes_mute_and_scanlines_are_saved(self):
+        from game import audio, settings
+        from states.settings_state import ROWS, SettingsScreen
+        game = self.game
+        screen = SettingsScreen(game)
+        screen.selected = ROWS.index("music")
+        before = screen.values["music"]
+        screen.handle_key(pygame.K_LEFT)
+        self.assertEqual(screen.values["music"], max(0, before - 1))
+        self.assertAlmostEqual(audio._state["music_volume"], screen.values["music"] / 10)
+        screen.selected = ROWS.index("sfx")
+        screen.handle_key(pygame.K_RIGHT)
+        screen.selected = ROWS.index("sound")
+        screen.handle_key(pygame.K_RETURN)
+        self.assertFalse(game.sound)
+        self.assertFalse(audio._state["enabled"])
+        screen.draw(pygame.Surface((320, 240)), 1)
+        self.assertEqual(settings.load()["sound"], False)          # remembered for next time
+        screen.handle_key(pygame.K_RETURN)
+        self.assertTrue(audio._state["enabled"])
+        screen.handle_key(pygame.K_ESCAPE)
+        self.assertTrue(screen.closed)
+
+    def test_settings_open_from_the_title_and_the_pause_menu(self):
+        from states.pause_state import PauseScreen
+        from states.settings_state import SettingsScreen
+        game = self.game
+        pause = game.states.push(PauseScreen(game))
+        pause.activate(2)
+        self.assertIsInstance(game.states.overlay, SettingsScreen)
+        game.states.clear()
+        game.state = "settings"
+        game._draw_settings()
+        game._settings_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE, unicode="", mod=0))
+        self.assertEqual(game.state, "menu")

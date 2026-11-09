@@ -113,6 +113,9 @@ class GameManager:
         self.settings_selected = 0
         self.scanlines = False
         self.sound = True
+        self.settings_screen = None
+        from game import settings as player_settings
+        player_settings.apply(self, player_settings.load())     # sound, volumes, scanlines from last time
         self.player_name = ""
         self.frame = 0
         self.running = True
@@ -171,6 +174,13 @@ class GameManager:
             if TAB.collidepoint(ui.to_virtual(event.pos)):
                 self.world.tracker.toggle()
                 return
+        if event.type == pygame.MOUSEBUTTONDOWN and self.state == "settings":
+            screen = self._settings()
+            screen.handle_event(event)
+            if screen.closed:
+                self.settings_screen = None
+                self.state = "menu"
+            return
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state in ("menu", "starter", "avatar"):
             self._menu_click(ui.to_virtual(event.pos))
             return
@@ -196,10 +206,7 @@ class GameManager:
             if self.monster_battle.closed:
                 battle, self.monster_battle = self.monster_battle, None
                 self._reload_party()
-                won = battle.engine.outcome == "won"
-                name = battle.engine.name
-                self._back_to_world(f"You defeated {name}! It will be back, stronger, when you return here."
-                                    if won else f"{name} retreats into the wild. Find it again to retry!")
+                self._trial_over(battle)
         elif self.state == "puzzle" and self.puzzle:
             self.puzzle.handle_key(event.key, event.unicode)
             if self.puzzle.closed:
@@ -289,20 +296,18 @@ class GameManager:
         elif event.key == pygame.K_ESCAPE:
             self.state = "avatar"
 
+    def _settings(self):
+        from states.settings_state import SettingsScreen
+        if self.settings_screen is None or self.settings_screen.closed:
+            self.settings_screen = SettingsScreen(self)
+        return self.settings_screen
+
     def _settings_key(self, event):
-        if event.key == pygame.K_ESCAPE:
+        screen = self._settings()
+        screen.handle_key(event.key, getattr(event, "unicode", ""))
+        if screen.closed:
+            self.settings_screen = None
             self.state = "menu"
-        elif event.key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
-            step = -1 if event.key in (pygame.K_UP, pygame.K_w) else 1
-            self.settings_selected = (self.settings_selected + step) % 3
-        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-            if self.settings_selected == 0:
-                self.scanlines = not self.scanlines
-            elif self.settings_selected == 1:
-                self.sound = not self.sound
-                audio.set_enabled(self.sound)
-            else:
-                self.state = "menu"
 
     def _recovery_key(self, event):
         if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_ESCAPE, pygame.K_e):
@@ -745,6 +750,12 @@ class GameManager:
 
     def _start_boss(self):
         gate = self.boss_gate() or {}
+        if gate.get("trial"):
+            # This gate's boss is a Monster Trials creature (the stone arch: ARITHMORD, the Arithmetic Beast).
+            self.boss_in_progress = gate
+            self.story_event("boss_before", then=lambda: self._start_trial(gate["trial"], gate.get("trial_rank"), gate),
+                             flag=gate.get("flag", self.BOSS_FLAG))
+            return
         cfg = encounters()["boss"]
         enemy = monster_factory.create(gate.get("boss", cfg["species"]), gate.get("level", cfg["level"]))
         self.boss_in_progress = gate
@@ -809,20 +820,51 @@ class GameManager:
                                    scene=self.player.world)
         self.state = "battle"
 
-    def _start_trial(self, monster_id):
-        """A roaming Trial boss was touched: battle it at the next mastery tier you can reach."""
+    def _start_trial(self, monster_id, rank=None, gate=None):
+        """Battle a Trial monster: a roaming one (next mastery tier you can reach) or a gate boss."""
         from battle_engine.monster_data import load_all
         from battle_engine.progression import available_ranks, new_record
         defn = load_all().get(monster_id)
         if defn is None:
             return
         record = self.repository.monster_records(self.player.player_id).get(monster_id) or new_record(monster_id)
-        rank = available_ranks(defn, record)[-1]
+        rank = rank or available_ranks(defn, record)[-1]
+        self.trial_gate = gate
         self.world.set_flag(f"trial_seen:{monster_id}")      # the Trials catalogue now shows it
         self.save_all()
         self.monster_battle = MonsterBattleScreen(self.repository, self.player, monster_id, rank, self.rng,
                                                   self._team())
         self.state = "mbattle"
+
+    def _trial_over(self, battle):
+        """After a Trial battle: gate bosses finish their story; a first win unlocks the Professor's tale."""
+        won = battle.engine.outcome == "won"
+        name, monster_id = battle.engine.name, battle.engine.defn.id
+        gate, self.trial_gate = getattr(self, "trial_gate", None), None
+        if gate:
+            self.state = "overworld"
+            self.world.resume()
+            if won:
+                self._boss_victory(gate)
+            else:
+                self.boss_in_progress = None
+                self.world.set_message(f"{name} drives you back! Heal up and face it again.", 220)
+        else:
+            self._back_to_world(f"You defeated {name}! It will be back, stronger, when you return here."
+                                if won else f"{name} retreats into the wild. Find it again to retry!")
+        if won and not self.world.has_flag(f"trial_story:{monster_id}"):
+            self.story_event("trial_won", id=monster_id)        # the Professor tells its story
+
+    def _boss_victory(self, gate):
+        flag = gate.get("flag", self.BOSS_FLAG)
+        self.world.set_flag(flag)
+        messages, done = self.quests.notify("battle_won")
+        more, finished = self.quests.notify("flag", flag=flag)
+        self.boss_in_progress = None
+        self._refresh_boss_gate()
+        self.save_all()
+        self._quest_feedback(messages + more, done + finished, gate.get("victory", "The boss is defeated!"))
+        self.story_event("boss_after", flag=flag)
 
     def _wild_encounter(self):
         species_id, level = self.world.encounter_spec, self.world.encounter_level
@@ -930,7 +972,7 @@ class GameManager:
         if self.state != self._last_state and WEB:
             self.persister.sync()
         if self.state != self._last_state:
-            boss = self.state == "battle" and self.battle is not None and self.battle.battle.kind == "boss"
+            boss = (self.state == "battle" and self.battle is not None and self.battle.battle.kind == "boss") or                 (self.state == "mbattle" and getattr(self, "trial_gate", None) is not None)
             self._play_music(boss)
             self.fade = self.FADE_FRAMES if self._last_state is not None else 0
             self._last_state = self.state
@@ -1076,15 +1118,7 @@ class GameManager:
         text(self.canvas, "Y / ENTER: NEW GAME        N / ESC: KEEP SAVE", (160, 148), 10, PALETTE["gold"], center=True)
 
     def _draw_settings(self):
-        self.canvas.fill(PALETTE["ink"])
-        text(self.canvas, "SETTINGS", (160, 53), 24, PALETTE["gold"], center=True)
-        options = ["SCANLINE EFFECT: " + ("ON" if self.scanlines else "OFF"),
-                   "SOUND: " + ("ON" if self.sound else "OFF"), "BACK TO TITLE"]
-        menu(self.canvas, (77, 100, 166, 60), options, self.settings_selected, 12, self.frame)
-        text(self.canvas, f"AI MODE: {self.llm.label}  (set MATHMON_AI_MODE / ANTHROPIC_API_KEY in .env)",
-             (160, 166), 8, PALETTE["sky"], center=True)
-        text(self.canvas, "F11 or ALT+ENTER toggles fullscreen", (160, 182), 10, PALETTE["muted"], center=True)
-        text(self.canvas, "UP/DOWN: CHOOSE     ENTER: CHANGE     ESC: BACK", (160, 200), 10, PALETTE["muted"], center=True)
+        self._settings().draw(self.canvas, self.frame)
 
     def _draw_recovery(self):
         self.canvas.fill(PALETTE["ink"])

@@ -333,7 +333,9 @@
    "open": "Every clock in the dimension strikes at once. At the top of the spire, something endless waits...",
    "fight": "Face the Overlord!",
    "victory": "THE INFINITE OVERLORD is defeated! Time flows again and the Numera returns to all of Mathea. You did it, Numera Trainer!",
-   "quiet": "The spire ticks peacefully. Time flows again across Mathea."
+   "quiet": "The spire ticks peacefully. Time flows again across Mathea.",
+   "trial": "infinity_zero",
+   "trial_rank": 3
   },
   {
    "id": "chronos_dimension_forward",

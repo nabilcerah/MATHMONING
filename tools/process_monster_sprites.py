@@ -52,6 +52,13 @@ SHEETS = {
     "PROFESSOR_NUMERIS": ("PROFESSOR NUMERIS.jpg", "light_checker_solid"),  # white lab coat
     "REX": ("REX.jpg", "light_checker"),
     "BRAM": ("bram.jpg.jpeg", "grey_checker"),      # the builder: a 5 x 3 sheet, see GRIDS
+    "NURSE_HANA": ("NURSE HANA.jpg", "light_checker_solid"),          # white coat
+    "FARAH": ("RECEPTIONIST FARAH.jpg", "checker"),
+    "AINA": ("Random NPC/AINA.jpg", "checker"),
+    "ZAKI": ("Random NPC/ENCIK ZAKI.jpg", "checker"),
+    "HAKIM": ("Random NPC/HAKIM.jpg", "checker"),
+    "SHAZLAN": ("Random NPC/UNCLE SHAZLAN.jpg", "checker"),
+    "FISHERMAN": ("Random NPC/Fisherman.jpeg", "checker"),
     # Advanced battle monsters (3x3 sheets laid out as idle / walk / attack rows).
     "CRYSTALGON": ("CRYSTALGON.jpg", "grey_checker"),
     "NULLSHADE": ("NULLSHADE.jpg", "grey_checker"),
@@ -66,11 +73,21 @@ SHEETS = {
     "SPHYNOX": ("SPHYNOX.jpg", "grey_checker"),
     "INFINITY_ZERO": ("INFINITY ZERO.jpg", "grey_checker"),
 }
-CHARACTERS = {"ALEX", "LUNA", "PROFESSOR_NUMERIS", "REX", "BRAM"}
+CHARACTERS = {"ALEX", "LUNA", "PROFESSOR_NUMERIS", "REX", "BRAM", "NURSE_HANA", "FARAH", "AINA", "ZAKI", "HAKIM",
+              "SHAZLAN", "FISHERMAN"}
+# Villager sheets: row 1 idle, row 2 walking, row 3 gestures (wave first).
+_VILLAGER = [(0, 0), (0, 1), (2, 1), (1, 1), (0, 2), (2, 2), (1, 0), (2, 0), (1, 2)]
 # Sheets that are not 3 x 3: (columns, rows, the (column, row) cell for each of the 9 poses).
 GRIDS = {
     # stand, walk1, walk2, run, wave (talking: hammer raised), cheer, surprised, hurt, fist
     "BRAM": (5, 3, [(0, 0), (3, 1), (4, 0), (3, 1), (1, 0), (2, 0), (4, 1), (2, 2), (2, 1)]),
+    # Nurse Hana has no walking row: her gestures double as steps; 1, 2, 6, 7 are her check-up poses.
+    "NURSE_HANA": (3, 3, [(0, 0), (1, 1), (0, 1), (1, 0), (2, 0), (2, 2), (1, 2), (0, 2), (2, 1)]),
+    # Farah stays at the counter: tablet, book, wave, idea...
+    "FARAH": (3, 3, [(0, 1), (1, 1), (2, 1), (0, 0), (1, 0), (2, 2), (0, 2), (1, 2), (2, 0)]),
+    "AINA": (3, 3, _VILLAGER), "ZAKI": (3, 3, _VILLAGER), "HAKIM": (3, 3, _VILLAGER), "SHAZLAN": (3, 3, _VILLAGER),
+    # The fisherman's sheet is his fishing cycle, kept in reading order (stand, cast, ..., the catch).
+    "FISHERMAN": (3, 3, [(0, 0), (1, 0), (0, 0), (2, 0), (2, 2), (1, 2), (0, 1), (1, 1), (2, 1)]),
 }
 ROW_LAYOUT = {"CRYSTALGON", "NULLSHADE", "VOLTBYTE", "CHRONOWL", "INFERMATH", "EQUINOX", "MYCOMORPH",
               "HEXABYTE", "GALAXION", "ARITHMORD", "SPHYNOX", "INFINITY_ZERO"}

@@ -21,7 +21,9 @@ MUSIC = {"menu": "menu", "overworld": "forest", "number_forest": "forest", "vill
          "battle": "battle", "boss": "boss",
          "wild_battle": "wild_battle", "arena": "arena"}   # recorded tracks (assets/sounds/New Sound)
 
-_state = {"ready": None, "sounds": {}, "music": None, "enabled": True, "loop_sound": None}
+_state = {"ready": None, "sounds": {}, "music": None, "enabled": True, "loop_sound": None,
+          "wanted": None, "music_volume": 0.7, "sfx_volume": 0.8}
+MUSIC_LEVEL = 0.65          # loudness of music at 100% (effects are louder by design)
 
 
 def _ready():
@@ -72,13 +74,16 @@ def play(name):
     try:
         sound = _sound(name)
         if sound is not None:
-            sound.play()
+            channel = sound.play()
+            if channel is not None:
+                channel.set_volume(_state["sfx_volume"])
     except Exception:
         _state["sounds"][name] = None
 
 
 def music(track):
     """Loop assets/sounds/<track>.ogg if it exists; otherwise keep quiet (placeholder silence)."""
+    _state["wanted"] = track                  # remembered, so un-muting brings it back
     if track == _state["music"] or not _state["enabled"] or not _ready():
         return
     _state["music"] = track
@@ -91,7 +96,7 @@ def music(track):
             _web_music(path)
         elif path is not None:
             pygame.mixer.music.load(str(path))
-            pygame.mixer.music.set_volume(0.45)
+            pygame.mixer.music.set_volume(MUSIC_LEVEL * _state["music_volume"])
             pygame.mixer.music.play(-1)
         else:
             pygame.mixer.music.stop()
@@ -109,14 +114,34 @@ def _web_music(path):
     if path is None:
         return
     sound = pygame.mixer.Sound(str(path))
-    sound.set_volume(0.45)
+    sound.set_volume(MUSIC_LEVEL * _state["music_volume"])
     _state["loop_sound"] = sound
     channel.play(sound, loops=-1)
 
 
+def set_volumes(music_volume, sfx_volume):
+    """Music and sound-effect volume, each 0.0-1.0 (the Settings sliders)."""
+    _state["music_volume"] = max(0.0, min(1.0, float(music_volume)))
+    _state["sfx_volume"] = max(0.0, min(1.0, float(sfx_volume)))
+    try:
+        import pygame
+        if pygame.mixer.get_init():
+            level = MUSIC_LEVEL * _state["music_volume"]
+            pygame.mixer.music.set_volume(level)
+            if _state["loop_sound"] is not None:
+                _state["loop_sound"].set_volume(level)
+    except Exception:
+        pass
+
+
 def set_enabled(enabled):
+    was = _state["enabled"]
     _state["enabled"] = bool(enabled)
+    if enabled and not was and _state["wanted"]:
+        _state["music"] = None
+        music(_state["wanted"])               # sound back on: resume the current track
     if not enabled:
+        _state["music"] = None
         try:
             import pygame
             if pygame.mixer.get_init():

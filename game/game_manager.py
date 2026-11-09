@@ -602,7 +602,16 @@ class GameManager:
         self.repository.add_recommendation(self.player.player_id,
                                            f"{monster.name} evolved! Keep practising {curriculum.label(monster.mastery_topic).lower()}.")
 
+    def open_catalog(self, tab="MATHDEX"):
+        """The Catalog: MathDex and Trials (bosses) side by side, switched with Q / E."""
+        from states.catalog_state import CatalogScreen
+        screen = CatalogScreen(self, tab)
+        self.states.push(screen, self._screen_closed)
+        return screen
+
     def open_screen(self, name):
+        if name == "catalog":
+            return self.open_catalog()
         from states.codex_state import CodexScreen
         screens = {"codex": CodexScreen, "party": PartyScreen, "bag": InventoryScreen, "quests": QuestScreen, "mathdex": DexScreen,
                    "profile": ProfileScreen, "shop": ShopScreen, "sanctuary": SanctuaryScreen,
@@ -703,15 +712,14 @@ class GameManager:
             self.states.push(TrainerMenu(self), self._screen_closed)
             return
         if event.key == pygame.K_m:
-            self.open_screen("mathdex")
+            self.open_catalog("MATHDEX")
             return
         if event.key == pygame.K_j and self.world:
             self.world.tracker.toggle()          # quest tracker in the top-right corner
             return
         if event.key == pygame.K_t:
             self.save_all()
-            self.trials = TrialsScreen(self.repository, self.player, self._team())
-            self.state = "trials"
+            self.open_catalog("TRIALS")          # the Trials catalogue is a tab of the Catalog now
             return
         if event.key == pygame.K_n and not world.world.interior:
             self.map_screen = WorldMapScreen(world)

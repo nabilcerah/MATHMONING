@@ -1,11 +1,11 @@
-"""The TRAINER MENU (TAB): party, bag, quests, MathDex, learning profile and save."""
+"""The TRAINER MENU (TAB): party, bag, quests, Codex, Catalog (MathDex + Trials), learning profile and save."""
 import pygame
 
 from config import PALETTE
 from game.ui import menu, panel, text
 from states.base import Screen
 
-CHOICES = ("PARTY", "BAG", "QUESTS", "CODEX", "MATHDEX", "PROFILE", "SAVE", "CLOSE")
+CHOICES = ("PARTY", "BAG", "QUESTS", "CODEX", "CATALOG", "PROFILE", "SAVE", "CLOSE")   # CATALOG: MathDex + Trials
 RECT = (214, 24, 100, 127)
 
 

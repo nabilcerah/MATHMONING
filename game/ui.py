@@ -45,6 +45,13 @@ def begin_frame():
     _queue.clear()
 
 
+def drop_text_in(rect):
+    """Forget text already queued inside ``rect`` (e.g. a page title covered by a tab strip)."""
+    import pygame
+    area = pygame.Rect(rect)
+    _queue[:] = [item for item in _queue if not area.colliderect(item[1])]
+
+
 def flush_text(window, scale, offset=(0, 0)):
     ox, oy = offset
     for message, rect, size, color, shadow, anchor in _queue:

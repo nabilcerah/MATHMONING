@@ -234,10 +234,10 @@ class RoamerAndMapTests(unittest.TestCase):
         screen = WorldMapScreen(self.world)
         surface = pygame.Surface((320, 240))
         screen.draw(surface, 0)
-        desert = next(i for i, a in enumerate(screen.areas) if a["id"] == "desert")
+        desert = next(i for i, p in enumerate(screen.pins) if p["kind"] == "spawn" and p["area"] == "desert")
         screen.selected = desert
         screen.handle_key(pygame.K_RETURN)
-        self.assertIn("on foot", screen.notice)  # not visited yet: no travel
+        self.assertIn("on foot", screen.notice)  # a locked spawn point: no travel
         self.assertIsNone(screen.travel_to)
         self.world.set_flag("visited:desert")
         screen = WorldMapScreen(self.world)

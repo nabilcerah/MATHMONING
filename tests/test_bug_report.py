@@ -632,3 +632,73 @@ class NextDestinationTests(GameCase):
 
     def test_no_next_destination_while_a_main_quest_is_running(self):
         self.assertIsNone(self.game.world.tracker.next_destination())
+
+
+class WorldMapPinTests(GameCase):
+    """Report: pick SPAWN POINTS on the map, see quest locations, and open quests from it."""
+
+    def open_map(self):
+        from game.worldmap_screen import WorldMapScreen
+        game = self.game
+        game._overworld_key(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_n, unicode="n", mod=0))
+        self.assertIsInstance(game.map_screen, WorldMapScreen)
+        return game.map_screen
+
+    def test_spawn_points_and_quest_pins_are_on_the_map(self):
+        screen = self.open_map()
+        kinds = {p["kind"] for p in screen.pins}
+        self.assertEqual(kinds, {"spawn", "quest"})
+        quest_pins = [p for p in screen.pins if p["kind"] == "quest"]
+        self.assertIn("fading_numera", {p["quest"] for p in quest_pins})
+        self.assertEqual(screen.pins[screen.selected]["kind"], "quest")    # starts on your quest
+        surface = pygame.Surface((320, 240))
+        for key in (pygame.K_RIGHT, pygame.K_DOWN, pygame.K_LEFT, pygame.K_UP, pygame.K_TAB):
+            screen.handle_key(key)
+            screen.draw(surface, 1)
+
+    def test_a_quest_pin_opens_the_quest_log_on_that_quest(self):
+        from states.quest_state import QuestScreen
+        game = self.game
+        screen = self.open_map()
+        screen.selected = next(i for i, p in enumerate(screen.pins) if p.get("quest") == "fading_numera")
+        game._handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="\r", mod=0))
+        self.assertEqual(game.state, "overworld")
+        log = game.states.overlay
+        self.assertIsInstance(log, QuestScreen)
+        self.assertEqual(log.entries[log.selected], "fading_numera")
+
+    def test_a_locked_place_your_quest_leads_to_shows_the_quest(self):
+        from states.quest_state import QuestScreen
+        game = self.game
+        screen = self.open_map()
+        target = next(p for p in screen.pins if p["kind"] == "quest" and p["quest"] == "fading_numera")
+        cell = (int(target["x"] // 16), int(target["y"] // 16))
+        area = game.world.world.area_at(cell)[0]
+        spawn = next((i for i, p in enumerate(screen.pins) if p["kind"] == "spawn" and p["area"] == area), None)
+        if spawn is None or screen.pins[spawn]["unlocked"]:
+            self.skipTest("the first quest's objective is in an area you have already visited")
+        screen.selected = spawn
+        screen.activate()
+        self.assertEqual(screen.open_quest, "fading_numera")
+        game._finish_map()
+        self.assertIsInstance(game.states.overlay, QuestScreen)
+
+    def test_click_a_pin_to_select_then_again_to_go(self):
+        from game import ui
+        game = self.game
+        screen = self.open_map()
+        ui.set_view(1, (0, 0))
+        index = next(i for i, p in enumerate(screen.pins) if p["kind"] == "spawn" and p["unlocked"]
+                     and p["area"] != game.world.area_id) if any(
+            p["kind"] == "spawn" and p["unlocked"] and p["area"] != game.world.area_id for p in screen.pins) else None
+        if index is None:
+            game.world.set_flag("visited:meadow")
+            screen = self.open_map()
+            index = next(i for i, p in enumerate(screen.pins) if p["kind"] == "spawn" and p["area"] == "meadow")
+        pin = screen.pins[index]
+        pos = tuple(int(v) for v in screen.to_map(pin["x"], pin["y"]))
+        game._handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=pos))
+        self.assertEqual(game.map_screen.selected, index)
+        game._handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=pos))
+        self.assertEqual(game.state, "overworld")
+        self.assertEqual(game.world.area_id, pin["area"])

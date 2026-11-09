@@ -181,9 +181,16 @@ class BattleManager:
             return 1 + float(passive["max"]) * self.mastery(passive["topic"]) / 100
         return 1.0
 
+    @staticmethod
+    def focus_bonus(move):
+        """Moves that spend Focus hit harder: 1 Focus +30%, 2 Focus +50%, 3 Focus +70% (data/rules.json)."""
+        table = rules().get("focus_damage_bonus", {})
+        return float(table.get(str(min(int(move.focus), 3)), 0.0)) if move.focus else 0.0
+
     def _player_hit(self, move, attacker, answer):
         element = elemental_system.multiplier(move.element, self.enemy.element)
-        extra = self.passive_power(attacker, move) * self.attack_boost
+        bonus = self.focus_bonus(move)
+        extra = self.passive_power(attacker, move) * self.attack_boost * (1 + bonus)
         shielded = self.enemy_shield
         if shielded:
             extra *= rules()["shield"]["incoming_multiplier"]
@@ -193,6 +200,8 @@ class BattleManager:
         self.enemy.hp = max(0, self.enemy.hp - result.amount)
         verdict = elemental_system.message(move.element, self.enemy.element)
         note = " The shield softened it." if shielded else ""
+        if bonus:
+            note = f" Focus power +{round(bonus * 100)}%!" + note
         return self._event("attack", f"{attacker.name} used {move.name}! {verdict} {result.amount} damage.{note}",
                            side="player", move=move.move_id, damage=result.amount, parts=result.parts,
                            effectiveness=elemental_system.effectiveness(move.element, self.enemy.element))

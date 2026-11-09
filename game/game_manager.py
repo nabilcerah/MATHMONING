@@ -170,6 +170,11 @@ class GameManager:
         if self.state == "battle" and self.battle:
             self.battle.handle_event(event)
             return
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == "worldmap" and self.map_screen:
+            self.map_screen.handle_click(event.pos)
+            if self.map_screen.closed:
+                self._finish_map()
+            return
         if (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == "overworld" and self.world
                 and not self.world.dialogue):
             from game.quest_tracker import TAB
@@ -216,13 +221,7 @@ class GameManager:
         elif self.state == "worldmap" and self.map_screen:
             self.map_screen.handle_key(event.key)
             if self.map_screen.closed:
-                if self.map_screen.travel_to:
-                    cell, name = self.map_screen.travel_to
-                    self.world.teleport(cell)
-                    self.save_all()
-                    self.world.set_message(f"You travel to {name}.", 150)
-                self.map_screen = None
-                self.state = "overworld"
+                self._finish_map()
 
     def _menu_click(self, pos):
         if self.state == "menu":
@@ -334,6 +333,25 @@ class GameManager:
         self.quests.start_auto_quests()
         self._enter_world()
         self.world.set_message(f"{STARTERS[species_id].name} joins your journey!", 200)
+
+    def _finish_map(self):
+        """The world map closed: fast-travel to a spawn point, or open a quest it pointed at."""
+        screen, self.map_screen = self.map_screen, None
+        self.state = "overworld"
+        if screen.travel_to:
+            cell, name = screen.travel_to
+            self.world.teleport(cell)
+            self.save_all()
+            self.world.set_message(f"You travel to {name}.", 150)
+        if screen.open_quest:
+            self.show_quest(screen.open_quest)
+
+    def show_quest(self, quest_id):
+        """Open the Quest Log on one quest (from the world map's quest pins and locked places)."""
+        screen = self.open_screen("quests")
+        if screen is not None and quest_id in getattr(screen, "entries", []):
+            screen.selected = screen.entries.index(quest_id)
+        return screen
 
     def open_profiles(self):
         """CONTINUE: choose which save profile to play (or start / delete one)."""

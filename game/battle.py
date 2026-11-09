@@ -603,7 +603,9 @@ class BattleScreen:
                 text(surface, cost, (196, y), 9, PALETTE["gold"] if usable else PALETTE["coral"], align="right")
                 if chosen:
                     power = "Support" if choice.kind == "support" else f"Power {self.battle.move_power(choice)}"
-                    detail = (f"{choice.element} • {curriculum.label(choice.topic)} • {power} • Focus {choice.focus}. "
+                    bonus = self.battle.focus_bonus(choice) if choice.kind != "support" else 0
+                    focus = f"Focus {choice.focus}" + (f" (+{round(bonus * 100)}% dmg)" if bonus else "")
+                    detail = (f"{choice.element} • {curriculum.label(choice.topic)} • {power} • {focus}. "
                               f"{choice.description} {elemental_system.message(choice.element, self.enemy.element)}")
             elif self.state in ("party", "target"):
                 usable = not choice.fainted and choice is not self.active if self.state == "party" else True

@@ -311,3 +311,29 @@ class TrialHealGuardTests(unittest.TestCase):
         braced, events = hit(True)
         self.assertLessEqual(braced, plain // 2 + 1)
         self.assertIn("braced", events[0].text)
+
+
+class FocusBonusTests(unittest.TestCase):
+    """Report: 1 Focus = +0.3x, 2 Focus = +0.5x, 3 Focus = +0.7x of the basic damage."""
+
+    def test_bonus_table(self):
+        from types import SimpleNamespace
+        from combat.battle_manager import BattleManager
+        self.assertEqual([BattleManager.focus_bonus(SimpleNamespace(focus=f)) for f in (0, 1, 2, 3)],
+                         [0.0, 0.3, 0.5, 0.7])
+
+    def test_a_two_focus_move_hits_half_as_hard_again(self):
+        import dataclasses
+        import random as _random
+        from combat.battle_manager import BattleManager, DictInventory
+        from monsters.monster_factory import create as _create
+        from monsters.monster_party import MonsterParty
+
+        def damage(focus):
+            battle = BattleManager(MonsterParty([_create("FRACTELLA", 8)]), _create("GEOMAX", 30), "wild", None,
+                                   DictInventory({}), _random.Random(4))
+            move = next(m for m in battle.active.moves() if m.kind != "support")
+            return battle._player_hit(dataclasses.replace(move, focus=focus), battle.active, 1.0)
+        plain, focused = damage(0), damage(2)
+        self.assertAlmostEqual(focused["damage"] / plain["damage"], 1.5, delta=0.08)
+        self.assertIn("Focus power +50%", focused["text"])

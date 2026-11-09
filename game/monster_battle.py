@@ -447,9 +447,18 @@ class MonsterBattleScreen:
             self.sub_selected = (self.sub_selected + 1) % len(SKILLS)
         elif key in (pygame.K_RETURN, pygame.K_SPACE):
             skill = SKILLS[self.sub_selected]
+            if skill.unlock_level > self.engine.trainer_level:
+                self.message = self.lock_text(skill)
+                return
             events = self.engine.use_skill(skill.id)
             self.message = events[-1].text if events else ""
             self.state = "menu"  # skills are free: you still choose your action
+
+    def lock_text(self, skill):
+        """How to unlock a skill: it needs a Trainer level (not your MathMon's level)."""
+        trainer = self.store.trainer()
+        return (f"LOCKED: {skill.name} needs TRAINER Lv {skill.unlock_level} (you are Lv {trainer.level}, "
+                f"{trainer.xp}/{trainer.next_level_xp} XP). Win any battle or catch MathMon to earn Trainer XP.")
 
     def _ask(self, topic):
         self.engine.next_question(topic)
@@ -712,7 +721,7 @@ class MonsterBattleScreen:
                 for index, skill in enumerate(SKILLS):
                     cooldown = self.engine.skill_cooldowns.get(skill.id, 0)
                     if skill.unlock_level > self.engine.trainer_level:
-                        labels.append(f"{skill.name[:10]} Lv{skill.unlock_level}")
+                        labels.append(f"{skill.name} (T{skill.unlock_level})")
                         locked.append(index)
                     else:
                         labels.append(f"{skill.name[:12]}" + (f" ({cooldown})" if cooldown else ""))
@@ -720,12 +729,15 @@ class MonsterBattleScreen:
                             locked.append(index)
                 menu(surface, (214, 150, 100, 74), labels, self.sub_selected, 8, frame, tuple(locked), 13)
                 skill = SKILLS[self.sub_selected]
-                wrapped(surface, skill.description, (12, 200, 190, 20), 8, PALETTE["sky"], 9, 2)
+                if skill.unlock_level > self.engine.trainer_level:
+                    wrapped(surface, self.lock_text(skill), (12, 186, 190, 34), 7, PALETTE["coral"], 8, 4)
+                else:
+                    wrapped(surface, skill.description, (12, 200, 190, 20), 8, PALETTE["sky"], 9, 2)
         hints = {"menu": "UP/DOWN  ENTER   L: BATTLE LOG",
                  "party": ("CHOOSE WHO BATTLES NEXT" if self.forced_switch else "SWITCH COSTS YOUR TURN   ESC BACK"),
                  "bag": "USING AN ITEM COSTS YOUR TURN   ESC BACK",
                  "topic": "CHOOSE A MATHS ATTACK   GREEN = WEAKNESS   ESC BACK",
-                 "skills": "SKILLS ARE FREE ACTIONS   ESC BACK",
+                 "skills": "SKILLS ARE FREE   T4 = NEEDS TRAINER Lv 4   ESC BACK",
                  "question": ("TYPE + ENTER   TAB: OPTIONS   H: HINT" if self.typing else
                               "1-5 OR ARROWS + ENTER   TAB: TYPE IT (x1.15)   H: HINT   F: FOCUS"),
                  "result": "ENTER: CONTINUE", "events": "ENTER: NEXT", "over": "ENTER: LEAVE"}.get(self.state, "")

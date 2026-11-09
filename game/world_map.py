@@ -19,6 +19,15 @@ def load_map(map_id="number_forest"):
 COLLISION_CODES = {"#": "T", "~": "w", ".": "g", ",": "g"}
 
 
+def vanish_flag(entry):
+    """Objects that disappear once used: the numbered stones vanish when their challenge is solved."""
+    if entry.get("vanish_flag"):
+        return entry["vanish_flag"]
+    if entry.get("kind") == "challenge" and str(entry.get("id", "")).startswith("stone") and entry.get("challenge"):
+        return f"challenge:{entry['challenge']}"
+    return None
+
+
 class WorldMap:
     """Two kinds of map share this class:
 
@@ -100,10 +109,15 @@ class WorldMap:
         self.interior = bool(data.get("interior"))
         # Interactable objects occupy their tile (plus any extra "solid" cells).
         self.blocked = set()
+        self.vanishing = {}          # cell -> flag: an object that is gone once that flag is earned
         for entry in data.get("interactables", []):
             self.blocked.add(tuple(entry["pos"]))
             for cell in entry.get("solid", []):
                 self.blocked.add(tuple(cell))
+            flag = vanish_flag(entry)
+            if flag:
+                self.vanishing[tuple(entry["pos"])] = flag
+        self._object_cells = set(self.blocked)
 
     def _set(self, x, y, code):
         if 0 <= x < self.width and 0 <= y < self.height:
@@ -116,7 +130,10 @@ class WorldMap:
         return self.tiles[y][x]
 
     def apply_flags(self, flags):
-        """Open every barrier whose flag has been earned (GDD 11: quests unlock new areas)."""
+        """Open every barrier whose flag has been earned (GDD 11: quests unlock new areas), and free
+        the tiles of objects that are gone (a numbered stone you already picked up)."""
+        self.blocked = {cell for cell in self._object_cells
+                        if cell not in self.vanishing or self.vanishing[cell] not in flags}
         self.closed_cells = set()
         for barrier in self.barriers:
             barrier["open"] = barrier.get("open_flag") in flags

@@ -879,6 +879,25 @@ class GameManager:
                                                   self._team())
         self.state = "mbattle"
 
+    TRAINER_XP = {"wild": 12, "trainer": 20, "boss": 50}     # per win; a catch counts like a wild win
+
+    def _grant_trainer_xp(self, kind, outcome):
+        """Every battle you win (or catch) earns Trainer XP - Trainer levels unlock battle SKILLS."""
+        if outcome not in ("won", "captured"):
+            return ""
+        from battle_engine.progression import ProgressStore
+        from battle_engine.skills import newly_unlocked
+        store = ProgressStore(self.repository, self.player.player_id)
+        trainer = store.trainer()
+        before = trainer.level
+        gained = trainer.add_xp(self.TRAINER_XP.get(kind, 12))
+        store.save_trainer(trainer)
+        if not gained:
+            return ""
+        skills = newly_unlocked(before, trainer.level)
+        extra = f" New skill: {skills[0].name}!" if skills else ""
+        return f"TRAINER Lv {trainer.level}!{extra}"
+
     def _trial_over(self, battle):
         """After a Trial battle: gate bosses finish their story; a first win unlocks the Professor's tale."""
         won = battle.engine.outcome == "won"
@@ -956,6 +975,9 @@ class GameManager:
             messages += more
         lead = {"won": "Victory! Your team grows stronger.", "captured": "Captured! Press TAB > PARTY to see your team.",
                 "fled": "You got away safely."}.get(outcome, "")
+        trainer_note = self._grant_trainer_xp(battle.battle.kind, outcome)
+        if trainer_note:
+            lead = f"{lead} {trainer_note}".strip()
         if battle.battle.kind == "boss" and outcome == "won":
             gate = getattr(self, "boss_in_progress", None) or self.boss_gate() or {}
             lead = gate.get("victory", "The boss is defeated!")

@@ -767,3 +767,45 @@ class StuckSaveTests(unittest.TestCase):
         finish_story(again)
         self.assertEqual(again.quests.step_index("unknown_guardian"), 2)
         again.llm.close()
+
+
+class StoneAndSkillTests(GameCase):
+    """Screenshot bugs: an invisible solved stone blocked the path; skill unlocks were unclear."""
+
+    def test_a_solved_numbered_stone_no_longer_blocks_or_interacts(self):
+        game = self.game
+        world = game.world
+        cell = tuple(world.objects["stone_1"]["pos"])
+        self.assertFalse(world.world.is_walkable(cell))
+        world.set_flag("challenge:stone_1")
+        self.assertTrue(world.world.is_walkable(cell))          # picked up: the path is clear
+        world.avatar.x, world.avatar.y = world.world.cell_to_feet((cell[0], cell[1] + 1))
+        world.avatar.facing = (0, -1)
+        world.update()
+        self.assertNotEqual(world.target_id(), "stone_1")
+
+    def test_battle_wins_earn_trainer_xp_and_unlock_skills(self):
+        from battle_engine.progression import ProgressStore
+        game = self.game
+        store = ProgressStore(game.repository, game.player.player_id)
+        self.assertEqual(store.trainer().level, 1)
+        notes = [game._grant_trainer_xp("wild", "won") for _ in range(15)]
+        self.assertGreaterEqual(store.trainer().level, 2)
+        self.assertTrue(any("New skill: Analyse" in n for n in notes))
+        self.assertEqual(game._grant_trainer_xp("wild", "fled"), "")
+
+    def test_a_locked_skill_says_how_to_unlock_it(self):
+        from battle_engine.skills import SKILL_BY_ID
+        from game.monster_battle import MonsterBattleScreen
+        game = self.game
+        screen = MonsterBattleScreen(game.repository, game.player, "voltbyte", 1, random.Random(1))
+        text_ = screen.lock_text(SKILL_BY_ID["shield_breaker"])
+        self.assertIn("TRAINER Lv 4", text_)
+        self.assertIn("Win any battle", text_)
+
+    def test_next_destination_does_not_repeat_the_place_name(self):
+        game = self.game
+        for flag in ("boss:numerex", "region:number_forest_complete"):
+            game.world.set_flag(flag)
+        game.quests._save("fading_numera", "completed", {})
+        self.assertEqual(game.world.tracker.next_destination()[1], "Travel to the Algebra Cavern.")

@@ -18,7 +18,7 @@ from game.sprites import frame_for
 from monsters.monster_data import challenges, species
 from world.encounter_manager import EncounterManager
 from game.ui import heart, menu, meter, panel, text, wrap_lines, wrapped
-from game.world_map import TILE, load_map
+from game.world_map import TILE, load_map, vanish_flag
 
 VIEW_TOP, VIEW_HEIGHT = 24, 192
 INTERACT_RANGE = 13
@@ -486,6 +486,9 @@ class Overworld:
             if distance < best_distance:
                 best, best_distance = npc, distance
         for entry in self.objects.values():
+            gone = vanish_flag(entry)
+            if gone and gone in self.flags:
+                continue                     # picked up already: nothing there to interact with
             for cell in [entry["pos"]] + entry.get("solid", []):
                 cx, cy = cell[0] * TILE + TILE / 2, cell[1] * TILE + TILE / 2
                 distance = math.hypot(px - cx, py - cy)

@@ -147,7 +147,11 @@ class QuestTracker:
             target = load_map(region).name
             here = next((o for o in options if o[0] == w.world.map_id), None)
             map_id, map_name, portal = here or options[0]
-            text_ = f"Travel to the {target} through the {portal.get('title', 'portal').title()}."
+            portal_name = portal.get("title", "portal").title()
+            if portal_name.lower() in target.lower() or target.lower() in portal_name.lower():
+                text_ = f"Travel to the {target}."          # the entrance is named after the place itself
+            else:
+                text_ = f"Travel to the {target} through the {portal_name}."
             if here:
                 x, y = w.world.cell_to_feet(tuple(portal["pos"]))
                 dx, dy = x - w.avatar.x, y - w.avatar.y

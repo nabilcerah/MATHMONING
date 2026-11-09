@@ -595,3 +595,40 @@ class SaveProfileTests(unittest.TestCase):
         screen = ProfileScreen(game)
         screen.handle_key(pygame.K_n)
         self.assertFalse(screen.closed)
+
+
+class NextDestinationTests(GameCase):
+    """3:42 report: after a chapter's quests are done, the game points the player to the next world."""
+
+    def test_after_the_guardian_the_tracker_points_to_the_lab_gateway(self):
+        game = self.game
+        for flag in ("boss:numerex", "region:number_forest_complete", "boss:guardian",
+                     "region:algebra_cavern_complete"):
+            game.world.set_flag(flag)
+        for quest_id in list(game.quests.active()):
+            if game.quests.definition(quest_id).get("category") == "main":
+                game.quests._save(quest_id, "completed", {})
+        game._travel_to_map("algebra_cavern", (10, 24))
+        from tests.test_cutscene import run_scene
+        run_scene(game)
+        game.quests._save("unknown_guardian", "completed", {})
+        title, text_, distance = game.world.tracker.entries()[0]
+        self.assertEqual(title, "NEXT DESTINATION")
+        self.assertIn("Geometry Kingdom", text_)
+        self.assertIn("Lab Gateway", text_)
+        self.assertRegex(distance, r"^\d+ m [NESW]{1,2}$")
+        game.world.tracker.toggle()
+        self.assertIn("NEXT: Travel to the Geometry Kingdom", game.world.quest_hint())
+
+    def test_from_another_map_it_names_where_the_portal_is(self):
+        game = self.game
+        for flag in ("boss:numerex", "region:number_forest_complete"):
+            game.world.set_flag(flag)
+        game.quests._save("fading_numera", "completed", {})
+        upcoming = game.world.tracker.next_destination()
+        self.assertEqual(upcoming[0], "NEXT DESTINATION")
+        self.assertIn("Algebra Cavern", upcoming[1])              # the cave in the ruins
+        self.assertRegex(upcoming[2], r"^\d+ m ")                 # that entrance is on this map
+
+    def test_no_next_destination_while_a_main_quest_is_running(self):
+        self.assertIsNone(self.game.world.tracker.next_destination())

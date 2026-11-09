@@ -44,6 +44,23 @@ def _maps_index():
     return index
 
 
+# The story's worlds in order. Finishing one opens a portal to the next (data/maps: portal "requires").
+WORLD_ORDER = ("number_forest", "algebra_cavern", "geometry_kingdom", "chronos_dimension")
+
+
+@lru_cache(maxsize=None)
+def _progress_portals():
+    """{destination world: [(map id, map name, portal entry)]} for the portals that move the story on."""
+    from game.world_map import load_map
+    found = {}
+    for map_id in WORLD_ORDER:
+        world = load_map(map_id)
+        for entry in world.data.get("interactables", []):
+            if entry.get("kind") == "portal" and entry.get("requires") and entry.get("destination") in WORLD_ORDER:
+                found.setdefault(entry["destination"], []).append((map_id, world.name, entry))
+    return found
+
+
 def direction(dx, dy):
     """Compass word for a vector (screen y grows downwards)."""
     angle = math.degrees(math.atan2(-dy, dx)) % 360
@@ -110,14 +127,49 @@ class QuestTracker:
         ax, ay = self.world.avatar.x, self.world.avatar.y
         return min(points, key=lambda p: (p[0] - ax) ** 2 + (p[1] - ay) ** 2)
 
+    def next_destination(self):
+        """Between chapters no main quest is active (the next one starts when its guide meets you in the
+        next world), so point at the portal to the next unfinished world: (title, text, distance) or None."""
+        w = self.world
+        quests = w.quests
+        if quests and any(quests.definition(q).get("category") == "main" for q in quests.active()):
+            return None
+        for index, region in enumerate(WORLD_ORDER[1:], start=1):
+            done = w.has_flag(f"region:{region}_complete") or (region == "chronos_dimension" and w.has_flag("game:complete"))
+            if done:
+                continue
+            if not w.has_flag(f"region:{WORLD_ORDER[index - 1]}_complete") or w.world.map_id == region:
+                return None                              # the current world's story is still going
+            options = [(m, name, e) for m, name, e in _progress_portals().get(region, []) if w.has_flag(e["requires"])]
+            if not options:
+                return None
+            from game.world_map import load_map
+            target = load_map(region).name
+            here = next((o for o in options if o[0] == w.world.map_id), None)
+            map_id, map_name, portal = here or options[0]
+            text_ = f"Travel to the {target} through the {portal.get('title', 'portal').title()}."
+            if here:
+                x, y = w.world.cell_to_feet(tuple(portal["pos"]))
+                dx, dy = x - w.avatar.x, y - w.avatar.y
+                metres = round(math.hypot(dx, dy) / TILE)
+                distance = "You're here!" if metres <= 1 else f"{metres} m {direction(dx, dy)}"
+            else:
+                distance = f"In {map_name}"
+            return ("NEXT DESTINATION", text_, distance)
+        return None
+
     def entries(self, limit=2):
-        """[(title, step text, distance text)] for the active quests, this map's story first."""
+        """[(title, step text, distance text)]: where to go next between chapters, then the active quests
+        (this map's story first)."""
         quests = self.world.quests
         if not quests:
             return []
+        upcoming = self.next_destination()
+        if upcoming:
+            limit -= 1
         active = quests.active()
         active.sort(key=lambda q: quests.definition(q).get("category") != "main")
-        out = []
+        out = [upcoming] if upcoming else []
         for quest_id in active[:limit]:
             step = quests.current_step(quest_id) or {}
             where = self.target(step)

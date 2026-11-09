@@ -1357,6 +1357,9 @@ class Overworld:
         mains.sort(key=lambda q: self.quests.definition(q).get("giver") not in local)   # this world's story first
         for quest_id in mains:
             return "QUEST: " + self.quests.step_text(quest_id)
+        upcoming = self.tracker.next_destination() if hasattr(self, "tracker") else None
+        if upcoming:
+            return "NEXT: " + upcoming[1]
         active = self.quests.active()
         return ("QUEST: " + self.quests.step_text(active[0])) if active else ""
 

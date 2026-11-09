@@ -715,7 +715,14 @@ class MonsterBattleScreen:
             elif self.state == "bag":
                 bag = self.repository.inventory(self.player.player_id)
                 labels = [f"{name[:12]} x{bag.get(name, 0)}" for name in self.bag_items]
-                menu(surface, (214, 150, 100, 74), labels, self.sub_selected, 8, frame, (), 13)
+                rows = 5                                     # what fits in the box; a full bag scrolls
+                top = max(0, min(self.sub_selected - rows + 1, len(labels) - rows)) if len(labels) > rows else 0
+                top = min(top, self.sub_selected)
+                menu(surface, (214, 150, 100, 74), labels[top:top + rows], self.sub_selected - top, 8, frame, (), 13)
+                if top > 0:
+                    pygame.draw.polygon(surface, PALETTE["gold"], [(306, 156), (309, 152), (312, 156)])
+                if top + rows < len(labels):
+                    pygame.draw.polygon(surface, PALETTE["gold"], [(306, 216), (309, 220), (312, 216)])
             elif self.state == "skills":
                 labels, locked = [], []
                 for index, skill in enumerate(SKILLS):

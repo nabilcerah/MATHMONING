@@ -859,3 +859,34 @@ class ArtDropTests(unittest.TestCase):
     def test_the_capture_animation_uses_the_numeris_core(self):
         from game import monster_sprites
         self.assertTrue(monster_sprites.available("items/NUMERIS_CORE"))
+
+
+class BattleBagScrollTests(GameCase):
+    """Screenshot bug: a full BAG spilled out of the battle box."""
+
+    def test_long_bag_lists_scroll_inside_the_box(self):
+        from game.battle import LIST_ROWS
+        game = self.game
+        pid = game.player.player_id
+        for item in ("Energy Potion", "Attack Boost", "Defence Boost", "Revive Crystal", "Greater Potion",
+                     "Full Restore", "Advanced Numeris Core"):
+            game.repository.add_item(pid, item, 2)
+        game._start_battle(create("VOLTIX", 2), "wild")
+        battle = game.battle
+        for _ in range(50):
+            if battle.state == "menu":
+                break
+            battle.handle_key(pygame.K_RETURN)
+        battle.choose_action("BAG")
+        items = battle.battle_items()
+        self.assertGreater(len(items), LIST_ROWS)
+        surface = pygame.Surface((320, 240))
+        for _ in range(len(items) - 1):
+            battle.handle_key(pygame.K_DOWN)
+            battle.draw(surface, 1)
+            top = battle.list_top(len(items))
+            self.assertTrue(top <= battle.sub_selected < top + LIST_ROWS)   # the selection is always visible
+        self.assertEqual(battle.list_top(len(items)), len(items) - LIST_ROWS)
+        for _ in range(len(items) - 1):
+            battle.handle_key(pygame.K_UP)
+        self.assertEqual(battle.list_top(len(items)), 0)

@@ -25,6 +25,7 @@ BATTLE_ITEMS = tuple(name for name, info in _item_data().items() if info["use"] 
 EVENT_FRAMES = 70       # how long each battle message stays (ENTER skips)
 MENU_RECT = (207, 150, 106, 62)
 LIST_RECT = (7, 128, 306, 84)
+LIST_ROWS = 4                  # rows that fit in LIST_RECT; longer lists (a full BAG) scroll
 
 
 class RepositoryBag:
@@ -352,10 +353,12 @@ class BattleScreen:
                 self.selected = index
                 self.choose_action(actions[index])
         elif self.state in ("moves", "party", "bag", "target"):
-            index = ui.row_index(LIST_RECT[1] + 18, 14, len(self._list_choices()), pos, 7, 200)
-            if index is not None:
-                self.sub_selected = index
-                self._pick(self._list_choices()[index])
+            choices = self._list_choices()
+            top = self.list_top(len(choices))
+            row = ui.row_index(LIST_RECT[1] + 18, 14, min(LIST_ROWS, len(choices) - top), pos, 7, 200)
+            if row is not None:
+                self.sub_selected = top + row
+                self._pick(choices[top + row])
 
     # ================================================================== actions
     def choose_move(self, move_id):
@@ -594,6 +597,14 @@ class BattleScreen:
         elif self.state == "over":
             pass
 
+    def list_top(self, count):
+        """First visible row of a scrolling list, keeping the selection on screen."""
+        top = getattr(self, "_list_top", 0)
+        top = min(top, self.sub_selected)
+        top = max(top, self.sub_selected - LIST_ROWS + 1)
+        self._list_top = max(0, min(top, max(0, count - LIST_ROWS)))
+        return self._list_top
+
     def _draw_list(self, surface, frame):
         panel(surface, LIST_RECT, PALETTE["night"])
         choices = self._list_choices()
@@ -603,8 +614,11 @@ class BattleScreen:
             title = "Choose who battles next!"
         text(surface, title, (14, 132), 10, PALETTE["gold"])
         detail = ""
+        top = self.list_top(len(choices))
         for index, choice in enumerate(choices):
-            y = 146 + index * 14
+            if not top <= index < top + LIST_ROWS:
+                continue
+            y = 146 + (index - top) * 14
             chosen = index == self.sub_selected
             if chosen:
                 pygame.draw.rect(surface, PALETTE["deep"], (11, y - 2, 190, 13))
@@ -640,6 +654,10 @@ class BattleScreen:
                     detail = item_data()[choice]["description"] + " Uses your turn."
                     if item_data()[choice]["effect"] == "capture" and self.battle.capture_block_reason():
                         detail = self.battle.capture_block_reason()
+        if top > 0:                                          # more above / below: scroll arrows
+            pygame.draw.polygon(surface, PALETTE["gold"], [(199, 137), (202, 133), (205, 137)])
+        if top + LIST_ROWS < len(choices):
+            pygame.draw.polygon(surface, PALETTE["gold"], [(199, 203), (202, 207), (205, 203)])
         panel(surface, (208, 140, 102, 68), PALETTE["ink"], PALETTE["deep"])
         wrapped(surface, detail or self.message, (213, 145, 94, 60), 8, PALETTE["cream"], 9, 6)
 

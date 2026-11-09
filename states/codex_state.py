@@ -25,9 +25,7 @@ class CodexScreen(Screen):
         for monster in self.party.all_monsters():
             self.caught.add(monster.species_id)
             self.seen.add(monster.species_id)
-        bosses = {"boss:numerex": "NUMEREX_BOSS", "boss:guardian": "EQUINOX_BOSS", "boss:dragon": "DIMENSION_DRAGON",
-                  "boss:overlord": "INFINITY_ZERO_BOSS"}
-        self.seen |= {sid for flag, sid in bosses.items() if self.story.has(flag)}
+        # The story bosses are Monster Trials creatures now: they live in the TRIAL section, not here.
         self._load()
 
     def _load(self):

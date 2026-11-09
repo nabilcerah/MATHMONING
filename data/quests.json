@@ -277,14 +277,14 @@
       }
     },
     "dimension_dragon": {
-      "title": "THE DIMENSION DRAGON",
+      "title": "THE DIMENSION COLOSSUS",
       "category": "main",
       "giver": "hypot",
       "topics": [
         "geometry",
         "multiplication"
       ],
-      "summary": "Sir Hypot guards the Geometry Kingdom. The Dimension Dragon has folded its castle into impossible shapes.",
+      "summary": "Sir Hypot guards the Geometry Kingdom. The Dimension Colossus has folded its castle into impossible shapes.",
       "steps": [
         {
           "type": "talk",
@@ -309,7 +309,7 @@
         {
           "type": "flag",
           "flag": "boss:dragon",
-          "text": "Defeat THE DIMENSION DRAGON in the Dragon Keep."
+          "text": "Defeat CRYSTALGON, the Dimension Colossus, in the Dragon Keep."
         }
       ],
       "rewards": {

@@ -326,10 +326,12 @@
    ],
    "sealed": "Three Geometry Seals lock the keep's great gate.",
    "where": "Find the Seal of Areas, the Seal of Angles and the Seal of Solids.",
-   "open": "The gate unfolds like paper. A dragon made of shapes uncurls inside...",
-   "fight": "Face the dragon!",
-   "victory": "THE DIMENSION DRAGON is defeated! The sundial's shadow spins - the Chronos Dimension opens.",
-   "quiet": "The keep is still. Every shape is back where it belongs."
+   "open": "The gate unfolds like paper. CRYSTALGON, a colossus of crystal facets from too many dimensions, rises inside...",
+   "fight": "Face the colossus!",
+   "victory": "CRYSTALGON, the Dimension Colossus, is calm again! The sundial's shadow spins - the Chronos Dimension opens.",
+   "quiet": "The keep is still. Every shape is back where it belongs.",
+   "trial": "crystalgon",
+   "trial_rank": 3
   },
   {
    "id": "geometry_kingdom_forward",
@@ -351,7 +353,7 @@
     "The sundial's shadow spins. Beyond it, islands float in frozen time. Step through?"
    ],
    "locked_text": [
-    "The sundial casts no shadow while the Dimension Dragon rules the keep."
+    "The sundial casts no shadow while the Dimension Colossus rules the keep."
    ]
   }
  ],
@@ -380,7 +382,7 @@
    "dialogue": {
     "not_started": [
      "Halt, traveller! ...Ah, a trainer. Welcome to the Geometry Kingdom.",
-     "The Dimension Dragon has folded our castle into impossible shapes. Cross to the Pillar Court, restore the three Geometry Seals and the keep will open."
+     "The Dimension Colossus has folded our castle into impossible shapes. Cross to the Pillar Court, restore the three Geometry Seals and the keep will open."
     ],
     "active": [
      "Areas, angles and solids - the three seals measure everything. Measure carefully!"

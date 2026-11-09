@@ -1,15 +1,15 @@
 {
-  "_comment": "Where the Monster Trials creatures hide. They are fought by FINDING them (walk into one); the Trials page is only a catalogue. Each hides in a remote nook of its area - the far, quiet dead ends - inside a small rocky cave, and is only visible up close. ARITHMORD (the stone arch), EQUINOX (the guardian's chamber) and INFINITY ZERO (the Time Spire) are story bosses fought at their gates, so they do not roam.",
+  "_comment": "Where the Monster Trials creatures hide. They are fought by FINDING them (walk into one); the Trials page is only a catalogue. Each hides in a remote nook of its area - the far, quiet dead ends - inside a small rocky cave, and is only visible up close. ARITHMORD (the stone arch), EQUINOX (the guardian's chamber), CRYSTALGON (the Dragon Keep) and INFINITY ZERO (the Time Spire) are story bosses fought at their gates, so they do not roam.",
   "spawns": {
     "voltbyte":   {"map": "number_forest", "area": "meadow"},
     "mycomorph":  {"map": "number_forest", "area": "grove"},
     "nullshade":  {"map": "number_forest", "area": "ridge"},
-    "crystalgon": {"map": "crystal_realm", "area": "glimmer"},
+    "galaxion":   {"map": "crystal_realm", "area": "starfall"},
     "infermath":  {"map": "algebra_cavern", "area": "glow_tunnels"},
-    "galaxion":   {"map": "geometry_kingdom", "area": "garden_court"},
     "sphynox":    {"map": "geometry_kingdom", "area": "pillar_court"},
     "chronowl":   {"map": "chronos_dimension", "area": "tick_isles"},
     "hexabyte":   {"map": "chronos_dimension", "area": "tock_isles"}
   },
-  "gates": {"arithmord": "number_forest", "equinox": "algebra_cavern", "infinity_zero": "chronos_dimension"}
+  "gates": {"arithmord": "number_forest", "equinox": "algebra_cavern", "crystalgon": "geometry_kingdom",
+            "infinity_zero": "chronos_dimension"}
 }

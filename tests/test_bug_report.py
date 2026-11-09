@@ -890,3 +890,23 @@ class BattleBagScrollTests(GameCase):
         for _ in range(len(items) - 1):
             battle.handle_key(pygame.K_UP)
         self.assertEqual(battle.list_top(len(items)), 0)
+
+
+class StoryBossTrialTests(unittest.TestCase):
+    """Every story boss is a real Monster Trials creature - no recoloured stand-ins."""
+
+    def test_every_boss_gate_is_a_trials_monster(self):
+        from battle_engine.monster_data import load_all
+        trials = load_all()
+        expected = {"number_forest": "arithmord", "algebra_cavern": "equinox", "geometry_kingdom": "crystalgon",
+                    "chronos_dimension": "infinity_zero"}
+        for map_id, trial in expected.items():
+            gate = next(e for e in load_map(map_id).data["interactables"] if e.get("kind") == "boss_gate")
+            self.assertEqual(gate.get("trial"), trial, map_id)
+            self.assertIn(trial, trials)
+
+    def test_story_bosses_do_not_also_roam(self):
+        import json
+        data = json.loads((ROOT / "data" / "trial_spawns.json").read_text(encoding="utf-8"))
+        self.assertFalse(set(data["spawns"]) & set(data["gates"]))
+        self.assertEqual(len(data["spawns"]) + len(data["gates"]), 12)        # all twelve Trial monsters placed

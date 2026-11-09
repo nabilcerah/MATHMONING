@@ -853,7 +853,7 @@
         },
         {
           "s": "hypot",
-          "t": "Halt, traveller! ...Ah, a trainer! I'm Sir Hypot, knight of Euclidia. The Dimension Dragon folded our castle into impossible shapes. Restore the three Geometry Seals in the Pillar Court and the keep will open.",
+          "t": "Halt, traveller! ...Ah, a trainer! I'm Sir Hypot, knight of Euclidia. The Dimension Colossus folded our castle into impossible shapes. Restore the three Geometry Seals in the Pillar Court and the keep will open.",
           "cut": [
             {
               "do": "emote",
@@ -984,7 +984,7 @@
       "lines": [
         {
           "s": "narrator",
-          "t": "The keep unfolds like paper. A dragon made of shapes from too many dimensions uncurls, and the room's angles stop adding up."
+          "t": "The keep unfolds like paper. CRYSTALGON - Euclidia's measuring gem, grown into a colossus of facets from too many dimensions - rises, and the room's angles stop adding up."
         },
         {
           "s": "numlink",
@@ -1016,7 +1016,7 @@
       "lines": [
         {
           "s": "narrator",
-          "t": "The dragon folds itself small and still. The stranger's phial fills again - she is standing in the sundial's shadow."
+          "t": "The colossus folds itself small and still. The stranger's phial fills again - she is standing in the sundial's shadow."
         },
         {
           "s": "stranger",
@@ -1917,7 +1917,7 @@
         },
         {
           "s": "numlink",
-          "t": "Remainder had clouded its faces, so its measurements came out crooked. You measured true, and the realm's light is clearer already."
+          "t": "Remainder had clouded its faces, so every angle in the kingdom came out crooked. You measured true, and Euclidia adds up again."
         },
         {
           "s": "numlink",

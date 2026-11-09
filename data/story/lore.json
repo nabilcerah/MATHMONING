@@ -160,7 +160,7 @@
                 "'We joined the Last Calculation. When it failed, our angles stopped adding to one hundred and eighty, and our towers folded.'"],
       "parts": [{"text": "'Our kingdom did not fall to decay, whatever later scholars may claim.'"}]},
     "record_builders_last": {"section": "records", "title": "The Last Builder's Note", "unlock": "record:record_builders_last",
-      "pages": ["'The dragon that guards our keep was a friend once. We folded it to hold the Remainder. Forgive us, Dimensia.'",
+      "pages": ["'The colossus that guards our keep was a friend once. We folded it to hold the Remainder. Forgive us, Crystalgon.'",
                 "'The Unravelling came from our own hands.'"],
       "parts": [{"text": "'The Unravelling came from our own hands.'"}]},
     "record_burnt_log": {"section": "records", "title": "A Burnt Log Page", "unlock": "record:record_burnt_log",
@@ -190,7 +190,7 @@
       {"text": "The Tallyfolk shared every harvest by Mycomorph's rings: a quarter for the village, a quarter for the seed store, half for the long winter. While the colony was shared fairly it slept peacefully under the pines; unfair shares make it swell and spread.", "unlock": "trial_story:mycomorph"}]},
     "trial_crystalgon": {"section": "trials", "title": "Crystalgon, the Measuring Gem", "unlock": "trial_seen:crystalgon", "parts": [
       {"text": "A crystal Trial monster whose facets measure every angle that touches them."},
-      {"text": "Crystalgon grew around the first perfect triangle the masons of Euclidia ever laid. Each new facet records a shape: an area on one face, an angle on the next. The Crystal Realm's light is its memory of every building Euclidia ever planned.", "unlock": "trial_story:crystalgon"}]},
+      {"text": "Crystalgon grew around the first perfect triangle the masons of Euclidia ever laid. Each new facet records a shape: an area on one face, an angle on the next. Euclidia made it guardian of the Dragon Keep; folded full of Remainder, it became the Dimension Colossus.", "unlock": "trial_story:crystalgon"}]},
     "trial_chronowl": {"section": "trials", "title": "Chronowl, the Pattern Herald", "unlock": "trial_seen:chronowl", "parts": [
       {"text": "A time Trial monster whose hoots form sequences: each call is the next term."},
       {"text": "The Timekeepers raised Chronowls as messengers. A message was a sequence - 2, 4, 8 meant 'come quickly', 1, 1, 2, 3 meant 'all is well'. When the clocks stopped, Chronowl kept hooting the last pattern it learned, over and over, alone on the isles.", "unlock": "trial_story:chronowl"}]},
